@@ -454,17 +454,15 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                         st.rerun()
 
 # ====================================================
-# VISNING 4: PLATFORM SUPER ADMIN (SLET & RET TESTDATA)
+# VISNING 4: PLATFORM SUPER ADMIN (MED SØGEFUNKTION)
 # ====================================================
 elif st.session_state.current_view == "🛡️ Platform Admin":
     st.markdown("### 🛡️ Platform Super Admin")
     
-    # 1. ADMIN LOGIN MED SIMPEL PIN-KODE
     if not st.session_state.admin_logged_in:
         st.caption("Enter Super Admin PIN to manage database records, shops, and couriers.")
         admin_pass = st.text_input("Admin PIN", type="password", placeholder="Master key")
         
-        # Standard admin pinkode sat til: lagos2026
         if st.button("Unlock Admin Panel", type="primary"):
             if admin_pass == "lagos2026":
                 st.session_state.admin_logged_in = True
@@ -472,7 +470,6 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
             else:
                 st.error("Incorrect Admin PIN! (Default is: lagos2026)")
                 
-    # 2. LOGGET IND SOM ADMIN: OVERBLIK OG SLETTE-KNAPPER
     else:
         c_a1, c_a2 = st.columns([3, 1])
         with c_a1:
@@ -482,13 +479,59 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 st.session_state.admin_logged_in = False
                 st.rerun()
 
-        admin_tabs = st.tabs(["🏪 Manage Stores", "🛵 Manage Couriers", "📦 Manage Orders", "🔥 All Offers"])
+        st.markdown("---")
+        
+        # --- HURTIG SØGNING PÅ TELEFONNUMMER ELLER NAVN ---
+        st.markdown("#### 🔍 Quick Lookup (Forgotten PIN / Support)")
+        search_query = st.text_input("Search by phone number or name (Store or Rider):", placeholder="e.g. 08012345678 or Debbie")
+        
+        if search_query.strip():
+            sq = search_query.strip().lower()
+            clean_sq = re.sub(r'[^0-9]', '', sq)
+            
+            # Hent og filtrer butikker
+            all_shops_lookup = supabase.table("shops").select("*").execute().data or []
+            matched_shops = [
+                s for s in all_shops_lookup 
+                if (sq in s["name"].lower()) or (clean_sq and clean_sq in s["phone"])
+            ]
+            
+            # Hent og filtrer kurérer
+            all_couriers_lookup = supabase.table("couriers").select("*").execute().data or []
+            matched_couriers = [
+                c for c in all_couriers_lookup 
+                if (sq in c["name"].lower()) or (clean_sq and clean_sq in c["phone"])
+            ]
+            
+            if not matched_shops and not matched_couriers:
+                st.warning(f"No shop or courier found matching '{search_query}'.")
+            else:
+                for s in matched_shops:
+                    with st.container(border=True):
+                        st.markdown(f"🏪 **STORE: {s['name']}**")
+                        st.markdown(f"📞 **Phone:** `{s['phone']}` | 🔑 **PIN:** `{s['pin']}`")
+                        st.caption(f"Area: {s['area']} • Direct slug: `{s['slug']}`")
+                        
+                        wa_pin_msg = f"Hello {s['name']}! Your login PIN for Lagos Local Commerce is: {s['pin']}. Keep it safe!"
+                        st.link_button(f"💬 Send PIN to {s['phone']} on WhatsApp", make_wa_link(s['phone'], wa_pin_msg), use_container_width=True)
 
-        # --- FANE A: BUTIKKER ---
+                for c in matched_couriers:
+                    with st.container(border=True):
+                        st.markdown(f"🛵 **COURIER: {c['name']}**")
+                        st.markdown(f"📞 **Phone:** `{c['phone']}` | 🔑 **PIN:** `{c['pin']}`")
+                        st.caption(f"Area: {c['area']} • Vehicle: {c.get('vehicle', 'Motorcycle')}")
+                        
+                        wa_rider_pin = f"Hello {c['name']}! Your rider PIN for Lagos Local Commerce is: {c['pin']}."
+                        st.link_button(f"💬 Send PIN to {c['phone']} on WhatsApp", make_wa_link(c['phone'], wa_rider_pin), use_container_width=True)
+                        
+        st.markdown("---")
+
+        # FANEBLADE TIL ADMIN
+        admin_tabs = st.tabs(["🏪 All Stores", "🛵 All Couriers", "📦 All Orders", "🔥 All Offers"])
+
         with admin_tabs[0]:
             st.markdown("#### Registered Shops")
             all_shops = supabase.table("shops").select("*").order("id", desc=True).execute().data or []
-            
             if not all_shops:
                 st.info("No shops found.")
             for s in all_shops:
@@ -496,20 +539,17 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                     col_s1, col_s2 = st.columns([3, 1])
                     with col_s1:
                         st.markdown(f"**{s['name']}**")
-                        st.caption(f"Phone: `{s['phone']}` • PIN: `{s['pin']}` • Area: `{s['area']}` • Slug: `{s['slug']}`")
+                        st.caption(f"Phone: `{s['phone']}` • PIN: `{s['pin']}` • Area: `{s['area']}`")
                     with col_s2:
-                        if st.button("🗑️ Delete Shop", key=f"adm_del_shop_{s['id']}", type="secondary"):
-                            # Slet også butikkens tilbud
+                        if st.button("🗑️ Delete", key=f"adm_del_shop_{s['id']}", type="secondary"):
                             supabase.table("offers").delete().eq("shop", s["name"]).execute()
                             supabase.table("shops").delete().eq("id", s["id"]).execute()
                             st.success(f"Deleted {s['name']}")
                             st.rerun()
 
-        # --- FANE B: KURIERER / BUDE ---
         with admin_tabs[1]:
             st.markdown("#### Registered Couriers")
             all_couriers = supabase.table("couriers").select("*").order("id", desc=True).execute().data or []
-            
             if not all_couriers:
                 st.info("No couriers found.")
             for c in all_couriers:
@@ -519,16 +559,14 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         st.markdown(f"**{c['name']}**")
                         st.caption(f"Phone: `{c['phone']}` • PIN: `{c['pin']}` • Vehicle: `{c.get('vehicle', 'Okada')}`")
                     with col_c2:
-                        if st.button("🗑️ Delete Courier", key=f"adm_del_cour_{c['id']}", type="secondary"):
+                        if st.button("🗑️ Delete", key=f"adm_del_cour_{c['id']}", type="secondary"):
                             supabase.table("couriers").delete().eq("id", c["id"]).execute()
                             st.success(f"Deleted {c['name']}")
                             st.rerun()
 
-        # --- FANE C: ORDRER ---
         with admin_tabs[2]:
             st.markdown("#### All Orders / Deliveries")
             all_orders = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
-            
             if not all_orders:
                 st.info("No orders found.")
             for o in all_orders:
@@ -539,12 +577,11 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         st.caption(f"Customer: `{o['customer_name']}` ({o['customer_phone']}) • Status: **{o['status']}**")
                         st.caption(f"From: `{o['shop']}` ➡️ To: `{o['delivery_address']}`")
                     with col_o2:
-                        if st.button("🗑️ Delete Order", key=f"adm_del_ord_{o['id']}"):
+                        if st.button("🗑️ Delete", key=f"adm_del_ord_{o['id']}"):
                             supabase.table("orders").delete().eq("id", o["id"]).execute()
                             st.success(f"Deleted Order #{o['id']}")
                             st.rerun()
 
-        # --- FANE D: TILBUD ---
         with admin_tabs[3]:
             st.markdown("#### All Product Deals")
             all_deals = supabase.table("offers").select("*").order("id", desc=True).execute().data or []
@@ -554,6 +591,6 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                     with col_d1:
                         st.markdown(f"**{d['product']}** (₦{d['price']:,}) — Shop: `{d['shop']}`")
                     with col_d2:
-                        if st.button("🗑️ Delete Deal", key=f"adm_del_deal_{d['id']}"):
+                        if st.button("🗑️ Delete", key=f"adm_del_deal_{d['id']}"):
                             supabase.table("offers").delete().eq("id", d["id"]).execute()
                             st.rerun()
