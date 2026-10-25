@@ -10,17 +10,6 @@ import re
 import random
 from openai import OpenAI
 
-/* Ultimat tvingning af select-bokse og felter i mørk tilstand */
-    div[data-baseweb="select"], 
-    div[data-baseweb="select"] > div,
-    div[data-baseweb="select"] div,
-    div[data-baseweb="base-input"] {{
-        background-color: {card_bg} !important;
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
-        border-color: {border_color} !important;
-    }}
-
 # Tema-tilstand (skal sættes FØR set_page_config for at styre Streamlits indbyggede tema)
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
@@ -64,6 +53,17 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab"] p {{
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
+    }}
+
+    /* Ultimat tvingning af select-bokse og felter i mørk tilstand */
+    div[data-baseweb="select"], 
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="select"] div,
+    div[data-baseweb="base-input"] {{
+        background-color: {card_bg} !important;
+        color: {text_color} !important;
+        -webkit-text-fill-color: {text_color} !important;
+        border-color: {border_color} !important;
     }}
 
     /* Knapper - fastlåst farve, så de aldrig forsvinder */
