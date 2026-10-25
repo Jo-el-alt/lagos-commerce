@@ -329,21 +329,22 @@ if "logged_courier" not in st.session_state:
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
-# HEADER MED ENGELSK LYS/MØRK KNAP TIL LAGOS
-    col_hdr_title, col_hdr_toggle = st.columns([3, 1])
-    with col_hdr_title:
-        st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
-        st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
-    with col_hdr_toggle:
-        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+# HEADER MED KLAR OG STABIL TEMA-KNAP
+    st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
+    st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
+
+    # Skift-knap til lyst/mørkt tema placeret rent på sin egen linje
     if st.session_state.dark_mode:
-        if st.button("☀️ Day Mode", key="toggle_day_mode", use_container_width=True):
+        if st.button("☀️ Switch to Day Mode (Sunlight)", key="toggle_day_mode", use_container_width=True):
             st.session_state.dark_mode = False
             st.rerun()
     else:
-        if st.button("🌙 Night Mode", key="toggle_night_mode", use_container_width=True):
+        if st.button("🌙 Switch to Night Mode (Save Power)", key="toggle_night_mode", use_container_width=True):
             st.session_state.dark_mode = True
             st.rerun()
+
+    st.markdown("---")
+
 # Navigationsmenu (1-klik skift via key)
 views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
