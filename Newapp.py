@@ -7,13 +7,36 @@ import qrcode
 import io
 import base64
 
-# Mobil konfiguration
+# Mobil opsætning
 st.set_page_config(
     page_title="Lagos Local Commerce",
     page_icon="🇳🇬",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
+
+# CSS der tvinger produktbilleder til et kompakt, pænt kort-format på både mobil og PC
+st.markdown("""
+<style>
+    .product-img-box {
+        width: 100%;
+        max-width: 400px;
+        height: 200px;
+        overflow: hidden;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f0f2f6;
+    }
+    .product-img-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Forbindelse til Supabase
 @st.cache_resource
@@ -26,14 +49,12 @@ supabase = get_supabase()
 
 # --- HJÆLPEFUNKTIONER ---
 def convert_to_base64_img(uploaded_file, target_size=(500, 375)):
-    """Beskærer og skalerer billedet til pænt fast 4:3 format så det ikke fylder hele skærmen."""
+    """Beskærer og skalerer nye billeder, så de fylder minimalt i databasen."""
     try:
         img = Image.open(uploaded_file)
-        # Roter billedet rigtigt ift. mobilens orientering
         img = ImageOps.exif_transpose(img)
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
-        # Beskær pænt til 4:3
         img = ImageOps.fit(img, target_size, Image.Resampling.LANCZOS)
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=75, optimize=True)
@@ -107,9 +128,12 @@ if st.session_state.current_view == "🛒 Browse Deals":
         status = item.get("status", "active")
         
         with st.container(border=True):
-            # Centreret billede med pæn, afgrænset bredde
+            # Viser billedet i den kompakte ramme (max 200px høj)
             if item.get("img_src"):
-                st.image(item["img_src"], width=320)
+                st.markdown(
+                    f'<div class="product-img-box"><img src="{item["img_src"]}" alt="Product"></div>',
+                    unsafe_allow_html=True
+                )
                 
             st.markdown(f"### {item['product']}")
             st.markdown(f"**Price: ₦{item['price']:,}**")
