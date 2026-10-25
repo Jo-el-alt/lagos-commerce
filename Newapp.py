@@ -54,30 +54,29 @@ st.markdown(f"""
         -webkit-text-fill-color: {text_color} !important;
     }}
 
-    /* Brutal tvingning af lukkede select-bjælker og input-felter */
+    /* Input-felter og select-bjælker samlet */
     div[data-baseweb="input"],
     div[data-baseweb="base-input"],
-    div[data-baseweb="select"],
-    div[data-baseweb="select"] > div,
-    div[data-baseweb="select"] div,
-    div[data-baseweb="select"] span,
-    div[data-baseweb="select"] [data-baseweb="base-input"] {{
+    div[data-baseweb="select"] {{
         background-color: {card_bg} !important;
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
         border-color: {border_color} !important;
         border-radius: 8px !important;
     }}
     
-    /* Fanger selve værdien i den lukkede select-bjælke */
-    div[data-baseweb="select"] value,
-    div[data-baseweb="select"] div[aria-selected="true"],
-    div[data-baseweb="select"] span[aria-selected="true"] {{
+    div[data-baseweb="select"] > div {{
+        background-color: {card_bg} !important;
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
-        background-color: transparent !important;
+        border-color: {border_color} !important;
     }}
 
+    div[data-baseweb="input"] input,
+    div[data-baseweb="base-input"] textarea,
+    div[data-baseweb="select"] span {{
+        color: {text_color} !important;
+        -webkit-text-fill-color: {text_color} !important;
+    }}
+    
     div[data-baseweb="select"] svg {{
         fill: {text_color} !important;
     }}
