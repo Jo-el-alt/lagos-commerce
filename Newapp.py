@@ -54,24 +54,20 @@ st.markdown(f"""
         -webkit-text-fill-color: {text_color} !important;
     }}
 
-    /* Input-felter og selve select-bjælkerne */
+    /* Input-felter og totale tvingning af select-bjælker */
     div[data-baseweb="input"],
     div[data-baseweb="base-input"],
     div[data-baseweb="select"],
     div[data-baseweb="select"] > div,
-    div[data-baseweb="select"] div {{
-        background-color: {card_bg} !important;
-        border: 1px solid {border_color} !important;
-        border-radius: 8px !important;
-        color: {text_color} !important;
-    }}
-    
-    div[data-baseweb="input"] input,
-    div[data-baseweb="base-input"] textarea,
+    div[data-baseweb="select"] div,
     div[data-baseweb="select"] span {{
+        background-color: {card_bg} !important;
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
+        border-color: {border_color} !important;
+        border-radius: 8px !important;
     }}
+    
     div[data-baseweb="select"] svg {{
         fill: {text_color} !important;
     }}
@@ -223,7 +219,6 @@ st.markdown(f"""
     }}
 </style>
 """, unsafe_allow_html=True)
-
 # Supabase forbindelse
 @st.cache_resource
 def get_supabase() -> Client:
