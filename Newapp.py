@@ -1175,9 +1175,9 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 st.markdown("---")
 st.markdown("""
 <div class="disclaimer-box">
-    <strong>⚖️ Platform Disclaimer & Limitation of Liability:</strong><br>
+    <strong>Platform Disclaimer & Limitation of Liability:</strong><br>
     Sweet Debbie Deals is an intermediary discovery and connection platform. We do not manufacture, sell, store, or inspect the products listed. All sale agreements and warranties exist strictly between the merchant and the customer. Dispatch couriers operate as independent contractors. To the maximum extent permitted under Nigerian law, Sweet Debbie Deals shall not be liable for any product defect, delivery loss, delayed dispatch, personal injury, road incident, or transaction dispute.
     <br><br>
-    <strong>🔒 Privacy (NDPA / NDPR):</strong> User data is processed strictly for commerce fulfillment and identity accreditation. Registered users retain the right to rectify or request full deletion of records anytime.
+    <strong>Privacy (NDPA / NDPR):</strong> User data is processed strictly for commerce fulfillment and identity accreditation. Registered users retain the right to rectify or request full deletion of records anytime.
 </div>
 """, unsafe_allow_html=True)
