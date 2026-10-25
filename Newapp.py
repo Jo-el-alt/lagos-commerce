@@ -73,15 +73,23 @@ st.markdown(f"""
         fill: {text_color} !important;
     }}
 
-    /* Åbne rullemenuer */
+    /* Åbne rullemenuer og select-elementer i mørk tilstand */
     div[data-baseweb="popover"],
     div[data-baseweb="menu"],
     ul[data-testid="stSelectboxVirtualDropdown"],
-    li[role="option"] {{
+    li[role="option"],
+    div[data-baseweb="select"] div {
         background-color: {card_bg} !important;
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
-    }}
+    }
+    li[role="option"] div, li[role="option"] span {
+        color: {text_color} !important;
+        -webkit-text-fill-color: {text_color} !important;
+    }
+    li[role="option"]:hover {
+        background-color: {"#374151" if is_dark else "#e5e7eb"} !important;
+    }
 
     /* Knapper - fastlåst farve, så de aldrig forsvinder */
     .stButton button, .stButton button:focus, .stButton button:active {{
