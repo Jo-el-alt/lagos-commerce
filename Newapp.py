@@ -34,183 +34,96 @@ c_pop_bg = "#1f2937" if is_dark else "#ffffff"
 c_pop_txt = "#f3f4f6" if is_dark else "#262730"
 c_img_bg = "#2a2a2a" if is_dark else "#f0f2f6"
 
-# CSS styling - Tvinger felter mørke i nattilstand
-custom_css = f"""
+# CSS styling - Let og ren overbygning
+custom_css = """
 <style>
-    /* 1. Global baggrund og overordnet tekst */
-    .stApp {{
-        background-color: {c_bg} !important;
-        color: {c_text} !important;
-    }}
-
-    /* 2. Tekst på menuknapper, overskrifter og etiketter */
-    div[data-testid="stRadio"] label,
-    div[data-testid="stRadio"] label p,
-    div[data-testid="stRadio"] label span,
-    div[data-testid="stCheckbox"] label p,
-    label[data-testid="stWidgetLabel"] p,
-    .stTabs [data-baseweb="tab"] p,
-    .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5,
-    [data-testid="stCaptionContainer"] p {{
-        color: {c_text} !important;
-        -webkit-text-fill-color: {c_text} !important;
-        font-weight: 500 !important;
-    }}
-
-    /* Faner i Admin */
-    .stTabs [data-baseweb="tab"][aria-selected="true"] p {{
-        color: {"#ff9800" if is_dark else "#e65100"} !important;
-        -webkit-text-fill-color: {"#ff9800" if is_dark else "#e65100"} !important;
-        font-weight: 700 !important;
-    }}
-
-    /* 3. Tving ALLE inputfelter, dropdowns og tekstbokse til mørk/lys baggrund */
-    div[data-testid="stTextInputRootElement"],
-    div[data-testid="stTextInput"] input,
-    div[data-testid="stTextAreaRootElement"],
-    div[data-testid="stTextArea"] textarea,
-    div[data-testid="stNumberInput"] input,
-    div[data-baseweb="input"],
-    div[data-baseweb="base-input"],
-    div[data-baseweb="select"],
-    div[data-baseweb="select"] > div,
-    div[data-baseweb="select"] > div > div {{
-        background-color: {"#1f242d" if is_dark else "#ffffff"} !important;
-        color: {"#ffffff" if is_dark else "#111827"} !important;
-        -webkit-text-fill-color: {"#ffffff" if is_dark else "#111827"} !important;
-        border-color: {c_border} !important;
-    }}
-
-    /* Placeholder-tekst (f.eks. 'Describe your inquiry...') */
-    input::placeholder, textarea::placeholder {{
-        color: {"#8892b0" if is_dark else "#6b7280"} !important;
-        -webkit-text-fill-color: {"#8892b0" if is_dark else "#6b7280"} !important;
-        opacity: 1 !important;
-    }}
-
-    /* Dropdown pil-ikon */
-    div[data-baseweb="select"] svg {{
-        fill: {"#ffffff" if is_dark else "#111827"} !important;
-    }}
-
-    /* 4. Åben dropdown-menu (valgmuligheder) */
-    ul[data-testid="stSelectboxVirtualDropdown"],
-    ul[role="listbox"],
-    div[data-baseweb="popover"],
-    div[data-baseweb="menu"],
-    li[role="option"] {{
-        background-color: {"#1f242d" if is_dark else "#ffffff"} !important;
-        color: {"#ffffff" if is_dark else "#111827"} !important;
-        -webkit-text-fill-color: {"#ffffff" if is_dark else "#111827"} !important;
-    }}
-
-    li[role="option"]:hover,
-    li[role="option"][aria-selected="true"] {{
-        background-color: {"#2d3748" if is_dark else "#e5e7eb"} !important;
-    }}
-
-    /* 5. Knapper */
-    .stButton button {{
-        background-color: {"#262b36" if is_dark else "#f0f2f6"} !important;
-        color: {"#ffffff" if is_dark else "#111827"} !important;
-        -webkit-text-fill-color: {"#ffffff" if is_dark else "#111827"} !important;
-        border: 1px solid {c_border} !important;
-        font-weight: 600 !important;
-    }}
-
-    /* 6. Produktgrid */
-    .grid-img-box {{
+    /* Produktgrid */
+    .grid-img-box {
         width: 100%;
         height: 125px;
         overflow: hidden;
         border-radius: 8px;
         margin-bottom: 8px;
-        background-color: {c_img_bg};
+        background-color: #2a2a2a;
         display: flex;
         align-items: center;
         justify-content: center;
-    }}
-    .grid-img-box img {{
+    }
+    .grid-img-box img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-    }}
-    .grid-title {{
+    }
+    .grid-title {
         font-size: 0.95rem;
         font-weight: 600;
         line-height: 1.2;
         margin-bottom: 4px;
-        color: {c_text} !important;
-        -webkit-text-fill-color: {c_text} !important;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
         height: 2.4em;
-    }}
-    .grid-price {{
+    }
+    .grid-price {
         font-size: 1rem;
         font-weight: 700;
-        color: {"#66bb6a" if is_dark else "#2e7d32"};
+        color: #66bb6a;
         margin-bottom: 4px;
-    }}
+    }
 
-    /* 7. Badges & Status */
-    .member-badge {{
+    /* Badges & Status */
+    .member-badge {
         display: inline-block;
-        background-color: {"#1b3320" if is_dark else "#e8f5e9"};
-        color: {"#81c784" if is_dark else "#2e7d32"} !important;
-        -webkit-text-fill-color: {"#81c784" if is_dark else "#2e7d32"} !important;
+        background-color: #1b3320;
+        color: #81c784;
         padding: 4px 10px;
         border-radius: 6px;
         font-weight: bold;
         font-size: 0.9rem;
         margin-bottom: 8px;
-        border: 1px solid {"#2e7d32" if is_dark else "#c8e6c9"};
-    }}
-    .referral-badge {{
+        border: 1px solid #2e7d32;
+    }
+    .referral-badge {
         display: inline-block;
-        background-color: {"#3e2723" if is_dark else "#fff3e0"};
-        color: {"#ffb74d" if is_dark else "#e65100"} !important;
-        -webkit-text-fill-color: {"#ffb74d" if is_dark else "#e65100"} !important;
+        background-color: #3e2723;
+        color: #ffb74d;
         padding: 4px 8px;
         border-radius: 6px;
         font-size: 0.85rem;
         font-weight: 600;
-        border: 1px solid {"#d84315" if is_dark else "#ffe0b2"};
+        border: 1px solid #d84315;
         margin-bottom: 6px;
-    }}
-    .status-light-red {{
-        background-color: {"#371c1c" if is_dark else "#ffebee"};
-        color: {"#ef9a9a" if is_dark else "#c62828"} !important;
-        -webkit-text-fill-color: {"#ef9a9a" if is_dark else "#c62828"} !important;
+    }
+    .status-light-red {
+        background-color: #371c1c;
+        color: #ef9a9a;
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
-        border: 1px solid {"#b71c1c" if is_dark else "#ffcdd2"};
+        border: 1px solid #b71c1c;
         display: inline-block;
         margin-bottom: 6px;
-    }}
-    .status-light-green {{
-        background-color: {"#1b3320" if is_dark else "#e8f5e9"};
-        color: {"#81c784" if is_dark else "#2e7d32"} !important;
-        -webkit-text-fill-color: {"#81c784" if is_dark else "#2e7d32"} !important;
+    }
+    .status-light-green {
+        background-color: #1b3320;
+        color: #81c784;
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
-        border: 1px solid {"#2e7d32" if is_dark else "#c8e6c9"};
+        border: 1px solid #2e7d32;
         display: inline-block;
         margin-bottom: 6px;
-    }}
-    .disclaimer-box {{
+    }
+    .disclaimer-box {
         font-size: 0.8rem;
-        color: {"#aaaaaa" if is_dark else "#666666"} !important;
-        background-color: {"#1e1e1e" if is_dark else "#f8f9fa"};
+        color: #aaaaaa;
+        background-color: #1e1e1e;
         padding: 12px;
         border-radius: 8px;
-        border: 1px solid {c_border};
+        border: 1px solid #333333;
         margin-top: 25px;
-    }}
+    }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
