@@ -32,7 +32,7 @@ border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
 
-# Direkte og stabil CSS-styling
+# Stabil CSS-styling uden fejl
 st.markdown(f"""
 <style>
     /* Global baggrund og tekst */
@@ -83,21 +83,28 @@ st.markdown(f"""
         -webkit-text-fill-color: {text_color} !important;
     }}
 
-    /* Knapper */
-   # Én fast, stabil tema-knap der aldrig forsvinder ved klik
-    current_label = "☀️ Switch to Day Mode" if st.session_state.dark_mode else "🌙 Night Mode"
-    
-    if st.button(current_label, key="theme_toggle_btn"):
-        st.session_state.dark_mode = not st.session_state.dark_mode
-        st.rerun()
-        /* Låser knap-pladsen fast, så den ikke hopper eller forsvinder ved re-render */
-    .stButton {
-        
-    }
-    div[data-testid="stButton"] button {
+    /* Knapper - fastlåst farve, så de aldrig forsvinder */
+    .stButton button, .stButton button:focus, .stButton button:active {{
+        background-color: {btn_bg} !important;
+        color: {btn_text} !important;
+        -webkit-text-fill-color: {btn_text} !important;
+        border: 1px solid {border_color} !important;
+        font-weight: 600 !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }}
+    .stButton button:hover {{
+        background-color: {"#4b5563" if is_dark else "#e5e7eb"} !important;
+        color: {btn_text} !important;
+        border-color: {border_color} !important;
+    }}
+    .stButton {{
+        min-height: 45px;
+    }}
+    div[data-testid="stButton"] button {{
         width: 100% !important;
         transition: none !important;
-    }
+    }}
 
     /* Produktgrid */
     .grid-img-box {{
@@ -336,23 +343,18 @@ if "logged_courier" not in st.session_state:
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
-# HEADER MED FAST OG STABIL TEMA-KNAP
-    st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
-    st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
+# HEADER MED STABIL TEMA-KNAP
+st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
+st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
 
-    # Tema-knap i naturlig størrelse (uden container-udvidelse)
-    if st.session_state.dark_mode:
-        if st.button("☀️ Switch to Day Mode (Sunlight)", key="toggle_day_mode"):
-            st.session_state.dark_mode = False
-            st.rerun()
-    else:
-        if st.button("🌙 Switch to Night Mode (Save Power)", key="toggle_night_mode"):
-            st.session_state.dark_mode = True
-            st.rerun()
+current_label = "☀️ Switch to Day Mode" if st.session_state.dark_mode else "🌙 Night Mode"
+if st.button(current_label, key="theme_toggle_btn"):
+    st.session_state.dark_mode = not st.session_state.dark_mode
+    st.rerun()
 
-    st.markdown("---")
+st.markdown("---")
 
-# Navigationsmenu (1-klik skift via key)
+# Navigationsmenu
 views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
 
