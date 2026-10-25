@@ -511,7 +511,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
                                     show_offer_modal(deal)
 
 # ====================================================
-# VISNING 2: KUNDE PRÆMIER & HENVISNING (PÅ ENGELSK + BEKREFT PIN)
+# VISNING 2: KUNDE PRÆMIER & HENVISNING
 # ====================================================
 elif st.session_state.current_view == "🎁 Customer Prizes & Referrals":
     st.markdown("### 🎁 Customer Cash Prizes & Referrals")
@@ -595,7 +595,7 @@ elif st.session_state.current_view == "🎁 Customer Prizes & Referrals":
         st.link_button("📤 Share your ID on WhatsApp with friends", wa_share_url, use_container_width=True)
 
 # ====================================================
-# VISNING 3: BUTIKSEJER ADMIN (MED BEKREFT PIN)
+# VISNING 3: BUTIKSEJER ADMIN
 # ====================================================
 elif st.session_state.current_view == "🏪 Store Owner Admin":
     if not st.session_state.logged_shop:
@@ -763,7 +763,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         st.image(generate_qr(direct_shop_url), width=160, caption=f"Scan for {shop['name']}")
 
 # ====================================================
-# VISNING 4: BUDE & KURÉR (MED BEKREFT PIN)
+# VISNING 4: BUDE & KURÉR
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
     if not st.session_state.logged_courier:
@@ -968,6 +968,33 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
             if st.button("🔒 Lock Admin"):
                 st.session_state.admin_logged_in = False
                 st.rerun()
+
+        st.markdown("---")
+
+        # Hent samlede antal til overbliks-metrikker
+        try:
+            total_cust_count = len(supabase.table("customers").select("id", count="exact").execute().data or [])
+        except Exception:
+            total_cust_count = 0
+            
+        try:
+            total_shops_count = len(supabase.table("shops").select("id", count="exact").execute().data or [])
+        except Exception:
+            total_shops_count = 0
+            
+        try:
+            total_couriers_count = len(supabase.table("couriers").select("id", count="exact").execute().data or [])
+        except Exception:
+            total_couriers_count = 0
+
+        # Vis overbliks-metrikker øverst i admin
+        m_col1, m_col2, m_col3 = st.columns(3)
+        with m_col1:
+            st.metric("👥 Total Customers", total_cust_count)
+        with m_col2:
+            st.metric("🏪 Total Stores", total_shops_count)
+        with m_col3:
+            st.metric("🛵 Total Riders", total_couriers_count)
 
         st.markdown("---")
 
