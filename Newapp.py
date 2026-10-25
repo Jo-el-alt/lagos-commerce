@@ -84,12 +84,19 @@ st.markdown(f"""
     }}
 
     /* Knapper */
-    .stButton button {{
+   .stButton button, .stButton button:focus, .stButton button:active {{
         background-color: {btn_bg} !important;
         color: {btn_text} !important;
         -webkit-text-fill-color: {btn_text} !important;
         border: 1px solid {border_color} !important;
         font-weight: 600 !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }}
+    .stButton button:hover {{
+        background-color: {"#4b5563" if is_dark else "#e5e7eb"} !important;
+        color: {btn_text} !important;
+        border-color: {border_color} !important;
     }}
 
     /* Produktgrid */
