@@ -34,91 +34,68 @@ c_pop_bg = "#1f2937" if is_dark else "#ffffff"
 c_pop_txt = "#f3f4f6" if is_dark else "#262730"
 c_img_bg = "#2a2a2a" if is_dark else "#f0f2f6"
 
-# CSS styling med global portal-styring
+# CSS styling - Fuld kontrast i både lyst og mørkt tema
 custom_css = f"""
 <style>
-    /* 1. Global baggrund og tekstfarve på tværs af hele siden */
-    html, body, [data-testid="stAppViewContainer"], .stApp {{
+    /* Global baggrund og overordnet tekst */
+    .stApp {{
         background-color: {c_bg} !important;
         color: {c_text} !important;
     }}
 
-    /* 2. Tekstfarve på ALLEREDE faner (Aktive OG inaktive faner i Admin) */
-    button[data-baseweb="tab"] {{
-        background-color: transparent !important;
-    }}
-    button[data-baseweb="tab"] p,
-    button[data-baseweb="tab"] div,
-    button[data-baseweb="tab"] span {{
-        color: {"#f3f4f6" if is_dark else "#374151"} !important;
-        -webkit-text-fill-color: {"#f3f4f6" if is_dark else "#374151"} !important;
+    /* Tekst på menuknapper og overskrifter */
+    div[data-testid="stRadio"] label,
+    div[data-testid="stRadio"] label p,
+    div[data-testid="stRadio"] label span,
+    div[data-testid="stCheckbox"] label p,
+    label[data-testid="stWidgetLabel"] p,
+    .stTabs [data-baseweb="tab"] p,
+    .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5,
+    [data-testid="stCaptionContainer"] p {{
+        color: {c_text} !important;
+        -webkit-text-fill-color: {c_text} !important;
         font-weight: 500 !important;
-        opacity: 1 !important;
     }}
-    button[data-baseweb="tab"][aria-selected="true"] p {{
+
+    /* Aktive tabs i admin */
+    .stTabs [data-baseweb="tab"][aria-selected="true"] p {{
         color: {"#ff9800" if is_dark else "#e65100"} !important;
         -webkit-text-fill-color: {"#ff9800" if is_dark else "#e65100"} !important;
         font-weight: 700 !important;
     }}
 
-    /* 3. Menupunkter i toppen (Radio knapper: Deals, Store, Courier osv.) */
-    div[data-testid="stRadio"] label,
-    div[data-testid="stRadio"] label p,
-    div[data-testid="stRadio"] label span,
-    div[data-testid="stRadio"] label div,
-    label[data-testid="stWidgetLabel"] p,
-    div[data-testid="stCheckbox"] label p {{
-        color: {c_text} !important;
-        -webkit-text-fill-color: {c_text} !important;
-        font-weight: 500 !important;
-    }}
-
-    /* 4. Lukkede Selectboxe og Tekstfelter */
-    div[data-testid="stSelectbox"] > div,
-    div[data-baseweb="select"] > div,
-    div[data-baseweb="input"] > input,
-    div[data-baseweb="base-input"] > textarea {{
-        background-color: {c_card} !important;
-        color: {c_text} !important;
-        -webkit-text-fill-color: {c_text} !important;
+    /* Input-felter og dropdowns: mørkegrå i nat-tilstand, hvid i dag-tilstand */
+    div[data-baseweb="input"],
+    div[data-baseweb="base-input"],
+    div[data-baseweb="select"] > div {{
+        background-color: {"#262730" if is_dark else "#ffffff"} !important;
         border: 1px solid {c_border} !important;
         border-radius: 8px !important;
     }}
+
+    /* Skrift indeni input-felter og dropdowns */
+    div[data-baseweb="input"] input,
+    div[data-baseweb="base-input"] textarea,
+    div[data-baseweb="select"] div,
+    div[data-baseweb="select"] span {{
+        color: {"#ffffff" if is_dark else "#111827"} !important;
+        -webkit-text-fill-color: {"#ffffff" if is_dark else "#111827"} !important;
+    }}
+
     div[data-baseweb="select"] svg {{
-        fill: {c_text} !important;
+        fill: {"#ffffff" if is_dark else "#111827"} !important;
     }}
 
-    /* 5. ÅBNE DROPDOWN-MENUER (Renderes uden for .stApp i body) */
-    div[data-baseweb="popover"],
-    div[data-baseweb="popover"] *,
-    div[data-baseweb="menu"],
-    div[data-baseweb="menu"] *,
-    ul[data-testid="stSelectboxVirtualDropdown"],
-    ul[data-testid="stSelectboxVirtualDropdown"] * {{
-        background-color: {c_pop_bg} !important;
-        color: {c_pop_txt} !important;
-        -webkit-text-fill-color: {c_pop_txt} !important;
-    }}
-
-    /* Hover-effekt i åben dropdown */
-    li[role="option"]:hover,
-    li[role="option"]:hover *,
-    li[role="option"][aria-selected="true"],
-    li[role="option"][aria-selected="true"] * {{
-        background-color: {"#374151" if is_dark else "#e5e7eb"} !important;
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-    }}
-
-    /* 6. Knapper */
+    /* Knapper - mørkegrå med hvid tekst om natten, tydelig grå om dagen */
     .stButton button {{
-        background-color: {c_btn_bg} !important;
-        color: {c_btn_txt} !important;
-        -webkit-text-fill-color: {c_btn_txt} !important;
+        background-color: {"#2b303c" if is_dark else "#f0f2f6"} !important;
+        color: {"#ffffff" if is_dark else "#111827"} !important;
+        -webkit-text-fill-color: {"#ffffff" if is_dark else "#111827"} !important;
         border: 1px solid {c_border} !important;
+        font-weight: 600 !important;
     }}
 
-    /* 7. Grid kort og billeder */
+    /* Produktgrid */
     .grid-img-box {{
         width: 100%;
         height: 125px;
@@ -155,7 +132,7 @@ custom_css = f"""
         margin-bottom: 4px;
     }}
 
-    /* 8. Badges & Status */
+    /* Badges & Status */
     .member-badge {{
         display: inline-block;
         background-color: {"#1b3320" if is_dark else "#e8f5e9"};
@@ -205,7 +182,7 @@ custom_css = f"""
     .disclaimer-box {{
         font-size: 0.8rem;
         color: {"#aaaaaa" if is_dark else "#666666"} !important;
-        background-color: {c_card};
+        background-color: {"#1e1e1e" if is_dark else "#f8f9fa"};
         padding: 12px;
         border-radius: 8px;
         border: 1px solid {c_border};
