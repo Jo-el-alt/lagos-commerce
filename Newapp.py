@@ -140,7 +140,7 @@ st.markdown(f"""
         border-radius: 8px;
         border: 1px solid rgba(128, 128, 128, 0.25) !important;
         margin-top: 25px;
-    }
+    }}
 </style>
 """, unsafe_allow_html=True)
 
