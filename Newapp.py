@@ -34,16 +34,16 @@ c_pop_bg = "#1f2937" if is_dark else "#ffffff"
 c_pop_txt = "#f3f4f6" if is_dark else "#262730"
 c_img_bg = "#2a2a2a" if is_dark else "#f0f2f6"
 
-# CSS styling - Fuld kontrast i både lyst og mørkt tema
+# CSS styling - Tvinger felter mørke i nattilstand
 custom_css = f"""
 <style>
-    /* Global baggrund og overordnet tekst */
+    /* 1. Global baggrund og overordnet tekst */
     .stApp {{
         background-color: {c_bg} !important;
         color: {c_text} !important;
     }}
 
-    /* Tekst på menuknapper og overskrifter */
+    /* 2. Tekst på menuknapper, overskrifter og etiketter */
     div[data-testid="stRadio"] label,
     div[data-testid="stRadio"] label p,
     div[data-testid="stRadio"] label span,
@@ -57,45 +57,68 @@ custom_css = f"""
         font-weight: 500 !important;
     }}
 
-    /* Aktive tabs i admin */
+    /* Faner i Admin */
     .stTabs [data-baseweb="tab"][aria-selected="true"] p {{
         color: {"#ff9800" if is_dark else "#e65100"} !important;
         -webkit-text-fill-color: {"#ff9800" if is_dark else "#e65100"} !important;
         font-weight: 700 !important;
     }}
 
-    /* Input-felter og dropdowns: mørkegrå i nat-tilstand, hvid i dag-tilstand */
+    /* 3. Tving ALLE inputfelter, dropdowns og tekstbokse til mørk/lys baggrund */
+    div[data-testid="stTextInputRootElement"],
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stTextAreaRootElement"],
+    div[data-testid="stTextArea"] textarea,
+    div[data-testid="stNumberInput"] input,
     div[data-baseweb="input"],
     div[data-baseweb="base-input"],
-    div[data-baseweb="select"] > div {{
-        background-color: {"#262730" if is_dark else "#ffffff"} !important;
-        border: 1px solid {c_border} !important;
-        border-radius: 8px !important;
-    }}
-
-    /* Skrift indeni input-felter og dropdowns */
-    div[data-baseweb="input"] input,
-    div[data-baseweb="base-input"] textarea,
-    div[data-baseweb="select"] div,
-    div[data-baseweb="select"] span {{
+    div[data-baseweb="select"],
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="select"] > div > div {{
+        background-color: {"#1f242d" if is_dark else "#ffffff"} !important;
         color: {"#ffffff" if is_dark else "#111827"} !important;
         -webkit-text-fill-color: {"#ffffff" if is_dark else "#111827"} !important;
+        border-color: {c_border} !important;
     }}
 
+    /* Placeholder-tekst (f.eks. 'Describe your inquiry...') */
+    input::placeholder, textarea::placeholder {{
+        color: {"#8892b0" if is_dark else "#6b7280"} !important;
+        -webkit-text-fill-color: {"#8892b0" if is_dark else "#6b7280"} !important;
+        opacity: 1 !important;
+    }}
+
+    /* Dropdown pil-ikon */
     div[data-baseweb="select"] svg {{
         fill: {"#ffffff" if is_dark else "#111827"} !important;
     }}
 
-    /* Knapper - mørkegrå med hvid tekst om natten, tydelig grå om dagen */
+    /* 4. Åben dropdown-menu (valgmuligheder) */
+    ul[data-testid="stSelectboxVirtualDropdown"],
+    ul[role="listbox"],
+    div[data-baseweb="popover"],
+    div[data-baseweb="menu"],
+    li[role="option"] {{
+        background-color: {"#1f242d" if is_dark else "#ffffff"} !important;
+        color: {"#ffffff" if is_dark else "#111827"} !important;
+        -webkit-text-fill-color: {"#ffffff" if is_dark else "#111827"} !important;
+    }}
+
+    li[role="option"]:hover,
+    li[role="option"][aria-selected="true"] {{
+        background-color: {"#2d3748" if is_dark else "#e5e7eb"} !important;
+    }}
+
+    /* 5. Knapper */
     .stButton button {{
-        background-color: {"#2b303c" if is_dark else "#f0f2f6"} !important;
+        background-color: {"#262b36" if is_dark else "#f0f2f6"} !important;
         color: {"#ffffff" if is_dark else "#111827"} !important;
         -webkit-text-fill-color: {"#ffffff" if is_dark else "#111827"} !important;
         border: 1px solid {c_border} !important;
         font-weight: 600 !important;
     }}
 
-    /* Produktgrid */
+    /* 6. Produktgrid */
     .grid-img-box {{
         width: 100%;
         height: 125px;
@@ -132,7 +155,7 @@ custom_css = f"""
         margin-bottom: 4px;
     }}
 
-    /* Badges & Status */
+    /* 7. Badges & Status */
     .member-badge {{
         display: inline-block;
         background-color: {"#1b3320" if is_dark else "#e8f5e9"};
