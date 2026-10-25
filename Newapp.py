@@ -26,8 +26,8 @@ if "dark_mode" not in st.session_state:
 is_dark = st.session_state.dark_mode
 c_bg = "#121212" if is_dark else "#ffffff"
 c_card = "#1e1e1e" if is_dark else "#ffffff"
-c_text = "#e0e0e0" if is_dark else "#262730"
-c_border = "#333333" if is_dark else "#e0e0e0"
+c_text = "#f3f4f6" if is_dark else "#262730"
+c_border = "#3a3a3a" if is_dark else "#e0e0e0"
 c_btn_bg = "#262730" if is_dark else "#f0f2f6"
 c_btn_txt = "#fafafa" if is_dark else "#262730"
 c_pop_bg = "#1f2937" if is_dark else "#ffffff"
@@ -41,18 +41,60 @@ custom_css = f"""
         background-color: {c_bg} !important;
         color: {c_text} !important;
     }}
-    .stTextInput input, .stTextArea textarea, .stSelectbox [data-baseweb="select"] {{
+
+    /* Tekst ved Deals, Store, Courier, Support, Platform (Radio) + Labels + Faner */
+    div[data-testid="stRadio"] label,
+    div[data-testid="stRadio"] label p,
+    div[data-testid="stRadio"] label span,
+    div[role="radiogroup"] label,
+    div[role="radiogroup"] label p,
+    div[role="radiogroup"] label div,
+    div[data-testid="stCheckbox"] label p,
+    div[data-testid="stCheckbox"] label span,
+    label[data-testid="stWidgetLabel"] p,
+    .stTabs [data-baseweb="tab"] p,
+    .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5,
+    [data-testid="stCaptionContainer"] p {{
+        color: {c_text} !important;
+        -webkit-text-fill-color: {c_text} !important;
+    }}
+
+    /* Input-felter og lukkede Selectboxe */
+    .stTextInput input, .stTextArea textarea, .stNumberInput input,
+    .stSelectbox div[data-baseweb="select"],
+    .stSelectbox div[data-baseweb="select"] > div,
+    .stSelectbox div[data-baseweb="select"] span,
+    .stSelectbox div[data-baseweb="select"] div {{
         background-color: {c_card} !important;
         color: {c_text} !important;
         -webkit-text-fill-color: {c_text} !important;
-        border: 1px solid {c_border} !important;
+        border-color: {c_border} !important;
     }}
-    .stButton button {{
-        background-color: {c_btn_bg} !important;
-        color: {c_btn_txt} !important;
-        -webkit-text-fill-color: {c_btn_txt} !important;
-        border: 1px solid {c_border} !important;
+    .stSelectbox svg {{
+        fill: {c_text} !important;
     }}
+
+    /* Åbne Dropdown-menuer og Popovers */
+    div[data-baseweb="popover"],
+    div[data-baseweb="popover"] > div,
+    div[data-baseweb="menu"],
+    ul[data-testid="stSelectboxVirtualDropdown"],
+    ul[role="listbox"],
+    li[role="option"],
+    li[role="option"] span,
+    li[role="option"] div,
+    div[data-testid="stPopoverBody"] {{
+        background-color: {c_pop_bg} !important;
+        color: {c_pop_txt} !important;
+        -webkit-text-fill-color: {c_pop_txt} !important;
+    }}
+    li[role="option"]:hover,
+    li[role="option"][aria-selected="true"] {{
+        background-color: {"#374151" if is_dark else "#e5e7eb"} !important;
+    }}
+
+    /* Almindelige knapper & Popover-knapper */
+    .stButton button,
     div[data-testid="stPopover"] button,
     div[data-testid="stPopover"] > div > button {{
         background-color: {c_btn_bg} !important;
@@ -60,14 +102,8 @@ custom_css = f"""
         -webkit-text-fill-color: {c_btn_txt} !important;
         border: 1px solid {c_border} !important;
     }}
-    div[data-baseweb="popover"],
-    div[data-baseweb="popover"] > div,
-    div[data-testid="stPopoverBody"] {{
-        background-color: {c_pop_bg} !important;
-        color: {c_pop_txt} !important;
-        border: 1px solid {c_border} !important;
-        border-radius: 8px !important;
-    }}
+
+    /* Produktgrid */
     .grid-img-box {{
         width: 100%;
         height: 125px;
@@ -90,6 +126,7 @@ custom_css = f"""
         line-height: 1.2;
         margin-bottom: 4px;
         color: {c_text} !important;
+        -webkit-text-fill-color: {c_text} !important;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
@@ -99,7 +136,7 @@ custom_css = f"""
     .grid-price {{
         font-size: 1rem;
         font-weight: 700;
-        color: #2e7d32;
+        color: {"#66bb6a" if is_dark else "#2e7d32"};
         margin-bottom: 4px;
     }}
     .member-badge {{
@@ -285,6 +322,11 @@ active_shop_slug = query_params.get("shop", None)
 if "current_view" not in st.session_state:
     st.session_state.current_view = "🛒 Browse Deals"
 
+# Hvis en sælger lige har udgivet en annonce, send dem til forsiden før menuen tegnes
+if st.session_state.get("go_to_deals", False):
+    st.session_state.current_view = "🛒 Browse Deals"
+    st.session_state.go_to_deals = False
+
 if "logged_shop" not in st.session_state:
     st.session_state.logged_shop = None
 
@@ -310,9 +352,9 @@ with top_c2:
             st.session_state.dark_mode = True
             st.rerun()
 
+# Navigationsmenu med key="current_view" (skifter nu på 1 klik!)
 views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
-current_tab = st.radio("Nav", views, index=views.index(st.session_state.current_view), horizontal=True, label_visibility="collapsed")
-st.session_state.current_view = current_tab
+st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
 
 # ====================================================
 # MODAL TIL DETALJEVISNING
@@ -581,7 +623,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 supabase.table("offers").insert(new_data).execute()
                 if "ai_ad_copy" in st.session_state:
                     del st.session_state["ai_ad_copy"]
-                st.session_state.current_view = "🛒 Browse Deals"
+                st.session_state.go_to_deals = True
                 st.rerun()
 
         st.markdown("---")
