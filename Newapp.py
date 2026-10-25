@@ -46,16 +46,16 @@ def generate_qr(url: str) -> bytes:
 if "offers" not in st.session_state:
     st.session_state.offers = [
         {
-            "shop": "Mama Tobi Fresh Spices",
+            "shop": "Sweet Debbie & Mom's Kitchen",
             "category": "Groceries & Food",
             "area": "Yaba Market",
             "is_mobile": True,
             "location_note": "Near Tejuosho main entrance today",
             "phone": "2348012345678",
-            "product": "5L Pure Palm Oil + Free Pepper Mix",
-            "price": 8500,
-            "desc": "🔥 Original village palm oil fresh from Delta state! Buy 5L today and get free soup spice mix. Chat on WhatsApp sharp-sharp before market closes! 🍲",
-            "hours_left": 36,
+            "product": "Fresh Homemade Abacha with Coconut",
+            "price": 200,
+            "desc": "🥗 100% fresh, homemade Abacha with sweet crunchy coconut! Prepared daily with clean village ingredients. Only ₦200 per portion. We also produce & deliver bulk orders for events, meetings, and parties! Chat us on WhatsApp now to place your order.",
+            "hours_left": 48,
             "image_bytes": None
         },
         {
@@ -133,17 +133,17 @@ with tab2:
     st.markdown("### Post a New Deal (Active for 48 Hours)")
     
     with st.form("new_offer_form"):
-        shop_name = st.text_input("Store Name *", value="Iya Basira Store")
+        shop_name = st.text_input("Store Name *", value="Sweet Debbie & Mom's Kitchen")
         category = st.selectbox("Category", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
         area = st.selectbox("Area / Market", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
         
-        is_mobile = st.checkbox("This is a mobile stall (moves location daily)")
-        location_note = st.text_input("Today's Location / Address *", value="Opposite Zenith Bank, Tejuosho")
+        is_mobile = st.checkbox("This is a mobile stall (moves location daily)", value=True)
+        location_note = st.text_input("Today's Location / Address *", value="Near Tejuosho main entrance today")
         phone = st.text_input("WhatsApp Number (e.g., 08012345678) *", value="08012345678")
         
         st.markdown("---")
-        product = st.text_input("What are you selling? *", value="Original Ankara Fabric (6 Yards)")
-        price = st.number_input("Deal Price in Naira (₦) *", min_value=100, value=9500, step=500)
+        product = st.text_input("What are you selling? *", value="Fresh Homemade Abacha with Coconut")
+        price = st.number_input("Deal Price in Naira (₦) *", min_value=50, value=200, step=50)
         uploaded_img = st.file_uploader("Upload product photo", type=["jpg", "jpeg", "png"])
         
         ai_language = st.radio("Ad tone & language:", ["Nigerian Pidgin (Recommended)", "Standard English"], horizontal=True)
@@ -152,7 +152,7 @@ with tab2:
         if ai_language == "Nigerian Pidgin (Recommended)":
             default_copy = f"🔥 Sweet deal for {area}! High quality {product} now going for just ₦{price:,}. Very limited quantity available today. Chat me sharp on WhatsApp before e finish!"
         else:
-            default_copy = f"✨ Special limited-time offer at {shop_name}! Get your authentic {product} for only ₦{price:,} today in {area}. Send a direct WhatsApp message to order."
+            default_copy = f"🥗 Fresh homemade {product} for only ₦{price:,} today in {area}! Bulk orders available on demand. Chat with us on WhatsApp to order!"
             
         desc = st.text_area("Ad Description (feel free to edit):", value=default_copy, height=100)
         
@@ -183,7 +183,7 @@ with tab2:
     st.markdown("### Store QR Code")
     st.caption("Print and place this on your stall counter:")
     clean_shop_slug = urllib.parse.quote(shop_name.lower().replace(" ", "-"))
-    shop_demo_url = f"https://lagos-commerce.streamlit.app/?shop={clean_shop_slug}"
+    shop_demo_url = f"https://lagos-commerce-pzru6e8tsftfmt72gbjnhz.streamlit.app/?shop={clean_shop_slug}"
     qr_img = generate_qr(shop_demo_url)
     st.image(qr_img, width=160, caption=f"Scan to view {shop_name}")
 
@@ -196,8 +196,8 @@ with tab3:
     
     with st.container(border=True):
         st.markdown("**Order #1042**")
-        st.markdown("📦 **Item:** 5L Pure Palm Oil")
-        st.markdown("📍 **Pickup:** Mama Tobi Spices (Yaba Market)")
+        st.markdown("📦 **Item:** Fresh Homemade Abacha with Coconut (Bulk Order: 10 packs)")
+        st.markdown("📍 **Pickup:** Sweet Debbie & Mom's Kitchen (Yaba Market)")
         st.markdown("🎯 **Drop-off:** 14 Commercial Avenue, Sabo Yaba (approx. 1.8 km)")
         st.markdown("💵 **Delivery Fee:** ₦1,500")
         st.caption("*(Rider Payout: ₦1,350 • Platform Fee: ₦150)*")
