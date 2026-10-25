@@ -24,31 +24,24 @@ if "dark_mode" not in st.session_state:
 
 # CSS: Lyst fundament til skarp sol, inverteret skærm til aften/nat
 if st.session_state.dark_mode:
-    theme_filter = """
-    /* Vender skærmen om til nat-tilstand inkl. alle formularfelter og dropdowns */
+    filter_style = """
     html {
         filter: invert(0.92) hue-rotate(180deg) !important;
         background-color: #0d1117 !important;
     }
-    /* Beskytter billeder, ikoner og QR mod at blive negative */
-    img, [data-testid="stImage"], .grid-img-box img, qr-box {
+    img, [data-testid="stImage"], .grid-img-box img {
         filter: invert(1) hue-rotate(180deg) contrast(1.1) !important;
     }
     """
 else:
-    theme_filter = ""
+    filter_style = ""
 
-st.markdown(f"""
+base_css = """
 <style>
-    {theme_filter}
-
-    /* Skarpere tekst til udendørs sollys */
-    .stApp {{
+    .stApp {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }}
-    
-    /* Billedboks i 2-kolonne grid */
-    .grid-img-box {{
+    }
+    .grid-img-box {
         width: 100%;
         height: 125px;
         overflow: hidden;
@@ -58,15 +51,13 @@ st.markdown(f"""
         display: flex;
         align-items: center;
         justify-content: center;
-    }}
-    .grid-img-box img {{
+    }
+    .grid-img-box img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-    }}
-
-    /* Varetekst & Pris */
-    .grid-title {{
+    }
+    .grid-title {
         font-size: 0.95rem;
         font-weight: 700;
         line-height: 1.2;
@@ -76,16 +67,14 @@ st.markdown(f"""
         -webkit-box-orient: vertical;
         overflow: hidden;
         height: 2.4em;
-    }}
-    .grid-price {{
+    }
+    .grid-price {
         font-size: 1.05rem;
         font-weight: 800;
         color: #0e8a16;
         margin-bottom: 4px;
-    }}
-
-    /* Badges */
-    .member-badge {{
+    }
+    .member-badge {
         display: inline-block;
         background-color: #e8f5e9;
         color: #1b5e20;
@@ -95,8 +84,8 @@ st.markdown(f"""
         font-size: 0.9rem;
         margin-bottom: 8px;
         border: 1px solid #c8e6c9;
-    }}
-    .referral-badge {{
+    }
+    .referral-badge {
         display: inline-block;
         background-color: #fff3e0;
         color: #e65100;
@@ -106,10 +95,8 @@ st.markdown(f"""
         font-weight: 700;
         border: 1px solid #ffe0b2;
         margin-bottom: 6px;
-    }}
-
-    /* Trafiklys */
-    .status-light-red {{
+    }
+    .status-light-red {
         background-color: #ffebee;
         color: #c62828;
         padding: 6px 12px;
@@ -118,8 +105,8 @@ st.markdown(f"""
         border: 1px solid #ffcdd2;
         display: inline-block;
         margin-bottom: 6px;
-    }}
-    .status-light-green {{
+    }
+    .status-light-green {
         background-color: #e8f5e9;
         color: #2e7d32;
         padding: 6px 12px;
@@ -128,9 +115,7 @@ st.markdown(f"""
         border: 1px solid #c8e6c9;
         display: inline-block;
         margin-bottom: 6px;
-    }}
-
-    /* Footer & Disclaimer */
+    }
     .disclaimer-box {
         font-size: 0.8rem;
         background-color: rgba(128, 128, 128, 0.12) !important;
@@ -140,9 +125,12 @@ st.markdown(f"""
         border-radius: 8px;
         border: 1px solid rgba(128, 128, 128, 0.25) !important;
         margin-top: 25px;
-    }}
+    }
 </style>
-""", unsafe_allow_html=True)
+"""
+
+# Kør CSS ind uden f-string for at undgå klamme-fejl
+st.markdown(f"<style>{filter_style}</style>" + base_css, unsafe_allow_html=True)
 
 # Supabase forbindelse
 @st.cache_resource
