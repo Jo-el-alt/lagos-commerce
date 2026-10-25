@@ -269,22 +269,21 @@ if "logged_courier" not in st.session_state:
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
-# HEADER MED DIREKTE LYS/MØRK KNAP TIL MARKEDET
-col_hdr_title, col_hdr_toggle = st.columns([3, 1])
-with col_hdr_title:
-    st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
-    st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
-with col_hdr_toggle:
-    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
-    if st.session_state.dark_mode:
-        if st.button("☀️ Sol / Dag", use_container_width=True, help="Skift til højkontrast lyst tema til skarp sol"):
-            st.session_state.dark_mode = False
-            st.rerun()
-    else:
-        if st.button("🌙 Nat / Strøm", use_container_width=True, help="Skift til mørk tilstand til aftensalg"):
-            st.session_state.dark_mode = True
-            st.rerun()
-
+# HEADER MED ENGELSK LYS/MØRK KNAP TIL LAGOS
+    col_hdr_title, col_hdr_toggle = st.columns([3, 1])
+    with col_hdr_title:
+        st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
+        st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
+    with col_hdr_toggle:
+        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+        if st.session_state.dark_mode:
+            if st.button("☀️ Day Mode", use_container_width=True, help="Switch to high contrast bright screen for outdoor sunlight"):
+                st.session_state.dark_mode = False
+                st.rerun()
+        else:
+            if st.button("🌙 Night Mode", use_container_width=True, help="Dim screen to save battery and reduce glare at night"):
+                st.session_state.dark_mode = True
+                st.rerun()
 # Navigationsmenu (1-klik skift via key)
 views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
