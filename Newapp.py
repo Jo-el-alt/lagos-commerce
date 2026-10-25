@@ -59,7 +59,7 @@ st.markdown(f"""
     div[data-baseweb="input"] input,
     div[data-baseweb="base-input"] textarea,
     div[data-baseweb="select"] span,
-    input[type="text"], textarea, div[data-baseweb="select"] > div {{
+    input[type="text"], input[type="password"], textarea, div[data-baseweb="select"] > div {{
         background-color: {card_bg} !important;
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
@@ -383,7 +383,7 @@ if st.button(current_label, key="theme_toggle_btn"):
 st.markdown("---")
 
 # Navigationsmenu
-views = ["🛒 Browse Deals", "🎁 Kunde Præmier & Henvisning", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
+views = ["🛒 Browse Deals", "🎁 Customer Prizes & Referrals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
 
 # ====================================================
@@ -511,43 +511,48 @@ if st.session_state.current_view == "🛒 Browse Deals":
                                     show_offer_modal(deal)
 
 # ====================================================
-# VISNING 2: KUNDE PRÆMIER & HENVISNING
+# VISNING 2: KUNDE PRÆMIER & HENVISNING (PÅ ENGELSK + BEKREFT PIN)
 # ====================================================
-elif st.session_state.current_view == "🎁 Kunde Præmier & Henvisning":
-    st.markdown("### 🎁 Kunde Kontant-Præmie & Henvisning")
-    st.caption("Henvis venner, familie eller markedsboder og vind kontante præmier i den ugentlige lodtrækning!")
+elif st.session_state.current_view == "🎁 Customer Prizes & Referrals":
+    st.markdown("### 🎁 Customer Cash Prizes & Referrals")
+    st.caption("Refer friends, family, or market stalls and win cash prizes in our weekly lucky draw!")
     
     render_broadcast_alerts("All")
 
     if not st.session_state.logged_customer:
-        cust_auth = st.radio("Vælg handling:", ["🔑 Kunde Log Ind", "📝 Opret Ny Kundeprofil"], horizontal=True)
+        cust_auth = st.radio("Choose action:", ["🔑 Customer Log In", "📝 Register New Customer Profile"], horizontal=True)
         
-        if cust_auth == "🔑 Kunde Log Ind":
+        if cust_auth == "🔑 Customer Log In":
             with st.container(border=True):
-                c_phone = st.text_input("WhatsApp / Telefonnummer", placeholder="080...")
-                c_pin = st.text_input("4-Cifret PIN-kode", type="password", placeholder="1234")
-                if st.button("Log Ind på Kundeportal", type="primary", use_container_width=True):
+                c_phone = st.text_input("WhatsApp / Phone Number", placeholder="080...")
+                c_pin = st.text_input("4-Digit PIN", type="password", placeholder="1234")
+                if st.button("Log In to Customer Portal", type="primary", use_container_width=True):
                     res = supabase.table("customers").select("*").eq("phone", c_phone.strip()).eq("pin", c_pin.strip()).execute()
                     if res.data:
                         st.session_state.logged_customer = res.data[0]
-                        st.success(f"Velkommen tilbage, {res.data[0]['name']}!")
+                        st.success(f"Welcome back, {res.data[0]['name']}!")
                         st.rerun()
                     else:
-                        st.error("Ugyldigt telefonnummer eller PIN-kode.")
+                        st.error("Invalid phone number or PIN.")
         else:
             with st.container(border=True):
-                c_name = st.text_input("Dit Fulde Navn (skal matche ID) *", placeholder="e.g. Chioma Adebayo")
-                c_phone_new = st.text_input("WhatsApp / Telefonnummer *", placeholder="080...")
-                c_pin_new = st.text_input("Opret 4-cifret hemmelig PIN *", type="password", max_chars=4, placeholder="1234")
-                c_referred = st.text_input("Hvem henviste dig? (Indtast ven/bodens ID, valgfrit)", placeholder="f.eks. CUST-1042 eller SHOP-1002")
+                c_name = st.text_input("Full Name (Must match ID) *", placeholder="e.g. Chioma Adebayo")
+                c_phone_new = st.text_input("WhatsApp / Phone Number *", placeholder="080...")
+                c_pin_new = st.text_input("Create 4-Digit Secret PIN *", type="password", max_chars=4, placeholder="1234")
+                c_pin_confirm = st.text_input("Confirm 4-Digit PIN *", type="password", max_chars=4, placeholder="1234")
+                c_referred = st.text_input("Referred by? (Enter friend/stall ID, optional)", placeholder="e.g. CUST-1042 or SHOP-1002")
                 
-                if st.button("🚀 Opret Profil & Få Kunde-ID", type="primary", use_container_width=True):
-                    if not c_name or not c_phone_new or not c_pin_new or len(c_pin_new) != 4:
-                        st.error("Udfyld venligst alle felter og vælg en 4-cifret PIN.")
+                if st.button("🚀 Register Profile & Get Customer ID", type="primary", use_container_width=True):
+                    if not c_name or not c_phone_new or not c_pin_new or not c_pin_confirm:
+                        st.error("Please fill in all required fields.")
+                    elif c_pin_new != c_pin_confirm:
+                        st.error("PIN codes do not match! Please check your input.")
+                    elif len(c_pin_new) != 4:
+                        st.error("PIN must be exactly 4 digits.")
                     else:
                         existing = supabase.table("customers").select("id").eq("phone", c_phone_new.strip()).execute()
                         if existing.data:
-                            st.error("Telefonnummeret er allerede registreret. Log ind i stedet.")
+                            st.error("Phone number already registered. Please log in.")
                         else:
                             cust_code = generate_member_code("CUST")
                             new_cust = {
@@ -560,7 +565,7 @@ elif st.session_state.current_view == "🎁 Kunde Præmier & Henvisning":
                             ins = supabase.table("customers").insert(new_cust).execute()
                             if ins.data:
                                 st.session_state.logged_customer = ins.data[0]
-                                st.success("🎉 Profil oprettet med succes!")
+                                st.success("🎉 Profile created successfully!")
                                 st.rerun()
     else:
         cust = st.session_state.logged_customer
@@ -573,24 +578,24 @@ elif st.session_state.current_view == "🎁 Kunde Præmier & Henvisning":
         col_ch1, col_ch2 = st.columns([3, 1])
         with col_ch1:
             st.markdown(f"### 👤 {cust['name']}")
-            st.markdown(f'<div class="member-badge">🎟️ Dit Kunde-ID: {c_member_id}</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="referral-badge">🤝 Henvisninger: {my_referrals} ven(ner)/bod(er) • 🎟️ Lodder i lodtrækning: <b>{total_tickets}</b></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="member-badge">🎟️ Your Customer ID: {c_member_id}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="referral-badge">🤝 Referrals: {my_referrals} friend(s)/stall(s) • 🎟️ Raffle Tickets: <b>{total_tickets}</b></div>', unsafe_allow_html=True)
             st.caption(f"📞 {cust['phone']}")
         with col_ch2:
-            if st.button("🚪 Log Ud", use_container_width=True):
+            if st.button("🚪 Log Out", use_container_width=True):
                 st.session_state.logged_customer = None
                 st.rerun()
 
         st.markdown("---")
-        st.markdown("#### 💵 Kontant-Præmie & Henvisnings-program")
-        st.info(f"💡 **Sådan vinder du kontanter:** Del dit Kunde-ID (`{c_member_id}`) med venner eller markedsboder, når de opretter sig eller køber. Hver gang en bruger indtaster dit ID, får du **1 ekstra lod** i den ugentlige lodtrækning om kontante præmier!")
+        st.markdown("#### 💵 Cash Prize & Referral Program")
+        st.info(f"💡 **How to win cash:** Share your Customer ID (`{c_member_id}`) with friends or market stalls when they sign up or buy. Every time someone enters your ID, you get **1 extra ticket** in the weekly cash prize lucky draw!")
 
         share_text = f"Hey! Check out Sweet Debbie Deals for cheap market prices in Lagos. Use my referral ID *{c_member_id}* when you sign up so we both get extra raffle tickets!"
         wa_share_url = f"https://wa.me/?text={urllib.parse.quote(share_text)}"
-        st.link_button("📤 Del dit ID på WhatsApp med venner", wa_share_url, use_container_width=True)
+        st.link_button("📤 Share your ID on WhatsApp with friends", wa_share_url, use_container_width=True)
 
 # ====================================================
-# VISNING 3: BUTIKSEJER ADMIN
+# VISNING 3: BUTIKSEJER ADMIN (MED BEKREFT PIN)
 # ====================================================
 elif st.session_state.current_view == "🏪 Store Owner Admin":
     if not st.session_state.logged_shop:
@@ -615,16 +620,21 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
             with st.container(border=True):
                 new_shop_name = st.text_input("Store or Stall Name *", placeholder="e.g. Mama Funke Provisions")
                 new_phone = st.text_input("WhatsApp Number *", placeholder="08012345678")
-                new_pin = st.text_input("Create a 4-Digit Secret PIN *", type="password", max_chars=4, placeholder="4 digits e.g. 2468")
+                new_pin = st.text_input("Create 4-Digit Secret PIN *", type="password", max_chars=4, placeholder="4 digits e.g. 2468")
+                new_pin_confirm = st.text_input("Confirm 4-Digit PIN *", type="password", max_chars=4, placeholder="4 digits e.g. 2468")
                 new_area = st.selectbox("Market / Area *", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
                 new_cat = st.selectbox("Main Category *", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
                 
-                referred_code = st.text_input("Referred by another Store or Customer ID? (Optional)", placeholder="e.g. SHOP-1002 eller CUST-1042")
+                referred_code = st.text_input("Referred by another Store or Customer ID? (Optional)", placeholder="e.g. SHOP-1002 or CUST-1042")
                 shop_consent = st.checkbox("I accept Platform Terms: Sweet Debbie Deals acts as discovery intermediary.")
                 
                 if st.button("🚀 Complete Registration & Enter", type="primary", use_container_width=True):
-                    if not new_shop_name or not new_phone or not new_pin or len(new_pin) != 4:
-                        st.error("Please fill all required fields and ensure PIN is 4 digits.")
+                    if not new_shop_name or not new_phone or not new_pin or not new_pin_confirm:
+                        st.error("Please fill all required fields.")
+                    elif new_pin != new_pin_confirm:
+                        st.error("PIN codes do not match! Please check your input.")
+                    elif len(new_pin) != 4:
+                        st.error("PIN must be exactly 4 digits.")
                     elif not shop_consent:
                         st.error("Please accept the terms to register.")
                     else:
@@ -753,7 +763,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         st.image(generate_qr(direct_shop_url), width=160, caption=f"Scan for {shop['name']}")
 
 # ====================================================
-# VISNING 4: BUDE & KURÉR
+# VISNING 4: BUDE & KURÉR (MED BEKREFT PIN)
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
     if not st.session_state.logged_courier:
@@ -779,6 +789,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                 r_name = st.text_input("Rider / Company Full Name *", placeholder="e.g. Ibrahim Babatunde")
                 r_phone_new = st.text_input("Phone Number (WhatsApp) *", placeholder="080...")
                 r_pin_new = st.text_input("Create 4-Digit PIN *", type="password", max_chars=4, placeholder="1234")
+                r_pin_confirm = st.text_input("Confirm 4-Digit PIN *", type="password", max_chars=4, placeholder="1234")
                 r_area = st.selectbox("Primary Operating Area", ["Yaba / Sabo", "Ikeja / Maryland", "Surulere", "Island / Lekki", "All Lagos"])
                 vehicle = st.selectbox("Vehicle Type", ["Motorcycle (Okada)", "Bicycle", "Van / Car"])
                 
@@ -790,8 +801,12 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                 rider_consent = st.checkbox("I agree to terms: Riders operate as independent agents.")
                 
                 if st.button("🚀 Submit Profile for Verification", type="primary", use_container_width=True):
-                    if not r_name or not r_phone_new or not r_pin_new or len(r_pin_new) != 4 or not id_file:
-                        st.error("Please fill all details, upload ID, and set 4-digit PIN.")
+                    if not r_name or not r_phone_new or not r_pin_new or not r_pin_confirm or not id_file:
+                        st.error("Please fill all details, upload ID, and set PIN.")
+                    elif r_pin_new != r_pin_confirm:
+                        st.error("PIN codes do not match! Please check your input.")
+                    elif len(r_pin_new) != 4:
+                        st.error("PIN must be exactly 4 digits.")
                     elif not rider_consent:
                         st.error("Please accept the platform terms.")
                     else:
@@ -956,7 +971,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
         st.markdown("---")
 
-        admin_tabs = st.tabs(["📢 Broadcasts", "🤝 Kunde Præmie-Lodtrækning", "🚦 Subscriptions", "🎉 Lucky Draw (Boder)", "📬 Messages", "🛵 Riders", "🏪 Stores", "👤 Kunder", "📦 Orders", "🔥 Offers"])
+        admin_tabs = st.tabs(["📢 Broadcasts", "🤝 Customer Cash Raffle", "🚦 Subscriptions", "🎉 Lucky Draw (Stores)", "📬 Messages", "🛵 Riders", "🏪 Stores", "👤 Customers", "📦 Orders", "🔥 Offers"])
 
         # --- FANE 0: BROADCASTS ---
         with admin_tabs[0]:
@@ -1007,10 +1022,10 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                 supabase.table("broadcast_messages").delete().eq("id", b["id"]).execute()
                                 st.rerun()
 
-        # --- FANE 1: KUNDE PRÆMIE-LODTRÆKNING ---
+        # --- FANE 1: CUSTOMER CASH RAFFLE ---
         with admin_tabs[1]:
-            st.markdown("#### 🎁 Kunde Kontant-Præmie Lodtrækning (Vægtet)")
-            st.caption("Jo flere venner eller boder kunden har henvist, jo flere lodder har de i puljen!")
+            st.markdown("#### 🎁 Customer Cash Prize Raffle (Weighted)")
+            st.caption("The more friends or stores referred, the more tickets the customer has in the pool!")
             
             all_customers = supabase.table("customers").select("*").execute().data or []
             all_shops_for_ref = supabase.table("shops").select("*").execute().data or []
@@ -1032,13 +1047,13 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 })
             
             total_tickets_sum = sum([item["tickets"] for item in customer_pool])
-            st.metric("👥 Registrerede Kunder i alt", len(customer_pool))
-            st.metric("🎟️ Samlede Lodder i Puljen (Vægtet)", total_tickets_sum)
+            st.metric("👥 Total Registered Customers", len(customer_pool))
+            st.metric("🎟️ Total Tickets in Pool (Weighted)", total_tickets_sum)
             
             st.markdown("---")
-            if st.button("🎲 Træk Kontant-Præmie Vinder blandt Kunder", type="primary", use_container_width=True):
+            if st.button("🎲 Draw Cash Prize Winner Among Customers", type="primary", use_container_width=True):
                 if not customer_pool:
-                    st.warning("Ingen kunder tilmeldt endnu.")
+                    st.warning("No customers registered yet.")
                 else:
                     weighted_list = []
                     for item in customer_pool:
@@ -1047,15 +1062,15 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                     
                     winner = random.choice(weighted_list)
                     st.balloons()
-                    st.success(f"🏆 **KONTANT-VINDER FUNDET!**\n\n**{winner['name']}**\n\n🎟️ Kunde-ID: `{winner['id']}`\n🤝 Antal henvisninger: **{winner['referrals']}** (Lodder i spil: {winner['tickets']})\n📞 Telefon: `{winner['phone']}`")
+                    st.success(f"🏆 **CASH WINNER FOUND!**\n\n**{winner['name']}**\n\n🎟️ Customer ID: `{winner['id']}`\n🤝 Referrals: **{winner['referrals']}** (Tickets in play: {winner['tickets']})\n📞 Phone: `{winner['phone']}`")
                     win_wa = make_wa_link(winner['phone'], f"Congratulations {winner['name']}! Your ID ({winner['id']}) has won the Sweet Debbie Deals Customer Cash Prize!")
-                    st.link_button("💬 Send Præmie-besked på WhatsApp", win_wa, use_container_width=True)
+                    st.link_button("💬 Send Prize Message on WhatsApp", win_wa, use_container_width=True)
 
-            st.markdown("##### Oversigt over Kundernes Lodder")
+            st.markdown("##### Customer Tickets Overview")
             for item in customer_pool:
                 with st.container(border=True):
                     st.markdown(f"**{item['name']}** (`{item['id']}`) — 📞 `{item['phone']}`")
-                    st.write(f"Henvisninger: **{item['referrals']}** • Samlede lodder i puljen: **{item['tickets']} stk.**")
+                    st.write(f"Referrals: **{item['referrals']}** • Total tickets in pool: **{item['tickets']} pcs.**")
 
         # --- FANE 2: ABONNEMENTER ---
         with admin_tabs[2]:
@@ -1167,7 +1182,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
         # --- FANE 3: LODTRÆKNING BODER ---
         with admin_tabs[3]:
-            st.markdown("#### 🎉 Store Lucky Draw (Boder)")
+            st.markdown("#### 🎉 Store Lucky Draw (Stores)")
             all_shops_ref = supabase.table("shops").select("*").execute().data or []
             referral_counts = {}
             for s in all_shops_ref:
@@ -1182,16 +1197,16 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 if cnt >= 5:
                     qualified_stores.append({"name": s.get("name"), "phone": s.get("phone"), "id": s_id, "count": cnt})
 
-            st.write(f"Kvalificerede boder (5+ henvisninger): **{len(qualified_stores)}**")
-            if st.button("🎲 Træk Bod-Vinder Nu", type="primary", use_container_width=True):
+            st.write(f"Qualified stores (5+ referrals): **{len(qualified_stores)}**")
+            if st.button("🎲 Draw Store Winner Now", type="primary", use_container_width=True):
                 if not qualified_stores:
-                    st.warning("Ingen boder har opfyldt 5 henvisninger endnu.")
+                    st.warning("No stores have met 5 referrals yet.")
                 else:
                     winner = random.choice(qualified_stores)
                     st.balloons()
-                    st.success(f"🏆 **BOD-VINDER!**\n\n**{winner['name']}**\n\n🎟️ ID: `{winner['id']}`\n📞 Telefon: `{winner['phone']}`")
+                    st.success(f"🏆 **STORE WINNER!**\n\n**{winner['name']}**\n\n🎟️ ID: `{winner['id']}`\n📞 Phone: `{winner['phone']}`")
                     win_wa = make_wa_link(winner['phone'], f"Congratulations {winner['name']}! Your store ({winner['id']}) has won the Lucky Draw!")
-                    st.link_button("💬 WhatsApp Besked", win_wa, use_container_width=True)
+                    st.link_button("💬 WhatsApp Message", win_wa, use_container_width=True)
 
         # --- FANE 4: SUPPORT BESKEDER ---
         with admin_tabs[4]:
@@ -1265,16 +1280,16 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
         # --- FANE 7: KUNDER ---
         with admin_tabs[7]:
-            st.markdown("#### Registrerede Kunder")
+            st.markdown("#### Registered Customers")
             all_cust_admin = supabase.table("customers").select("*").execute().data or []
             if not all_cust_admin:
-                st.info("Ingen kunder registreret endnu.")
+                st.info("No customers registered yet.")
             for cu in all_cust_admin:
                 with st.container(border=True):
                     cu_id = cu.get("member_id") or f"CUST-{cu['id']}"
                     st.markdown(f"**{cu['name']}** (🎟️ `{cu_id}`)")
-                    st.caption(f"📞 `{cu['phone']}` • Henvist af: `{cu.get('referred_by', 'Ingen')}`")
-                    if st.button("🗑️ Slet Kunde", key=f"del_cu_{cu['id']}", type="secondary"):
+                    st.caption(f"📞 `{cu['phone']}` • Referred by: `{cu.get('referred_by', 'None')}`")
+                    if st.button("🗑️ Delete Customer", key=f"del_cu_{cu['id']}", type="secondary"):
                         supabase.table("customers").delete().eq("id", cu["id"]).execute()
                         st.rerun()
 
