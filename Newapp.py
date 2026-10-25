@@ -1,11 +1,13 @@
 import streamlit as st
 from PIL import Image
+from supabase import create_client, Client
+from datetime import datetime, timezone
 import urllib.parse
 import qrcode
 import io
 import base64
 
-# Mobile configuration
+# Mobile setup
 st.set_page_config(
     page_title="Lagos Local Commerce",
     page_icon="🇳🇬",
@@ -13,9 +15,18 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- HELPER FUNCTIONS ---
+# Forbindelse til Supabase
+@st.cache_resource
+def get_supabase() -> Client:
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
+
+supabase = get_supabase()
+
+# --- HJÆLPEFUNKTIONER ---
 def convert_to_base64_img(uploaded_file, max_width=600):
-    """Krymper billedet og laver det til en ren base64-streng, så det aldrig forsvinder."""
+    """Krymper billedet og laver det til en data-streng, der gemmes direkte i databasen."""
     try:
         img = Image.open(uploaded_file)
         if img.mode in ("RGBA", "P"):
@@ -29,15 +40,9 @@ def convert_to_base64_img(uploaded_file, max_width=600):
         encoded = base64.b64encode(buf.getvalue()).decode()
         return f"data:image/jpeg;base64,{encoded}"
     except Exception:
-        # Hvis billedet fejler, gemmes raw data som fallback
-        try:
-            encoded = base64.b64encode(uploaded_file.getvalue()).decode()
-            return f"data:image/jpeg;base64,{encoded}"
-        except Exception:
-            return None
+        return None
 
 def make_wa_link(phone: str, product: str, price: int, shop: str) -> str:
-    """Creates a direct WhatsApp link with prefilled order inquiry."""
     clean_phone = phone.replace("+", "").replace(" ", "").replace("-", "")
     if clean_phone.startswith("0"):
         clean_phone = "234" + clean_phone[1:]
@@ -45,115 +50,142 @@ def make_wa_link(phone: str, product: str, price: int, shop: str) -> str:
     return f"https://wa.me/{clean_phone}?text={urllib.parse.quote(msg)}"
 
 def generate_qr(url: str) -> bytes:
-    """Generates a shop QR code as PNG bytes."""
     qr = qrcode.make(url)
     buf = io.BytesIO()
     qr.save(buf, format="PNG")
     return buf.getvalue()
 
-# --- INITIAL DATA (SESSION STATE) ---
-if "offers" not in st.session_state:
-    st.session_state.offers = [
-        {
-            "shop": "Sweet Debbie & Mom's Kitchen",
-            "category": "Groceries & Food",
-            "area": "Yaba Market",
-            "is_mobile": True,
-            "location_note": "Near Tejuosho main entrance today",
-            "phone": "2348012345678",
-            "product": "Fresh Homemade Abacha with Coconut",
-            "price": 200,
-            "desc": "🥗 100% fresh, homemade Abacha with sweet crunchy coconut! Prepared daily with clean village ingredients. Only ₦200 per portion. We also produce & deliver bulk orders for events, meetings, and parties! Chat us on WhatsApp now to place your order.",
-            "hours_left": 48,
-            "img_src": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80"
-        },
-        {
-            "shop": "Chinedu Electronics Hub",
-            "category": "Electronics",
-            "area": "Ikeja (Computer Village)",
-            "is_mobile": False,
-            "location_note": "Otigba Street, Shop 12B",
-            "phone": "2348098765432",
-            "product": "20,000mAh Powerbank (Fast Charge)",
-            "price": 14500,
-            "desc": "⚡ No NEPA wahala! Heavy-duty fast charge powerbank can charge your phone 4 times full. 6 months shop warranty included.",
-            "hours_left": 18,
-            "img_src": "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?w=600&auto=format&fit=crop&q=80"
-        }
-    ]
+def calculate_hours_left(expires_at_str: str) -> int:
+    """Beregner hvor mange timer der er tilbage af de 48 timer."""
+    try:
+        # Håndter ISO format fra Supabase
+        clean_str = expires_at_str.replace("Z", "+00:00")
+        exp_time = datetime.fromisoformat(clean_str)
+        now_time = datetime.now(timezone.utc)
+        diff = exp_time - now_time
+        return max(0, int(diff.total_seconds() // 3600))
+    except Exception:
+        return 48
 
-# Styrer hvilken fane der er aktiv
+# --- NAVIGATION ---
 if "current_view" not in st.session_state:
     st.session_state.current_view = "🛒 Browse Deals"
 
-# --- UI HEADER ---
 st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>🇳🇬 Lagos Local Commerce</h2>", unsafe_allow_html=True)
 st.caption("<p style='text-align: center;'>Discover top deals & order directly from nearby stores</p>", unsafe_allow_html=True)
 
-# Radio knapper i toppen fungerer mere stabilt end standard tabs ved opdateringer
 views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch"]
-current_tab = st.radio(
-    "Navigation", 
-    views, 
-    index=views.index(st.session_state.current_view), 
-    horizontal=True, 
-    label_visibility="collapsed"
-)
+current_tab = st.radio("Nav", views, index=views.index(st.session_state.current_view), horizontal=True, label_visibility="collapsed")
 st.session_state.current_view = current_tab
 
-# ----------------------------------------------------
-# VISNING 1: CUSTOMER DISCOVERY
-# ----------------------------------------------------
+# ====================================================
+# VISNING 1: KUNDEPORTAL (KUN AKTIVE OG IKKE-UDLØBNE TILBUD)
+# ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
-    col_filter1, col_filter2 = st.columns(2)
-    with col_filter1:
-        selected_area = st.selectbox(
-            "Market / Area", 
-            ["All Areas", "Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"]
-        )
-    with col_filter2:
-        selected_cat = st.selectbox(
-            "Category", 
-            ["All Categories", "Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"]
-        )
+    c1, c2 = st.columns(2)
+    with c1:
+        sel_area = st.selectbox("Market / Area", ["All Areas", "Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
+    with c2:
+        sel_cat = st.selectbox("Category", ["All Categories", "Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
 
     st.markdown("---")
-    shown_count = 0
-    for item in st.session_state.offers:
-        if selected_area != "All Areas" and item["area"] != selected_area:
-            continue
-        if selected_cat != "All Categories" and item["category"] != selected_cat:
-            continue
-            
-        shown_count += 1
+
+    # Hent kun tilbud, hvor 48 timer IKKE er udløbet (expires_at > nu)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    query = supabase.table("offers").select("*").gt("expires_at", now_iso).order("id", desc=True)
+    
+    if sel_area != "All Areas":
+        query = query.eq("area", sel_area)
+    if sel_cat != "All Categories":
+        query = query.eq("category", sel_cat)
+        
+    res = query.execute()
+    offers = res.data or []
+
+    if not offers:
+        st.info("No active deals found right now. Check back soon!")
+
+    for item in offers:
+        hours_left = calculate_hours_left(item["expires_at"])
+        status = item.get("status", "active")
+        
         with st.container(border=True):
             if item.get("img_src"):
                 st.image(item["img_src"], use_container_width=True)
                 
             st.markdown(f"### {item['product']}")
             st.markdown(f"**Price: ₦{item['price']:,}**")
-            st.write(item["desc"])
+            st.write(item.get("description", ""))
             
-            st.caption(f"🏪 **{item['shop']}** ({item['category']}) • ⏳ Expires in {item['hours_left']}h")
-            
-            if item["is_mobile"]:
-                st.info(f"📍 **Mobile Stall Today:** {item['location_note']}")
+            # Status badge
+            if status == "sold_out":
+                st.error("⛔ Sold Out for Today")
+            elif status == "back_tomorrow":
+                st.warning("⏳ Sold Out – Back Fresh Tomorrow Morning!")
             else:
-                st.caption(f"📍 Address: {item['location_note']}")
+                st.success("🟢 In Stock Now")
+            
+            st.caption(f"🏪 **{item['shop']}** ({item['category']}) • ⏳ Expires in {hours_left}h")
+            
+            if item.get("is_mobile"):
+                st.info(f"📍 **Mobile Stall Today:** {item.get('location_note')}")
+            else:
+                st.caption(f"📍 Address: {item.get('location_note')}")
                 
-            wa_url = make_wa_link(item["phone"], item["product"], item["price"], item["shop"])
-            st.link_button("💬 Order via WhatsApp", wa_url, use_container_width=True)
+            if status == "active":
+                wa_url = make_wa_link(item["phone"], item["product"], item["price"], item["shop"])
+                st.link_button("💬 Order via WhatsApp", wa_url, use_container_width=True)
+            else:
+                st.button("Item Unavailable", disabled=True, use_container_width=True)
 
-    if shown_count == 0:
-        st.info("No active deals found for this selection right now.")
-
-# ----------------------------------------------------
-# VISNING 2: STORE OWNER ADMIN
-# ----------------------------------------------------
+# ====================================================
+# VISNING 2: BUTIKSEJER ADMIN (STYR TILBUD & STATUS)
+# ====================================================
 elif st.session_state.current_view == "🏪 Store Owner Admin":
-    st.markdown("### Post a New Deal (Active for 48 Hours)")
+    st.markdown("### Manage Store Deals")
     
-    shop_name = st.text_input("Store Name *", value="Sweet Debbie & Mom's Kitchen")
+    # Simpel butiks-vælger til demo
+    current_shop = st.selectbox(
+        "Select your shop to manage:",
+        ["Sweet Debbie & Mom's Kitchen", "Chinedu Electronics Hub"]
+    )
+    
+    # 1. VIS EKSISTERENDE OPSLAG FOR DENNE BUTIK MED KNAPPER
+    st.markdown("#### Your Active Deals")
+    my_offers_res = supabase.table("offers").select("*").eq("shop", current_shop).order("id", desc=True).execute()
+    my_offers = my_offers_res.data or []
+    
+    if not my_offers:
+        st.write("You don't have any deals posted right now.")
+    else:
+        for deal in my_offers:
+            with st.container(border=True):
+                st.markdown(f"**{deal['product']}** — ₦{deal['price']:,}")
+                st.caption(f"Current Status: `{deal.get('status', 'active')}` • Expires in: {calculate_hours_left(deal['expires_at'])}h")
+                
+                col_btn1, col_btn2, col_btn3 = st.columns(3)
+                with col_btn1:
+                    if st.button("🟢 In Stock", key=f"stock_{deal['id']}"):
+                        supabase.table("offers").update({"status": "active"}).eq("id", deal["id"]).execute()
+                        st.rerun()
+                with col_btn2:
+                    if st.button("⛔ Sold Out", key=f"sold_{deal['id']}"):
+                        supabase.table("offers").update({"status": "sold_out"}).eq("id", deal["id"]).execute()
+                        st.rerun()
+                with col_btn3:
+                    if st.button("⏳ Back Tomorrow", key=f"tom_{deal['id']}"):
+                        supabase.table("offers").update({"status": "back_tomorrow"}).eq("id", deal["id"]).execute()
+                        st.rerun()
+                
+                if st.button("🗑️ Delete Deal", key=f"del_{deal['id']}", type="secondary"):
+                    supabase.table("offers").delete().eq("id", deal["id"]).execute()
+                    st.success("Deal deleted permanently!")
+                    st.rerun()
+
+    st.markdown("---")
+    
+    # 2. OPRET NYT TILBUD (GEMMES I SUPABASE)
+    st.markdown("#### Post a New 48-Hour Deal")
     category = st.selectbox("Category", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
     area = st.selectbox("Area / Market", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
     
@@ -161,59 +193,54 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
     location_note = st.text_input("Today's Location / Address *", value="Near Tejuosho main entrance today")
     phone = st.text_input("WhatsApp Number *", value="08012345678")
     
-    st.markdown("---")
-    product = st.text_input("What are you selling? *", value="Fresh Jollof Rice & Fried Fish")
-    price = st.number_input("Deal Price in Naira (₦) *", min_value=50, value=1500, step=50)
+    product = st.text_input("What are you selling? *", value="Fresh Homemade Abacha with Coconut")
+    price = st.number_input("Deal Price in Naira (₦) *", min_value=50, value=200, step=50)
     
-    st.markdown("**Product Photo (Optional)**")
-    uploaded_file = st.file_uploader("Select or snap photo", type=["jpg", "jpeg", "png", "webp"], key="img_uploader")
+    uploaded_file = st.file_uploader("Product Photo (Optional)", type=["jpg", "jpeg", "png", "webp"])
     if uploaded_file is not None:
-        st.image(uploaded_file, caption="Selected photo preview", width=220)
-
-    ai_language = st.radio("Ad tone & language:", ["Nigerian Pidgin (Recommended)", "Standard English"], horizontal=True)
-    
-    if ai_language == "Nigerian Pidgin (Recommended)":
-        default_copy = f"🔥 Correct deal for {area}! Sweet {product} ready now for only ₦{price:,}. Send WhatsApp sharp before e finish!"
-    else:
-        default_copy = f"🥗 Fresh and hot {product} available today at {shop_name} for just ₦{price:,}! Order directly on WhatsApp."
+        st.image(uploaded_file, caption="Preview", width=180)
         
-    desc = st.text_area("Ad Description:", value=default_copy, height=100)
+    ai_language = st.radio("Ad tone & language:", ["Nigerian Pidgin (Recommended)", "Standard English"], horizontal=True)
+    if ai_language == "Nigerian Pidgin (Recommended)":
+        default_copy = f"🔥 Sweet deal for {area}! High quality {product} now going for just ₦{price:,}. Very limited quantity available today. Chat me sharp on WhatsApp before e finish!"
+    else:
+        default_copy = f"🥗 Fresh homemade {product} for only ₦{price:,} today in {area}! Bulk orders available on demand. Chat with us on WhatsApp to order!"
+    desc = st.text_area("Ad Description:", value=default_copy, height=80)
     
-    if st.button("🚀 Publish Deal Now", type="primary", use_container_width=True):
-        if not product or not shop_name or not phone:
-            st.error("Please fill in Store Name, Product Name, and WhatsApp Number.")
+    if st.button("🚀 Publish to Lagos Commerce (Saves Forever)", type="primary", use_container_width=True):
+        if not product or not phone:
+            st.error("Please enter both product name and WhatsApp number.")
         else:
             final_img = convert_to_base64_img(uploaded_file) if uploaded_file else None
             
-            new_offer = {
-                "shop": shop_name,
+            # Gem i Supabase
+            new_data = {
+                "shop": current_shop,
                 "category": category,
                 "area": area,
                 "is_mobile": is_mobile,
                 "location_note": location_note,
                 "phone": phone,
                 "product": product,
-                "price": price,
-                "desc": desc,
-                "hours_left": 48,
-                "img_src": final_img
+                "price": int(price),
+                "description": desc,
+                "img_src": final_img,
+                "status": "active"
             }
-            # Indsæt øverst
-            st.session_state.offers.insert(0, new_offer)
-            # Skift automatisk visning til forsiden
+            supabase.table("offers").insert(new_data).execute()
             st.session_state.current_view = "🛒 Browse Deals"
             st.rerun()
 
     st.markdown("---")
     st.markdown("### Store QR Code")
-    clean_shop_slug = urllib.parse.quote(shop_name.lower().replace(" ", "-"))
+    clean_shop_slug = urllib.parse.quote(current_shop.lower().replace(" ", "-"))
     shop_demo_url = f"https://lagos-commerce-pzru6e8tsftfmt72gbjnhz.streamlit.app/?shop={clean_shop_slug}"
     qr_img = generate_qr(shop_demo_url)
-    st.image(qr_img, width=160, caption=f"Scan for {shop_name}")
+    st.image(qr_img, width=160, caption=f"Scan to view {current_shop}")
 
-# ----------------------------------------------------
-# VISNING 3: DISPATCH & COURIERS
-# ----------------------------------------------------
+# ====================================================
+# VISNING 3: BUDE & KURÉR (FASE 4 PREVIEW)
+# ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
     st.markdown("### Courier & Dispatch Portal")
     with st.container(border=True):
