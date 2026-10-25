@@ -32,7 +32,7 @@ border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
 
-# Stabil CSS-styling uden fejl
+# Fuld og korrekt CSS-styling
 st.markdown(f"""
 <style>
     /* Global baggrund og tekst */
@@ -73,23 +73,23 @@ st.markdown(f"""
         fill: {text_color} !important;
     }}
 
-    /* Åbne rullemenuer og select-elementer i mørk tilstand */
+    /* Åbne rullemenuer og select-elementer i mørk/lys tilstand */
     div[data-baseweb="popover"],
     div[data-baseweb="menu"],
     ul[data-testid="stSelectboxVirtualDropdown"],
     li[role="option"],
-    div[data-baseweb="select"] div {
+    div[data-baseweb="select"] div {{
         background-color: {card_bg} !important;
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
-    }
-    li[role="option"] div, li[role="option"] span {
+    }}
+    li[role="option"] div, li[role="option"] span {{
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
-    }
-    li[role="option"]:hover {
+    }}
+    li[role="option"]:hover {{
         background-color: {"#374151" if is_dark else "#e5e7eb"} !important;
-    }
+    }}
 
     /* Knapper - fastlåst farve, så de aldrig forsvinder */
     .stButton button, .stButton button:focus, .stButton button:active {{
