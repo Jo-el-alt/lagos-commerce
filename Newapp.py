@@ -73,20 +73,27 @@ st.markdown(f"""
         fill: {text_color} !important;
     }}
 
-    /* Åbne rullemenuer og select-elementer i mørk/lys tilstand */
+    /* Aggressiv tvingning af Åbne rullemenuer (Dropdowns & Popovers) i mørk/lys tilstand */
     div[data-baseweb="popover"],
     div[data-baseweb="menu"],
+    div[data-baseweb="select-dropdown"],
     ul[data-testid="stSelectboxVirtualDropdown"],
+    ul[role="listbox"],
     li[role="option"],
-    div[data-baseweb="select"] div {{
+    div[role="listbox"] {{
         background-color: {card_bg} !important;
         color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
     }}
-    li[role="option"] div, li[role="option"] span {{
+    
+    li[role="option"] div, 
+    li[role="option"] span,
+    div[role="listbox"] div,
+    div[role="listbox"] span {{
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
+        background-color: transparent !important;
     }}
+    
     li[role="option"]:hover {{
         background-color: {"#374151" if is_dark else "#e5e7eb"} !important;
     }}
