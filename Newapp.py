@@ -33,7 +33,7 @@ border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
 
-# Fuld og korrekt CSS-styling inkl. aggressive tvingninger af input-felter og select-bokse
+# Fuld og korrekt CSS-styling
 st.markdown(f"""
 <style>
     /* Global baggrund og tekst */
@@ -55,7 +55,7 @@ st.markdown(f"""
         -webkit-text-fill-color: {text_color} !important;
     }}
 
-    /* Tving alle standard input-felter, textareas og select-bokse til mørk/lys baggrund */
+    /* Tving input-felter og select-bokse */
     div[data-baseweb="input"] input,
     div[data-baseweb="base-input"] textarea,
     div[data-baseweb="select"] span,
@@ -359,6 +359,9 @@ if "logged_shop" not in st.session_state:
 if "logged_courier" not in st.session_state:
     st.session_state.logged_courier = None
 
+if "logged_customer" not in st.session_state:
+    st.session_state.logged_customer = None
+
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
@@ -380,7 +383,7 @@ if st.button(current_label, key="theme_toggle_btn"):
 st.markdown("---")
 
 # Navigationsmenu
-views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
+views = ["🛒 Browse Deals", "🎁 Kunde Præmier & Henvisning", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
 
 # ====================================================
@@ -508,7 +511,86 @@ if st.session_state.current_view == "🛒 Browse Deals":
                                     show_offer_modal(deal)
 
 # ====================================================
-# VISNING 2: BUTIKSEJER ADMIN
+# VISNING 2: KUNDE PRÆMIER & HENVISNING
+# ====================================================
+elif st.session_state.current_view == "🎁 Kunde Præmier & Henvisning":
+    st.markdown("### 🎁 Kunde Kontant-Præmie & Henvisning")
+    st.caption("Henvis venner, familie eller markedsboder og vind kontante præmier i den ugentlige lodtrækning!")
+    
+    render_broadcast_alerts("All")
+
+    if not st.session_state.logged_customer:
+        cust_auth = st.radio("Vælg handling:", ["🔑 Kunde Log Ind", "📝 Opret Ny Kundeprofil"], horizontal=True)
+        
+        if cust_auth == "🔑 Kunde Log Ind":
+            with st.container(border=True):
+                c_phone = st.text_input("WhatsApp / Telefonnummer", placeholder="080...")
+                c_pin = st.text_input("4-Cifret PIN-kode", type="password", placeholder="1234")
+                if st.button("Log Ind på Kundeportal", type="primary", use_container_width=True):
+                    res = supabase.table("customers").select("*").eq("phone", c_phone.strip()).eq("pin", c_pin.strip()).execute()
+                    if res.data:
+                        st.session_state.logged_customer = res.data[0]
+                        st.success(f"Velkommen tilbage, {res.data[0]['name']}!")
+                        st.rerun()
+                    else:
+                        st.error("Ugyldigt telefonnummer eller PIN-kode.")
+        else:
+            with st.container(border=True):
+                c_name = st.text_input("Dit Fulde Navn (skal matche ID) *", placeholder="e.g. Chioma Adebayo")
+                c_phone_new = st.text_input("WhatsApp / Telefonnummer *", placeholder="080...")
+                c_pin_new = st.text_input("Opret 4-cifret hemmelig PIN *", type="password", max_chars=4, placeholder="1234")
+                c_referred = st.text_input("Hvem henviste dig? (Indtast ven/bodens ID, valgfrit)", placeholder="f.eks. CUST-1042 eller SHOP-1002")
+                
+                if st.button("🚀 Opret Profil & Få Kunde-ID", type="primary", use_container_width=True):
+                    if not c_name or not c_phone_new or not c_pin_new or len(c_pin_new) != 4:
+                        st.error("Udfyld venligst alle felter og vælg en 4-cifret PIN.")
+                    else:
+                        existing = supabase.table("customers").select("id").eq("phone", c_phone_new.strip()).execute()
+                        if existing.data:
+                            st.error("Telefonnummeret er allerede registreret. Log ind i stedet.")
+                        else:
+                            cust_code = generate_member_code("CUST")
+                            new_cust = {
+                                "name": c_name.strip(),
+                                "phone": c_phone_new.strip(),
+                                "pin": c_pin_new.strip(),
+                                "member_id": cust_code,
+                                "referred_by": c_referred.strip().upper() if c_referred else None
+                            }
+                            ins = supabase.table("customers").insert(new_cust).execute()
+                            if ins.data:
+                                st.session_state.logged_customer = ins.data[0]
+                                st.success("🎉 Profil oprettet med succes!")
+                                st.rerun()
+    else:
+        cust = st.session_state.logged_customer
+        c_member_id = cust.get("member_id") or f"CUST-{cust.get('id', 1000)}"
+        
+        ref_res = supabase.table("customers").select("id").eq("referred_by", c_member_id).execute()
+        my_referrals = len(ref_res.data or [])
+        total_tickets = 1 + my_referrals
+
+        col_ch1, col_ch2 = st.columns([3, 1])
+        with col_ch1:
+            st.markdown(f"### 👤 {cust['name']}")
+            st.markdown(f'<div class="member-badge">🎟️ Dit Kunde-ID: {c_member_id}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="referral-badge">🤝 Henvisninger: {my_referrals} ven(ner)/bod(er) • 🎟️ Lodder i lodtrækning: <b>{total_tickets}</b></div>', unsafe_allow_html=True)
+            st.caption(f"📞 {cust['phone']}")
+        with col_ch2:
+            if st.button("🚪 Log Ud", use_container_width=True):
+                st.session_state.logged_customer = None
+                st.rerun()
+
+        st.markdown("---")
+        st.markdown("#### 💵 Kontant-Præmie & Henvisnings-program")
+        st.info(f"💡 **Sådan vinder du kontanter:** Del dit Kunde-ID (`{c_member_id}`) med venner eller markedsboder, når de opretter sig eller køber. Hver gang en bruger indtaster dit ID, får du **1 ekstra lod** i den ugentlige lodtrækning om kontante præmier!")
+
+        share_text = f"Hey! Check out Sweet Debbie Deals for cheap market prices in Lagos. Use my referral ID *{c_member_id}* when you sign up so we both get extra raffle tickets!"
+        wa_share_url = f"https://wa.me/?text={urllib.parse.quote(share_text)}"
+        st.link_button("📤 Del dit ID på WhatsApp med venner", wa_share_url, use_container_width=True)
+
+# ====================================================
+# VISNING 3: BUTIKSEJER ADMIN
 # ====================================================
 elif st.session_state.current_view == "🏪 Store Owner Admin":
     if not st.session_state.logged_shop:
@@ -537,7 +619,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 new_area = st.selectbox("Market / Area *", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
                 new_cat = st.selectbox("Main Category *", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
                 
-                referred_code = st.text_input("Referred by another Store ID? (Optional)", placeholder="e.g. SHOP-1002")
+                referred_code = st.text_input("Referred by another Store or Customer ID? (Optional)", placeholder="e.g. SHOP-1002 eller CUST-1042")
                 shop_consent = st.checkbox("I accept Platform Terms: Sweet Debbie Deals acts as discovery intermediary.")
                 
                 if st.button("🚀 Complete Registration & Enter", type="primary", use_container_width=True):
@@ -671,7 +753,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         st.image(generate_qr(direct_shop_url), width=160, caption=f"Scan for {shop['name']}")
 
 # ====================================================
-# VISNING 3: BUDE & KURÉR
+# VISNING 4: BUDE & KURÉR
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
     if not st.session_state.logged_courier:
@@ -804,7 +886,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                             st.rerun()
 
 # ====================================================
-# VISNING 4: BRUGER-SUPPORT
+# VISNING 5: BRUGER-SUPPORT
 # ====================================================
 elif st.session_state.current_view == "💬 Support":
     st.markdown("### 💬 User Support & Helpdesk")
@@ -822,6 +904,10 @@ elif st.session_state.current_view == "💬 Support":
         default_name = st.session_state.logged_courier["name"]
         default_phone = st.session_state.logged_courier["phone"]
         user_category = "Courier / Rider"
+    elif st.session_state.logged_customer:
+        default_name = st.session_state.logged_customer["name"]
+        default_phone = st.session_state.logged_customer["phone"]
+        user_category = "Customer"
         
     with st.container(border=True):
         u_name = st.text_input("Your Name / Business Name *", value=default_name)
@@ -846,7 +932,7 @@ elif st.session_state.current_view == "💬 Support":
                 st.success("✅ Message sent to the admin team! We will contact you on WhatsApp shortly.")
 
 # ====================================================
-# VISNING 5: PLATFORM SUPER ADMIN
+# VISNING 6: PLATFORM SUPER ADMIN
 # ====================================================
 elif st.session_state.current_view == "🛡️ Platform Admin":
     st.markdown("### 🛡️ Platform Super Admin")
@@ -870,7 +956,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
         st.markdown("---")
 
-        admin_tabs = st.tabs(["📢 Broadcasts", "🤝 Referrals", "🚦 Subscriptions", "🎉 Lucky Draw", "📬 Messages", "🛵 Riders", "🏪 Stores", "📦 Orders", "🔥 Offers"])
+        admin_tabs = st.tabs(["📢 Broadcasts", "🤝 Kunde Præmie-Lodtrækning", "🚦 Subscriptions", "🎉 Lucky Draw (Boder)", "📬 Messages", "🛵 Riders", "🏪 Stores", "👤 Kunder", "📦 Orders", "🔥 Offers"])
 
         # --- FANE 0: BROADCASTS ---
         with admin_tabs[0]:
@@ -921,63 +1007,55 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                 supabase.table("broadcast_messages").delete().eq("id", b["id"]).execute()
                                 st.rerun()
 
-        # --- FANE 1: HENVISNINGER ---
+        # --- FANE 1: KUNDE PRÆMIE-LODTRÆKNING ---
         with admin_tabs[1]:
-            st.markdown("#### 🤝 Store Referral Program (Target: 5 Referrals)")
-            all_shops = supabase.table("shops").select("*").execute().data or []
+            st.markdown("#### 🎁 Kunde Kontant-Præmie Lodtrækning (Vægtet)")
+            st.caption("Jo flere venner eller boder kunden har henvist, jo flere lodder har de i puljen!")
             
-            referral_counts = {}
-            for s in all_shops:
-                ref_by = s.get("referred_by")
-                if ref_by:
-                    referral_counts[ref_by] = referral_counts.get(ref_by, 0) + 1
-                    
-            qualified_stores = []
-            in_progress_stores = []
+            all_customers = supabase.table("customers").select("*").execute().data or []
+            all_shops_for_ref = supabase.table("shops").select("*").execute().data or []
             
-            for s in all_shops:
-                s_id = s.get("member_id") or f"SHOP-{1000 + s.get('id', 1)}"
-                cnt = referral_counts.get(s_id, 0)
-                data_item = {
-                    "name": s.get("name", "Unknown"),
-                    "phone": s.get("phone", ""),
-                    "id": s_id,
-                    "count": cnt,
-                    "area": s.get("area", "")
-                }
-                if cnt >= 5:
-                    qualified_stores.append(data_item)
-                elif cnt > 0:
-                    in_progress_stores.append(data_item)
-                    
-            r_col1, r_col2 = st.columns(2)
-            with r_col1:
-                st.metric("🎯 Qualified for Draw (5+ Referrals)", f"{len(qualified_stores)}")
-            with r_col2:
-                st.metric("⏳ Working Towards Target", f"{len(in_progress_stores)}")
+            customer_pool = []
+            for c in all_customers:
+                c_id = c.get("member_id") or f"CUST-{c.get('id', 1000)}"
+                cust_refs = len([x for x in all_customers if x.get("referred_by") == c_id])
+                shop_refs = len([x for x in all_shops_for_ref if x.get("referred_by") == c_id])
+                total_refs = cust_refs + shop_refs
+                tickets = 1 + total_refs
                 
+                customer_pool.append({
+                    "name": c["name"],
+                    "phone": c["phone"],
+                    "id": c_id,
+                    "referrals": total_refs,
+                    "tickets": tickets
+                })
+            
+            total_tickets_sum = sum([item["tickets"] for item in customer_pool])
+            st.metric("👥 Registrerede Kunder i alt", len(customer_pool))
+            st.metric("🎟️ Samlede Lodder i Puljen (Vægtet)", total_tickets_sum)
+            
             st.markdown("---")
-            st.markdown("##### 🏆 Qualified Stores (5/5 Referrals Completed)")
-            if not qualified_stores:
-                st.info("No store has reached 5 referrals yet.")
-            else:
-                for q in qualified_stores:
-                    with st.container(border=True):
-                        st.markdown(f"**{q['name']}** — 🎟️ `{q['id']}`")
-                        st.success(f"✅ {q['count']} stores referred! (Qualified for Lucky Draw)")
-                        wa_ref_msg = f"Congratulations {q['name']}! You have referred {q['count']} stores. You are officially entered into our exclusive Lucky Draw!"
-                        st.link_button("💬 Congratulate on WhatsApp", make_wa_link(q['phone'], wa_ref_msg), use_container_width=True)
+            if st.button("🎲 Træk Kontant-Præmie Vinder blandt Kunder", type="primary", use_container_width=True):
+                if not customer_pool:
+                    st.warning("Ingen kunder tilmeldt endnu.")
+                else:
+                    weighted_list = []
+                    for item in customer_pool:
+                        for _ in range(item["tickets"]):
+                            weighted_list.append(item)
+                    
+                    winner = random.choice(weighted_list)
+                    st.balloons()
+                    st.success(f"🏆 **KONTANT-VINDER FUNDET!**\n\n**{winner['name']}**\n\n🎟️ Kunde-ID: `{winner['id']}`\n🤝 Antal henvisninger: **{winner['referrals']}** (Lodder i spil: {winner['tickets']})\n📞 Telefon: `{winner['phone']}`")
+                    win_wa = make_wa_link(winner['phone'], f"Congratulations {winner['name']}! Your ID ({winner['id']}) has won the Sweet Debbie Deals Customer Cash Prize!")
+                    st.link_button("💬 Send Præmie-besked på WhatsApp", win_wa, use_container_width=True)
 
-            st.markdown("##### ⏳ Active Progress (1 to 4 Referrals)")
-            if not in_progress_stores:
-                st.caption("No stores currently on 1-4 referrals.")
-            else:
-                for p in in_progress_stores:
-                    with st.container(border=True):
-                        st.markdown(f"**{p['name']}** — 🎟️ `{p['id']}` (📞 `{p['phone']}`)")
-                        st.write(f"Progress: **{p['count']} / 5** referred *(Needs {5 - p['count']} more)*")
-                        wa_encourage = f"Hello {p['name']}! You currently have {p['count']}/5 referrals for Sweet Debbie Deals. Refer just {5 - p['count']} more store(s) with your ID ({p['id']}) to enter our Lucky Draw!"
-                        st.link_button("💬 Send Progress WhatsApp", make_wa_link(p['phone'], wa_encourage), use_container_width=True)
+            st.markdown("##### Oversigt over Kundernes Lodder")
+            for item in customer_pool:
+                with st.container(border=True):
+                    st.markdown(f"**{item['name']}** (`{item['id']}`) — 📞 `{item['phone']}`")
+                    st.write(f"Henvisninger: **{item['referrals']}** • Samlede lodder i puljen: **{item['tickets']} stk.**")
 
         # --- FANE 2: ABONNEMENTER ---
         with admin_tabs[2]:
@@ -1004,10 +1082,11 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 all_couriers = supabase.table("couriers").select("*").execute().data or []
                 target_payer_type = st.radio("Bill to:", ["Store", "Courier"], horizontal=True)
                 
-                if target_payer_type == "Store" and all_shops:
-                    shop_names = [f"{s.get('name', 'Shop')} ({s.get('member_id', '')})" for s in all_shops]
+                all_shops_list = supabase.table("shops").select("*").execute().data or []
+                if target_payer_type == "Store" and all_shops_list:
+                    shop_names = [f"{s.get('name', 'Shop')} ({s.get('member_id', '')})" for s in all_shops_list]
                     sel_s_idx = st.selectbox("Select Store:", range(len(shop_names)), format_func=lambda x: shop_names[x])
-                    chosen_payer = all_shops[sel_s_idx]
+                    chosen_payer = all_shops_list[sel_s_idx]
                 elif target_payer_type == "Courier" and all_couriers:
                     c_names = [f"{c.get('name', 'Rider')} ({c.get('member_id', '')})" for c in all_couriers]
                     sel_c_idx = st.selectbox("Select Courier:", range(len(c_names)), format_func=lambda x: c_names[x])
@@ -1086,44 +1165,33 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                 supabase.table("billing_records").delete().eq("id", b["id"]).execute()
                                 st.rerun()
 
-        # --- FANE 3: LODTRÆKNING ---
+        # --- FANE 3: LODTRÆKNING BODER ---
         with admin_tabs[3]:
-            st.markdown("#### 🎉 Member Lucky Draw")
-            draw_type = st.radio(
-                "Select Raffle Category:",
-                ["🎯 5-Referral Winners Only (Exclusive)", "🏪 All Stores", "🛵 Approved Riders Only", "🌍 All Members"],
-                horizontal=True
-            )
-            
-            draw_pool = []
-            if "5-Referral" in draw_type:
-                draw_pool = qualified_stores
-            elif "All Stores" in draw_type:
-                for s in all_shops:
-                    draw_pool.append({"name": s.get("name", "Unknown"), "phone": s.get("phone", ""), "id": s.get("member_id", ""), "type": "Store"})
-            elif "Approved Riders" in draw_type:
-                c_list = supabase.table("couriers").select("*").execute().data or []
-                for c in c_list:
-                    if c.get("is_approved", True):
-                        draw_pool.append({"name": c.get("name", "Rider"), "phone": c.get("phone", ""), "id": c.get("member_id", ""), "type": "Courier"})
-            else:
-                for s in all_shops:
-                    draw_pool.append({"name": s.get("name", "Unknown"), "phone": s.get("phone", ""), "id": s.get("member_id", ""), "type": "Store"})
-                c_list = supabase.table("couriers").select("*").execute().data or []
-                for c in c_list:
-                    if c.get("is_approved", True):
-                        draw_pool.append({"name": c.get("name", "Rider"), "phone": c.get("phone", ""), "id": c.get("member_id", ""), "type": "Courier"})
+            st.markdown("#### 🎉 Store Lucky Draw (Boder)")
+            all_shops_ref = supabase.table("shops").select("*").execute().data or []
+            referral_counts = {}
+            for s in all_shops_ref:
+                ref_by = s.get("referred_by")
+                if ref_by:
+                    referral_counts[ref_by] = referral_counts.get(ref_by, 0) + 1
+                    
+            qualified_stores = []
+            for s in all_shops_ref:
+                s_id = s.get("member_id") or f"SHOP-{1000 + s.get('id', 1)}"
+                cnt = referral_counts.get(s_id, 0)
+                if cnt >= 5:
+                    qualified_stores.append({"name": s.get("name"), "phone": s.get("phone"), "id": s_id, "count": cnt})
 
-            st.write(f"Eligible participants in this draw: **{len(draw_pool)}**")
-            if st.button("🎲 Draw Random Winner Now", type="primary", use_container_width=True):
-                if not draw_pool:
-                    st.warning("No eligible participants in this category.")
+            st.write(f"Kvalificerede boder (5+ henvisninger): **{len(qualified_stores)}**")
+            if st.button("🎲 Træk Bod-Vinder Nu", type="primary", use_container_width=True):
+                if not qualified_stores:
+                    st.warning("Ingen boder har opfyldt 5 henvisninger endnu.")
                 else:
-                    winner = random.choice(draw_pool)
+                    winner = random.choice(qualified_stores)
                     st.balloons()
-                    st.success(f"🏆 **WINNER SELECTED!**\n\n**{winner['name']}**\n\n🎟️ ID: `{winner['id']}`\n\n📞 Phone: `{winner['phone']}`")
-                    win_wa = make_wa_link(winner['phone'], f"Congratulations {winner['name']}! Your ID ({winner['id']}) has officially won the Sweet Debbie Deals Lucky Draw!")
-                    st.link_button("💬 Congratulate on WhatsApp", win_wa, use_container_width=True)
+                    st.success(f"🏆 **BOD-VINDER!**\n\n**{winner['name']}**\n\n🎟️ ID: `{winner['id']}`\n📞 Telefon: `{winner['phone']}`")
+                    win_wa = make_wa_link(winner['phone'], f"Congratulations {winner['name']}! Your store ({winner['id']}) has won the Lucky Draw!")
+                    st.link_button("💬 WhatsApp Besked", win_wa, use_container_width=True)
 
         # --- FANE 4: SUPPORT BESKEDER ---
         with admin_tabs[4]:
@@ -1180,7 +1248,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
         # --- FANE 6: BUTIKKER ---
         with admin_tabs[6]:
             st.markdown("#### Registered Shops")
-            for s in all_shops:
+            all_shops_admin = supabase.table("shops").select("*").execute().data or []
+            for s in all_shops_admin:
                 with st.container(border=True):
                     s_id_val = s.get("member_id") or f"SHOP-{1000 + s.get('id', 1)}"
                     col_s1, col_s2 = st.columns([3, 1])
@@ -1194,8 +1263,23 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             supabase.table("shops").delete().eq("id", s["id"]).execute()
                             st.rerun()
 
-        # --- FANE 7: ORDRER ---
+        # --- FANE 7: KUNDER ---
         with admin_tabs[7]:
+            st.markdown("#### Registrerede Kunder")
+            all_cust_admin = supabase.table("customers").select("*").execute().data or []
+            if not all_cust_admin:
+                st.info("Ingen kunder registreret endnu.")
+            for cu in all_cust_admin:
+                with st.container(border=True):
+                    cu_id = cu.get("member_id") or f"CUST-{cu['id']}"
+                    st.markdown(f"**{cu['name']}** (🎟️ `{cu_id}`)")
+                    st.caption(f"📞 `{cu['phone']}` • Henvist af: `{cu.get('referred_by', 'Ingen')}`")
+                    if st.button("🗑️ Slet Kunde", key=f"del_cu_{cu['id']}", type="secondary"):
+                        supabase.table("customers").delete().eq("id", cu["id"]).execute()
+                        st.rerun()
+
+        # --- FANE 8: ORDRER ---
+        with admin_tabs[8]:
             st.markdown("#### All Orders")
             all_orders = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
             for o in all_orders:
@@ -1209,8 +1293,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             supabase.table("orders").delete().eq("id", o["id"]).execute()
                             st.rerun()
 
-        # --- FANE 8: TILBUD ---
-        with admin_tabs[8]:
+        # --- FANE 9: TILBUD ---
+        with admin_tabs[9]:
             st.markdown("#### All Product Deals")
             all_deals = supabase.table("offers").select("*").order("id", desc=True).execute().data or []
             for d in all_deals:
@@ -1229,14 +1313,19 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 st.markdown("---")
 footer_html = (
     "<div class='disclaimer-box'>"
-    "<strong>Platform Disclaimer & Limitation of Liability:</strong><br>"
+    "<strong>Platform Disclaimer, Terms & Limitation of Liability:</strong><br>"
     "Sweet Debbie Deals is an intermediary discovery and connection platform. "
     "We do not manufacture, sell, store, or inspect the products listed. "
     "All sale agreements and warranties exist strictly between the merchant and the customer. "
     "Dispatch couriers operate as independent contractors. To the maximum extent permitted under Nigerian law, "
     "Sweet Debbie Deals shall not be liable for any product defect, delivery loss, delayed dispatch, personal injury, "
     "road incident, or transaction dispute.<br><br>"
-    "<strong>Privacy (NDPA / NDPR):</strong> User data is processed strictly for commerce fulfillment and identity accreditation. "
+    "<strong>Cash Prizes, Raffles & Referral Terms (18+ Only):</strong><br>"
+    "Participation in cash prize draws and referral programs requires users to be at least 18 years of age. "
+    "<strong>Identity Verification Rule:</strong> The full name registered on any user or merchant profile <em>must strictly match</em> "
+    "the official government-issued ID (NIN, Voter's Card, or Driver's License) provided upon verification or prize claim. "
+    "Any discrepancy, fake account, or fraudulent referral activity will result in immediate disqualification and forfeiture of cash prizes.<br><br>"
+    "<strong>Privacy (NDPA / NDPR):</strong> User data is processed strictly for commerce fulfillment, identity accreditation, and prize delivery. "
     "Registered users retain the right to rectify or request full deletion of records anytime."
     "</div>"
 )
