@@ -64,9 +64,10 @@ st.markdown(f"""
         border: 1px solid {border_color} !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
+        width: 100% !important;
     }}
     div[data-testid="stPopover"] button:hover {{
-        background-color: {"#374151" if is_dark else "#e5e7eb"} !important;
+        background-color: {"#4b5563" if is_dark else "#e5e7eb"} !important;
         border-color: {border_color} !important;
     }}
 
@@ -340,6 +341,12 @@ if "logged_courier" not in st.session_state:
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
+# Session state til popover filtre
+if "sel_area" not in st.session_state:
+    st.session_state.sel_area = "All Areas"
+if "sel_cat" not in st.session_state:
+    st.session_state.sel_cat = "All Categories"
+
 # HEADER MED STABIL TEMA-KNAP
 st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
 st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
@@ -425,17 +432,29 @@ if st.session_state.current_view == "🛒 Browse Deals":
     else:
         c1, c2 = st.columns(2)
         with c1:
-            sel_area = st.selectbox("Market / Area", ["All Areas", "Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
+            st.markdown("<div style='font-size: 0.85rem; font-weight: bold; margin-bottom: 4px;'>Market / Area</div>", unsafe_allow_html=True)
+            with st.popover(f"📍 {st.session_state.sel_area}", use_container_width=True):
+                areas = ["All Areas", "Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"]
+                for a in areas:
+                    if st.button(a, key=f"area_btn_{a}", use_container_width=True):
+                        st.session_state.sel_area = a
+                        st.rerun()
         with c2:
-            sel_cat = st.selectbox("Category", ["All Categories", "Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
+            st.markdown("<div style='font-size: 0.85rem; font-weight: bold; margin-bottom: 4px;'>Category</div>", unsafe_allow_html=True)
+            with st.popover(f"📂 {st.session_state.sel_cat}", use_container_width=True):
+                cats = ["All Categories", "Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"]
+                for c in cats:
+                    if st.button(c, key=f"cat_btn_{c}", use_container_width=True):
+                        st.session_state.sel_cat = c
+                        st.rerun()
 
         st.markdown("---")
         now_iso = datetime.now(timezone.utc).isoformat()
         query = supabase.table("offers").select("*").gt("expires_at", now_iso).order("id", desc=True)
-        if sel_area != "All Areas":
-            query = query.eq("area", sel_area)
-        if sel_cat != "All Categories":
-            query = query.eq("category", sel_cat)
+        if st.session_state.sel_area != "All Areas":
+            query = query.eq("area", st.session_state.sel_area)
+        if st.session_state.sel_cat != "All Categories":
+            query = query.eq("category", st.session_state.sel_cat)
         res = query.execute()
         offers = res.data or []
 
