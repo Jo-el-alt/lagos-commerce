@@ -33,7 +33,7 @@ border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
 
-# Fuld og korrekt CSS-styling
+# Fuld og korrekt CSS-styling inklusive Popover- og PopoverBody-fix
 st.markdown(f"""
 <style>
     /* Global baggrund og tekst */
@@ -55,15 +55,29 @@ st.markdown(f"""
         -webkit-text-fill-color: {text_color} !important;
     }}
 
-    /* Ultimat tvingning af select-bokse og felter i mørk tilstand */
-    div[data-baseweb="select"], 
-    div[data-baseweb="select"] > div,
-    div[data-baseweb="select"] div,
-    div[data-baseweb="base-input"] {{
+    /* Popover knap styling i lukket tilstand */
+    div[data-testid="stPopover"] button, 
+    div[data-testid="stPopover"] > div > button {{
         background-color: {card_bg} !important;
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }}
+    div[data-testid="stPopover"] button:hover {{
+        background-color: {"#374151" if is_dark else "#e5e7eb"} !important;
         border-color: {border_color} !important;
+    }}
+
+    /* Åbne popover-menuer og bokse (PopoverBody) */
+    div[data-baseweb="popover"], 
+    div[data-baseweb="popover"] > div, 
+    div[data-testid="stPopoverBody"] {{
+        background-color: {card_bg} !important;
+        color: {text_color} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 8px !important;
     }}
 
     /* Knapper - fastlåst farve, så de aldrig forsvinder */
