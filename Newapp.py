@@ -40,16 +40,51 @@ else:
     notice_bg = "#fdfbfb"
     disclaimer_bg = "#f8f9fa"
 
-# Dynamisk CSS
+# Dynamisk CSS med fuld popover- og kontraststyring
 st.markdown(f"""
 <style>
     /* Generel app baggrund og tekst */
     .stApp {{
-        background-color: {theme_bg};
-        color: {theme_text};
+        background-color: {theme_bg} !important;
+        color: {theme_text} !important;
     }}
-    
-    /* Grid billedboks */
+
+    /* Input-felter, selectboxe og tekstfelter i mørk tilstand */
+    .stTextInput input, .stTextArea textarea, .stSelectbox [data-baseweb="select"] {{
+        background-color: {"#1e1e1e" if st.session_state.dark_mode else "#ffffff"} !important;
+        color: {theme_text} !important;
+        -webkit-text-fill-color: {theme_text} !important;
+        border: 1px solid {theme_border} !important;
+    }}
+
+    /* Almindelige knapper */
+    .stButton button {{
+        background-color: {"#262730" if st.session_state.dark_mode else "#f0f2f6"} !important;
+        color: {"#fafafa" if st.session_state.dark_mode else "#262730"} !important;
+        -webkit-text-fill-color: {"#fafafa" if st.session_state.dark_mode else "#262730"} !important;
+        border: 1px solid {"#4b5563" if st.session_state.dark_mode else "#d0d7de"} !important;
+    }}
+
+    /* Popover-knapper */
+    div[data-testid="stPopover"] button,
+    div[data-testid="stPopover"] > div > button {{
+        background-color: {"#262730" if st.session_state.dark_mode else "#f0f2f6"} !important;
+        color: {"#fafafa" if st.session_state.dark_mode else "#262730"} !important;
+        -webkit-text-fill-color: {"#fafafa" if st.session_state.dark_mode else "#262730"} !important;
+        border: 1px solid {"#4b5563" if st.session_state.dark_mode else "#d0d7de"} !important;
+    }}
+
+    /* Popover-indhold og dropdown-kasser */
+    div[data-baseweb="popover"],
+    div[data-baseweb="popover"] > div,
+    div[data-testid="stPopoverBody"] {{
+        background-color: {"#1f2937" if st.session_state.dark_mode else "#ffffff"} !important;
+        color: {"#f3f4f6" if st.session_state.dark_mode else "#262730"} !important;
+        border: 1px solid {"#4b5563" if st.session_state.dark_mode else "#e0e0e0"} !important;
+        border-radius: 8px !important;
+    }}
+
+    /* Billedboks i 2-kolonne grid */
     .grid-img-box {{
         width: 100%;
         height: 125px;
@@ -66,12 +101,14 @@ st.markdown(f"""
         height: 100%;
         object-fit: cover;
     }}
+
+    /* Varetekst & Pris */
     .grid-title {{
         font-size: 0.95rem;
         font-weight: 600;
         line-height: 1.2;
         margin-bottom: 4px;
-        color: {theme_text};
+        color: {theme_text} !important;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
@@ -84,10 +121,13 @@ st.markdown(f"""
         color: #2e7d32;
         margin-bottom: 4px;
     }}
+
+    /* Badges */
     .member-badge {{
         display: inline-block;
         background-color: {"#1b3320" if st.session_state.dark_mode else "#e8f5e9"};
-        color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"};
+        color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"} !important;
+        -webkit-text-fill-color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"} !important;
         padding: 4px 10px;
         border-radius: 6px;
         font-weight: bold;
@@ -98,7 +138,8 @@ st.markdown(f"""
     .referral-badge {{
         display: inline-block;
         background-color: {"#3e2723" if st.session_state.dark_mode else "#fff3e0"};
-        color: {"#ffb74d" if st.session_state.dark_mode else "#e65100"};
+        color: {"#ffb74d" if st.session_state.dark_mode else "#e65100"} !important;
+        -webkit-text-fill-color: {"#ffb74d" if st.session_state.dark_mode else "#e65100"} !important;
         padding: 4px 8px;
         border-radius: 6px;
         font-size: 0.85rem;
@@ -106,9 +147,12 @@ st.markdown(f"""
         border: 1px solid {"#d84315" if st.session_state.dark_mode else "#ffe0b2"};
         margin-bottom: 6px;
     }}
+
+    /* Trafiklys */
     .status-light-red {{
         background-color: {"#371c1c" if st.session_state.dark_mode else "#ffebee"};
-        color: {"#ef9a9a" if st.session_state.dark_mode else "#c62828"};
+        color: {"#ef9a9a" if st.session_state.dark_mode else "#c62828"} !important;
+        -webkit-text-fill-color: {"#ef9a9a" if st.session_state.dark_mode else "#c62828"} !important;
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
@@ -118,7 +162,8 @@ st.markdown(f"""
     }}
     .status-light-green {{
         background-color: {"#1b3320" if st.session_state.dark_mode else "#e8f5e9"};
-        color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"};
+        color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"} !important;
+        -webkit-text-fill-color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"} !important;
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
@@ -126,15 +171,19 @@ st.markdown(f"""
         display: inline-block;
         margin-bottom: 6px;
     }}
+
+    /* Footer & Disclaimer */
     .disclaimer-box {{
         font-size: 0.8rem;
-        color: {"#aaaaaa" if st.session_state.dark_mode else "#666666"};
+        color: {"#aaaaaa" if st.session_state.dark_mode else "#666666"} !important;
         background-color: {disclaimer_bg};
         padding: 12px;
         border-radius: 8px;
         border: 1px solid {theme_border};
         margin-top: 25px;
     }}
+</style>
+""", unsafe_allow_html=True)
 </style>
 """, unsafe_allow_html=True)
 
