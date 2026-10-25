@@ -18,45 +18,57 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Session state til tema
+# Tema-tilstand i session
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
-# Farver afhængigt af lyst/mørkt tema
-is_dark = st.session_state.dark_mode
-c_bg = "#121212" if is_dark else "#ffffff"
-c_card = "#1e1e1e" if is_dark else "#ffffff"
-c_text = "#f3f4f6" if is_dark else "#262730"
-c_border = "#3a3a3a" if is_dark else "#e0e0e0"
-c_btn_bg = "#262730" if is_dark else "#f0f2f6"
-c_btn_txt = "#fafafa" if is_dark else "#262730"
-c_pop_bg = "#1f2937" if is_dark else "#ffffff"
-c_pop_txt = "#f3f4f6" if is_dark else "#262730"
-c_img_bg = "#2a2a2a" if is_dark else "#f0f2f6"
+# CSS: Lyst fundament til skarp sol, inverteret skærm til aften/nat
+if st.session_state.dark_mode:
+    theme_filter = """
+    /* Vender skærmen om til nat-tilstand inkl. alle formularfelter og dropdowns */
+    html {
+        filter: invert(0.92) hue-rotate(180deg) !important;
+        background-color: #0d1117 !important;
+    }
+    /* Beskytter billeder, ikoner og QR mod at blive negative */
+    img, [data-testid="stImage"], .grid-img-box img, qr-box {
+        filter: invert(1) hue-rotate(180deg) contrast(1.1) !important;
+    }
+    """
+else:
+    theme_filter = ""
 
-# CSS styling - Let og ren overbygning
-custom_css = """
+st.markdown(f"""
 <style>
-    /* Produktgrid */
-    .grid-img-box {
+    {theme_filter}
+
+    /* Skarpere tekst til udendørs sollys */
+    .stApp {{
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }}
+    
+    /* Billedboks i 2-kolonne grid */
+    .grid-img-box {{
         width: 100%;
         height: 125px;
         overflow: hidden;
         border-radius: 8px;
         margin-bottom: 8px;
-        background-color: #2a2a2a;
+        background-color: #f0f2f6;
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-    .grid-img-box img {
+    }}
+    .grid-img-box img {{
         width: 100%;
         height: 100%;
         object-fit: cover;
-    }
-    .grid-title {
+    }}
+
+    /* Varetekst & Pris */
+    .grid-title {{
         font-size: 0.95rem;
-        font-weight: 600;
+        font-weight: 700;
         line-height: 1.2;
         margin-bottom: 4px;
         display: -webkit-box;
@@ -64,69 +76,72 @@ custom_css = """
         -webkit-box-orient: vertical;
         overflow: hidden;
         height: 2.4em;
-    }
-    .grid-price {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #66bb6a;
+    }}
+    .grid-price {{
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #0e8a16;
         margin-bottom: 4px;
-    }
+    }}
 
-    /* Badges & Status */
-    .member-badge {
+    /* Badges */
+    .member-badge {{
         display: inline-block;
-        background-color: #1b3320;
-        color: #81c784;
+        background-color: #e8f5e9;
+        color: #1b5e20;
         padding: 4px 10px;
         border-radius: 6px;
         font-weight: bold;
         font-size: 0.9rem;
         margin-bottom: 8px;
-        border: 1px solid #2e7d32;
-    }
-    .referral-badge {
+        border: 1px solid #c8e6c9;
+    }}
+    .referral-badge {{
         display: inline-block;
-        background-color: #3e2723;
-        color: #ffb74d;
+        background-color: #fff3e0;
+        color: #e65100;
         padding: 4px 8px;
         border-radius: 6px;
         font-size: 0.85rem;
-        font-weight: 600;
-        border: 1px solid #d84315;
+        font-weight: 700;
+        border: 1px solid #ffe0b2;
         margin-bottom: 6px;
-    }
-    .status-light-red {
-        background-color: #371c1c;
-        color: #ef9a9a;
+    }}
+
+    /* Trafiklys */
+    .status-light-red {{
+        background-color: #ffebee;
+        color: #c62828;
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
-        border: 1px solid #b71c1c;
+        border: 1px solid #ffcdd2;
         display: inline-block;
         margin-bottom: 6px;
-    }
-    .status-light-green {
-        background-color: #1b3320;
-        color: #81c784;
+    }}
+    .status-light-green {{
+        background-color: #e8f5e9;
+        color: #2e7d32;
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
-        border: 1px solid #2e7d32;
+        border: 1px solid #c8e6c9;
         display: inline-block;
         margin-bottom: 6px;
-    }
-    .disclaimer-box {
+    }}
+
+    /* Footer & Disclaimer */
+    .disclaimer-box {{
         font-size: 0.8rem;
-        color: #aaaaaa;
-        background-color: #1e1e1e;
+        background-color: #f8f9fa;
+        color: #4b5563;
         padding: 12px;
         border-radius: 8px;
-        border: 1px solid #333333;
+        border: 1px solid #e5e7eb;
         margin-top: 25px;
-    }
+    }}
 </style>
-"""
-st.markdown(custom_css, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # Supabase forbindelse
 @st.cache_resource
@@ -265,23 +280,23 @@ if "logged_courier" not in st.session_state:
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
-# Top bjælke med dæmpet/lyst tema
-top_c1, top_c2 = st.columns([3, 1])
-with top_c1:
+# HEADER MED DIREKTE LYS/MØRK KNAP TIL MARKEDET
+col_hdr_title, col_hdr_toggle = st.columns([3, 1])
+with col_hdr_title:
     st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
     st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
-with top_c2:
+with col_hdr_toggle:
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
     if st.session_state.dark_mode:
-        if st.button("☀️ Day", use_container_width=True):
+        if st.button("☀️ Sol / Dag", use_container_width=True, help="Skift til højkontrast lyst tema til skarp sol"):
             st.session_state.dark_mode = False
             st.rerun()
     else:
-        if st.button("🌙 Night", use_container_width=True):
+        if st.button("🌙 Nat / Strøm", use_container_width=True, help="Skift til mørk tilstand til aftensalg"):
             st.session_state.dark_mode = True
             st.rerun()
 
-# Navigationsmenu
+# Navigationsmenu (1-klik skift via key)
 views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
 
@@ -469,7 +484,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
             st.markdown(f'<div class="member-badge">🎟️ Store ID: {member_id}</div>', unsafe_allow_html=True)
             
             if referred_count >= 5:
-                st.markdown(f'<div class="referral-badge" style="background-color:#e8f5e9; color:#2e7d32; border-color:#c8e6c9;">🎯 Referral Target Met: {referred_count}/5 stores referred! (Qualified for Lucky Draw)</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="referral-badge" style="background-color: #e8f5e9; color:#1b5e20;">🎯 Referral Target Met: {referred_count}/5 stores referred! (Qualified for Lucky Draw)</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="referral-badge">🤝 Referred Stores: {referred_count}/5 (Refer {5 - referred_count} more for Lucky Draw)</div>', unsafe_allow_html=True)
                 
