@@ -270,18 +270,17 @@ def get_billing_status(valid_until_str: str, is_paid: bool):
 def generate_ai_ad_copy(product_name: str, price_val: int, shop_name: str, market_area: str, tone_style: str) -> str:
     if not openai_client:
         if "Pidgin" in tone_style:
-            return f"🔥 Omo! Sweet deal don land for {market_area}! Quality {product_name} now going for ₦{price_val:,}. Chat me sharp on WhatsApp before stock finish!"
-        return f"✨ Premium quality {product_name} now available at {shop_name} ({market_area}) for only ₦{price_val:,}! Send a WhatsApp message to order."
+            return f"🔥 Omo! Sweet deal don land for {market_area}! Quality {product_name} now going for N{price_val:,}. Chat me sharp on WhatsApp before stock finish!"
+        return f"✨ Premium quality {product_name} now available at {shop_name} ({market_area}) for only N{price_val:,}! Send a WhatsApp message to order."
     
-    prompt = f"""
-    You are an expert market copywriter in Lagos, Nigeria for the platform 'Sweet Debbie Deals'. Write a short, high-converting ad description (maximum 3 sentences).
-    Product: {product_name}
-    Price: ₦{price_val:,}
-    Store Name: {shop_name}
-    Market Area: {market_area}
-    Style requested: {tone_style}
-    Output ONLY the ad copy text, no extra explanations or quotation marks.
-    """
+    prompt = f"""You are an expert market copywriter in Lagos, Nigeria for the platform 'Sweet Debbie Deals'. Write a short, high-converting ad description (maximum 3 sentences).
+Product: {product_name}
+Price: NGN {price_val:,}
+Store Name: {shop_name}
+Market Area: {market_area}
+Style requested: {tone_style}
+Output ONLY the ad copy text, no extra explanations or quotation marks."""
+
     try:
         response = openai_client.chat.completions.create(
             model="gpt-6-luna",
@@ -293,7 +292,7 @@ def generate_ai_ad_copy(product_name: str, price_val: int, shop_name: str, marke
         )
         return response.choices[0].message.content.strip()
     except Exception:
-        return f"🔥 Better deal on {product_name} at {shop_name} ({market_area}) for ₦{price_val:,}! Chat sharp on WhatsApp before e finish!"
+        return f"🔥 Better deal on {product_name} at {shop_name} ({market_area}) for N{price_val:,}! Chat sharp on WhatsApp before e finish!"
 
 def render_broadcast_alerts(target: str):
     try:
