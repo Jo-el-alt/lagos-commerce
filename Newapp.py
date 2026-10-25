@@ -12,8 +12,8 @@ from openai import OpenAI
 
 # Mobil opsætning
 st.set_page_config(
-    page_title="Lagos Local Commerce",
-    page_icon="🇳🇬",
+    page_title="Sweet Debbie Deals 🇳🇬",
+    page_icon="🛍️",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -95,13 +95,6 @@ st.markdown("""
         border: 1px solid #c8e6c9;
         display: inline-block;
         margin-bottom: 6px;
-    }
-    .broadcast-box {
-        background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-        border-left: 5px solid #ff9800;
-        padding: 12px 14px;
-        border-radius: 6px;
-        margin-bottom: 15px;
     }
     .disclaimer-box {
         font-size: 0.8rem;
@@ -202,7 +195,7 @@ def generate_ai_ad_copy(product_name: str, price_val: int, shop_name: str, marke
         return f"✨ Premium quality {product_name} now available at {shop_name} ({market_area}) for only ₦{price_val:,}! Send a WhatsApp message to order."
     
     prompt = f"""
-    You are an expert market copywriter in Lagos, Nigeria. Write a short, high-converting ad description (maximum 3 sentences).
+    You are an expert market copywriter in Lagos, Nigeria for the platform 'Sweet Debbie Deals'. Write a short, high-converting ad description (maximum 3 sentences).
     Product: {product_name}
     Price: ₦{price_val:,}
     Store Name: {shop_name}
@@ -224,7 +217,6 @@ def generate_ai_ad_copy(product_name: str, price_val: int, shop_name: str, marke
         return f"🔥 Better deal on {product_name} at {shop_name} ({market_area}) for ₦{price_val:,}! Chat sharp on WhatsApp before e finish!"
 
 def render_broadcast_alerts(target: str):
-    """Viser aktive broadcast-beskeder for en målgruppe"""
     try:
         notices = supabase.table("broadcast_messages").select("*").eq("is_active", True).in_("target_audience", [target, "All"]).order("id", desc=True).execute().data or []
         for n in notices:
@@ -248,8 +240,9 @@ if "logged_courier" not in st.session_state:
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
-st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>🇳🇬 Lagos Local Commerce</h2>", unsafe_allow_html=True)
-st.caption("<p style='text-align: center;'>Discover top deals & order directly from nearby stores</p>", unsafe_allow_html=True)
+# Hovedoverskrift og Tagline
+st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
+st.caption("<p style='text-align: center; font-size: 0.95rem;'>🇳🇬 Lagos Local Market • <i>Powered by AI</i></p>", unsafe_allow_html=True)
 
 views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 current_tab = st.radio("Nav", views, index=views.index(st.session_state.current_view), horizontal=True, label_visibility="collapsed")
@@ -277,7 +270,7 @@ def show_offer_modal(item):
         
     st.markdown("---")
     
-    wa_msg = f"Hello {item['shop']}! I saw *{item['product']}* (₦{item['price']:,}) on Lagos Local Commerce. Is it available?"
+    wa_msg = f"Hello {item['shop']}! I saw *{item['product']}* (₦{item['price']:,}) on Sweet Debbie Deals. Is it available?"
     wa_url = make_wa_link(item["phone"], wa_msg)
     st.link_button("💬 Order Directly via WhatsApp", wa_url, use_container_width=True)
     
@@ -309,7 +302,6 @@ def show_offer_modal(item):
 # VISNING 1: KUNDEPORTAL (2-KOLONNE GRID)
 # ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
-    # Vis globale meddelelser/events til alle
     render_broadcast_alerts("All")
     
     if active_shop_slug:
@@ -399,7 +391,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 new_cat = st.selectbox("Main Category *", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
                 
                 referred_code = st.text_input("Referred by another Store ID? (Optional)", placeholder="e.g. SHOP-1002")
-                shop_consent = st.checkbox("I accept Platform Terms & Disclaimer: Lagos Local Commerce is an intermediary discovery tool.")
+                shop_consent = st.checkbox("I accept Platform Terms & Disclaimer: Sweet Debbie Deals is an intermediary discovery tool.")
                 
                 if st.button("🚀 Complete Registration & Enter", type="primary", use_container_width=True):
                     if not new_shop_name or not new_phone or not new_pin or len(new_pin) != 4:
@@ -429,7 +421,6 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         shop = st.session_state.logged_shop
         member_id = shop.get("member_id") or f"SHOP-{1000 + shop.get('id', 1)}"
         
-        # Vis aktive beskeder til butikker
         render_broadcast_alerts("Stores")
         
         ref_count_res = supabase.table("shops").select("id").eq("referred_by", member_id).execute()
@@ -593,7 +584,6 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
         rider = rider_res.data[0] if rider_res.data else st.session_state.logged_courier
         r_member_id = rider.get("member_id") or f"RIDER-{2000 + rider.get('id', 1)}"
         
-        # Vis aktive beskeder til kurerer
         render_broadcast_alerts("Couriers")
         
         c_hdr1, c_hdr2 = st.columns([3, 1])
@@ -618,7 +608,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
             my_jobs = supabase.table("orders").select("*").eq("courier_id", rider["id"]).neq("status", "delivered").order("id", desc=True).execute().data or []
             
             if not my_jobs:
-                st.info("You don't have any active delivery runs right now.")
+                st.info("No active delivery runs right now.")
             else:
                 for job in my_jobs:
                     with st.container(border=True):
@@ -709,7 +699,7 @@ elif st.session_state.current_view == "💬 Support":
                 st.success("✅ Message sent to the admin team! We will contact you on WhatsApp shortly.")
 
 # ====================================================
-# VISNING 5: PLATFORM SUPER ADMIN (MED BROADCASTS)
+# VISNING 5: PLATFORM SUPER ADMIN
 # ====================================================
 elif st.session_state.current_view == "🛡️ Platform Admin":
     st.markdown("### 🛡️ Platform Super Admin")
@@ -841,7 +831,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                     with st.container(border=True):
                         st.markdown(f"**{p['name']}** — 🎟️ `{p['id']}` (📞 `{p['phone']}`)")
                         st.write(f"Progress: **{p['count']} / 5** referred *(Needs {5 - p['count']} more)*")
-                        wa_encourage = f"Hello {p['name']}! You currently have {p['count']}/5 referrals for Lagos Local Commerce. Refer just {5 - p['count']} more store(s) with your ID ({p['id']}) to enter our Lucky Draw!"
+                        wa_encourage = f"Hello {p['name']}! You currently have {p['count']}/5 referrals for Sweet Debbie Deals. Refer just {5 - p['count']} more store(s) with your ID ({p['id']}) to enter our Lucky Draw!"
                         st.link_button("💬 Send Progress WhatsApp", make_wa_link(p['phone'], wa_encourage), use_container_width=True)
 
         # --- FANE 2: ABONNEMENTER ---
@@ -941,7 +931,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                     st.success(f"Payment marked! Extended by {days_to_add} days.")
                                     st.rerun()
                                     
-                                wa_reminder = f"Hello {b['payer_name']}! Your {period.lower()} subscription for Lagos Local Commerce ({b.get('member_id')}) is currently due/expired. Please renew with our coordinator."
+                                wa_reminder = f"Hello {b['payer_name']}! Your {period.lower()} subscription for Sweet Debbie Deals ({b.get('member_id')}) is currently due/expired. Please renew with our coordinator."
                                 st.link_button("💬 WhatsApp Reminder", make_wa_link(b['payer_phone'], wa_reminder), use_container_width=True)
                             else:
                                 wa_receipt = f"Official Receipt: Hello {b['payer_name']}, payment confirmed for {period.lower()} access (₦{b['amount']:,}). Valid until {b.get('valid_until', '')[:10]}."
@@ -987,7 +977,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                     winner = random.choice(draw_pool)
                     st.balloons()
                     st.success(f"🏆 **WINNER SELECTED!**\n\n**{winner['name']}**\n\n🎟️ ID: `{winner['id']}`\n\n📞 Phone: `{winner['phone']}`")
-                    win_wa = make_wa_link(winner['phone'], f"Congratulations {winner['name']}! Your ID ({winner['id']}) has officially won the Lagos Local Commerce Lucky Draw!")
+                    win_wa = make_wa_link(winner['phone'], f"Congratulations {winner['name']}! Your ID ({winner['id']}) has officially won the Sweet Debbie Deals Lucky Draw!")
                     st.link_button("💬 Congratulate on WhatsApp", win_wa, use_container_width=True)
 
         # --- FANE 4: SUPPORT BESKEDER ---
@@ -1095,7 +1085,7 @@ st.markdown("---")
 st.markdown("""
 <div class="disclaimer-box">
     <strong>⚖️ Platform Disclaimer & Limitation of Liability:</strong><br>
-    Lagos Local Commerce is an intermediary discovery and connection platform. We do not manufacture, sell, store, or inspect the products listed. All sale agreements and warranties exist strictly between the merchant and the customer. Dispatch couriers operate as independent contractors. To the maximum extent permitted under Nigerian law, Lagos Local Commerce shall not be liable for any product defect, delivery loss, delayed dispatch, personal injury, road incident, or transaction dispute.
+    Sweet Debbie Deals is an intermediary discovery and connection platform. We do not manufacture, sell, store, or inspect the products listed. All sale agreements and warranties exist strictly between the merchant and the customer. Dispatch couriers operate as independent contractors. To the maximum extent permitted under Nigerian law, Sweet Debbie Deals shall not be liable for any product defect, delivery loss, delayed dispatch, personal injury, road incident, or transaction dispute.
     <br><br>
     <strong>🔒 Privacy (NDPA / NDPR):</strong> User data is processed strictly for commerce fulfillment and identity accreditation. Registered users retain the right to rectify or request full deletion of records anytime.
 </div>
