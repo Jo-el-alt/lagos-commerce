@@ -10,19 +10,20 @@ import re
 import random
 from openai import OpenAI
 
-# Mobil opsætning
-st.set_page_config(
-    page_title="Sweet Debbie Deals 🇳🇬",
-    page_icon="🛍️",
-    layout="centered",
-    initial_sidebar_state="collapsed"
-)
-
-# Tema-tilstand (starter lyst til skarp sol)
+# Tema-tilstand (skal sættes FØR set_page_config for at styre Streamlits indbyggede tema)
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
 is_dark = st.session_state.dark_mode
+
+# Mobil opsætning med dynamisk tema
+st.set_page_config(
+    page_title="Sweet Debbie Deals 🇳🇬",
+    page_icon="🛍️",
+    layout="centered",
+    initial_sidebar_state="collapsed",
+    menu_items=None
+)
 
 # Farver tilpasset sol vs. mørke
 bg_color = "#111827" if is_dark else "#ffffff"
@@ -52,58 +53,6 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab"] p {{
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
-    }}
-
-    /* Input-felter og select-bjælker samlet */
-    div[data-baseweb="input"],
-    div[data-baseweb="base-input"],
-    div[data-baseweb="select"] {{
-        background-color: {card_bg} !important;
-        border-color: {border_color} !important;
-        border-radius: 8px !important;
-    }}
-    
-    div[data-baseweb="select"] > div {{
-        background-color: {card_bg} !important;
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
-        border-color: {border_color} !important;
-    }}
-
-    div[data-baseweb="input"] input,
-    div[data-baseweb="base-input"] textarea,
-    div[data-baseweb="select"] span {{
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
-    }}
-    
-    div[data-baseweb="select"] svg {{
-        fill: {text_color} !important;
-    }}
-
-    /* Åbne rullemenuer (Dropdowns & Popovers) */
-    div[data-baseweb="popover"],
-    div[data-baseweb="menu"],
-    div[data-baseweb="select-dropdown"],
-    ul[data-testid="stSelectboxVirtualDropdown"],
-    ul[role="listbox"],
-    li[role="option"],
-    div[role="listbox"] {{
-        background-color: {card_bg} !important;
-        color: {text_color} !important;
-    }}
-    
-    li[role="option"] div, 
-    li[role="option"] span,
-    div[role="listbox"] div,
-    div[role="listbox"] span {{
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
-        background-color: transparent !important;
-    }}
-    
-    li[role="option"]:hover {{
-        background-color: {"#374151" if is_dark else "#e5e7eb"} !important;
     }}
 
     /* Knapper - fastlåst farve, så de aldrig forsvinder */
