@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS til faste, pæne mobilbilleder
+# CSS til faste mobilbilleder
 st.markdown("""
 <style>
     .product-img-box {
@@ -39,7 +39,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Forbindelse til Supabase
+# Supabase forbindelse
 @st.cache_resource
 def get_supabase() -> Client:
     url = st.secrets["SUPABASE_URL"]
@@ -50,7 +50,6 @@ supabase = get_supabase()
 
 # --- HJÆLPEFUNKTIONER ---
 def make_slug(name: str) -> str:
-    """Laver et pænt url-slug af et butiksnavn (f.eks. 'Mama Joy & Sons' -> 'mama-joy-sons')."""
     clean = re.sub(r'[^a-zA-Z0-9\s-]', '', name).strip().lower()
     return re.sub(r'[\s-]+', '-', clean)
 
@@ -68,12 +67,11 @@ def convert_to_base64_img(uploaded_file, target_size=(500, 375)):
     except Exception:
         return None
 
-def make_wa_link(phone: str, product: str, price: int, shop: str) -> str:
+def make_wa_link(phone: str, message: str) -> str:
     clean_phone = phone.replace("+", "").replace(" ", "").replace("-", "")
     if clean_phone.startswith("0"):
         clean_phone = "234" + clean_phone[1:]
-    msg = f"Hello {shop}! I saw *{product}* (₦{price:,}) on Lagos Local Commerce. Is it available for delivery/pickup?"
-    return f"https://wa.me/{clean_phone}?text={urllib.parse.quote(msg)}"
+    return f"https://wa.me/{clean_phone}?text={urllib.parse.quote(message)}"
 
 def generate_qr(url: str) -> bytes:
     qr = qrcode.make(url)
@@ -91,7 +89,7 @@ def calculate_hours_left(expires_at_str: str) -> int:
     except Exception:
         return 48
 
-# Tjek om kunden kommer ind via et QR-kode link
+# QR slug & session styring
 query_params = st.query_params
 active_shop_slug = query_params.get("shop", None)
 
@@ -101,6 +99,9 @@ if "current_view" not in st.session_state:
 if "logged_shop" not in st.session_state:
     st.session_state.logged_shop = None
 
+if "logged_courier" not in st.session_state:
+    st.session_state.logged_courier = None
+
 st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>🇳🇬 Lagos Local Commerce</h2>", unsafe_allow_html=True)
 st.caption("<p style='text-align: center;'>Discover top deals & order directly from nearby stores</p>", unsafe_allow_html=True)
 
@@ -109,15 +110,14 @@ current_tab = st.radio("Nav", views, index=views.index(st.session_state.current_
 st.session_state.current_view = current_tab
 
 # ====================================================
-# VISNING 1: KUNDEPORTAL
+# VISNING 1: KUNDEPORTAL & BESTILLING
 # ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
     if active_shop_slug:
         shop_info = supabase.table("shops").select("*").eq("slug", active_shop_slug).execute()
         shop_name = shop_info.data[0]["name"] if shop_info.data else active_shop_slug
-        
-        st.info(f"📍 Viewing live deals directly from **{shop_name}**")
-        if st.button("⬅️ Show all local deals in Lagos"):
+        st.info(f"📍 Viewing deals directly from **{shop_name}**")
+        if st.button("⬅️ Show all deals in Lagos"):
             st.query_params.clear()
             st.rerun()
             
@@ -168,14 +168,53 @@ if st.session_state.current_view == "🛒 Browse Deals":
             
             st.caption(f"🏪 **{item['shop']}** ({item['category']}) • ⏳ Expires in {hours_left}h")
             
+            pickup_loc = item.get("location_note") or f"{item['shop']}, {item['area']}"
             if item.get("is_mobile"):
-                st.info(f"📍 **Mobile Stall Today:** {item.get('location_note')}")
+                st.info(f"📍 **Mobile Stall Today:** {pickup_loc}")
             else:
-                st.caption(f"📍 Address: {item.get('location_note')}")
+                st.caption(f"📍 Address: {pickup_loc}")
                 
             if status == "active":
-                wa_url = make_wa_link(item["phone"], item["product"], item["price"], item["shop"])
-                st.link_button("💬 Order via WhatsApp", wa_url, use_container_width=True)
+                # Mulighed 1: WhatsApp
+                wa_msg = f"Hello {item['shop']}! I saw *{item['product']}* (₦{item['price']:,}) on Lagos Local Commerce. Is it available?"
+                wa_url = make_wa_link(item["phone"], wa_msg)
+                st.link_button("💬 Chat on WhatsApp", wa_url, use_container_width=True)
+                
+                # Mulighed 2: Bestil levering direkte med bud
+                with st.expander("🛵 Request Dispatch Delivery to Your Door"):
+                    with st.form(f"order_form_{item['id']}"):
+                        cust_name = st.text_input("Your Full Name *", placeholder="e.g. Tunde Bakare")
+                        cust_phone = st.text_input("Your Phone Number (WhatsApp) *", placeholder="080...")
+                        cust_area = st.selectbox("Your Area / Neighborhood *", ["Yaba / Sabo", "Ikeja / Allen", "Surulere", "Victoria Island / Lekki", "Other"], key=f"area_{item['id']}")
+                        cust_addr = st.text_area("Full Delivery Address & Landmark *", placeholder="e.g. 14 Commercial Ave, Sabo, opposite First Bank")
+                        
+                        st.markdown(f"**Item Price:** ₦{item['price']:,}")
+                        st.markdown("**Estimated Delivery Fee:** ₦1,500")
+                        st.markdown(f"**Total to Pay (Cash/Transfer on delivery):** ₦{item['price'] + 1500:,}")
+                        
+                        btn_order = st.form_submit_button("🚀 Confirm Delivery Order", type="primary", use_container_width=True)
+                        if btn_order:
+                            if not cust_name or not cust_phone or not cust_addr:
+                                st.error("Please fill in your Name, Phone, and Delivery Address.")
+                            else:
+                                new_order = {
+                                    "offer_id": item["id"],
+                                    "product": item["product"],
+                                    "shop": item["shop"],
+                                    "shop_phone": item["phone"],
+                                    "pickup_location": pickup_loc,
+                                    "customer_name": cust_name.strip(),
+                                    "customer_phone": cust_phone.strip(),
+                                    "customer_area": cust_area,
+                                    "delivery_address": cust_addr.strip(),
+                                    "item_price": item["price"],
+                                    "delivery_fee": 1500,
+                                    "rider_payout": 1350,
+                                    "platform_fee": 150,
+                                    "status": "pending"
+                                }
+                                supabase.table("orders").insert(new_order).execute()
+                                st.success("✅ Delivery order placed! A dispatch rider will pick it up and contact you.")
             else:
                 st.button("Item Unavailable", disabled=True, use_container_width=True)
 
@@ -183,18 +222,14 @@ if st.session_state.current_view == "🛒 Browse Deals":
 # VISNING 2: BUTIKSEJER ADMIN & OPRETTELSE
 # ====================================================
 elif st.session_state.current_view == "🏪 Store Owner Admin":
-    
-    # 1. IKKE LOGGET IND: VÆLG MELLEM LOGIN ELLER OPRET NY BUTIK
     if not st.session_state.logged_shop:
         auth_mode = st.radio("Choose action:", ["🔑 Log In to Existing Store", "📝 Register New Store / Stall"], horizontal=True)
         
-        # --- LOGIN FORM ---
         if auth_mode == "🔑 Log In to Existing Store":
             st.markdown("### Store Owner Login")
             with st.container(border=True):
                 phone_input = st.text_input("WhatsApp / Phone Number", placeholder="08012345678", value="")
                 pin_input = st.text_input("4-Digit PIN", type="password", placeholder="1234", value="")
-                
                 if st.button("Log In Now", type="primary", use_container_width=True):
                     clean_phone = phone_input.strip()
                     res = supabase.table("shops").select("*").eq("phone", clean_phone).eq("pin", pin_input.strip()).execute()
@@ -203,13 +238,9 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                         st.success(f"Welcome back, {res.data[0]['name']}!")
                         st.rerun()
                     else:
-                        st.error("Incorrect phone number or PIN. Check details or register below.")
-
-        # --- OPRETTELSE AF NY BUTIK ---
+                        st.error("Incorrect phone number or PIN.")
         else:
             st.markdown("### 📝 Register New Store or Stall")
-            st.caption("Sign up in 30 seconds to start posting 48-hour deals and get your store QR code.")
-            
             with st.container(border=True):
                 new_shop_name = st.text_input("Store or Stall Name *", placeholder="e.g. Mama Funke Provisions")
                 new_phone = st.text_input("WhatsApp Number *", placeholder="08012345678")
@@ -218,42 +249,25 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 new_cat = st.selectbox("Main Category *", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
                 
                 if st.button("🚀 Complete Registration & Enter", type="primary", use_container_width=True):
-                    if not new_shop_name or not new_phone or not new_pin:
-                        st.error("Please fill in Store Name, WhatsApp Number, and 4-Digit PIN.")
-                    elif len(new_pin) != 4:
-                        st.error("Your PIN must be exactly 4 digits.")
+                    if not new_shop_name or not new_phone or not new_pin or len(new_pin) != 4:
+                        st.error("Please fill all required fields and ensure PIN is 4 digits.")
                     else:
                         clean_phone = new_phone.strip()
-                        # Tjek om nummeret allerede er registreret
                         existing = supabase.table("shops").select("id").eq("phone", clean_phone).execute()
                         if existing.data:
-                            st.error("This phone number is already registered! Please switch to 'Log In'.")
+                            st.error("Phone number already registered. Please log in.")
                         else:
-                            base_slug = make_slug(new_shop_name)
-                            unique_slug = f"{base_slug}-{clean_phone[-4:]}" # Garanterer unikt slug
-                            
+                            unique_slug = f"{make_slug(new_shop_name)}-{clean_phone[-4:]}"
                             shop_record = {
-                                "slug": unique_slug,
-                                "name": new_shop_name.strip(),
-                                "phone": clean_phone,
-                                "pin": new_pin.strip(),
-                                "area": new_area,
-                                "category": new_cat
+                                "slug": unique_slug, "name": new_shop_name.strip(), "phone": clean_phone,
+                                "pin": new_pin.strip(), "area": new_area, "category": new_cat
                             }
-                            
-                            try:
-                                ins = supabase.table("shops").insert(shop_record).execute()
-                                if ins.data:
-                                    st.session_state.logged_shop = ins.data[0]
-                                    st.success("🎉 Shop registered successfully! Welcome aboard.")
-                                    st.rerun()
-                            except Exception as e:
-                                st.error(f"Error registering shop: {e}")
-
-    # 2. LOGGET IND: BUTIKKENS KONTROLPANEL
+                            ins = supabase.table("shops").insert(shop_record).execute()
+                            if ins.data:
+                                st.session_state.logged_shop = ins.data[0]
+                                st.rerun()
     else:
         shop = st.session_state.logged_shop
-        
         col_hdr1, col_hdr2 = st.columns([3, 1])
         with col_hdr1:
             st.markdown(f"### 🏪 {shop['name']}")
@@ -264,20 +278,16 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 st.rerun()
 
         st.markdown("---")
-        
-        # AKTIVE TILBUD
         st.markdown("#### Your Active Deals")
-        my_offers_res = supabase.table("offers").select("*").eq("shop", shop["name"]).order("id", desc=True).execute()
-        my_offers = my_offers_res.data or []
+        my_offers = supabase.table("offers").select("*").eq("shop", shop["name"]).order("id", desc=True).execute().data or []
         
         if not my_offers:
-            st.info("You haven't posted any active deals yet. Post your first one below!")
+            st.info("No active deals posted yet.")
         else:
             for deal in my_offers:
                 with st.container(border=True):
                     st.markdown(f"**{deal['product']}** — ₦{deal['price']:,}")
                     st.caption(f"Status: `{deal.get('status', 'active')}` • Expires in: {calculate_hours_left(deal['expires_at'])}h")
-                    
                     c1, c2, c3 = st.columns(3)
                     with c1:
                         if st.button("🟢 In Stock", key=f"s_{deal['id']}"):
@@ -291,32 +301,24 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                         if st.button("⏳ Tomorrow", key=f"bt_{deal['id']}"):
                             supabase.table("offers").update({"status": "back_tomorrow"}).eq("id", deal["id"]).execute()
                             st.rerun()
-                    
                     if st.button("🗑️ Delete Deal", key=f"del_{deal['id']}", type="secondary"):
                         supabase.table("offers").delete().eq("id", deal["id"]).execute()
-                        st.success("Deal deleted!")
                         st.rerun()
 
         st.markdown("---")
-        
-        # OPRET NYT TILBUD
         st.markdown("#### Post a New 48-Hour Deal")
-        is_mobile = st.checkbox("This is a mobile stall (moves location daily)", value=True)
-        location_note = st.text_input("Today's Location / Address *", value="At our shop / market stall")
-        
-        product = st.text_input("What are you selling? *", placeholder="e.g. 5L Cooking Oil, Ankara Fabric, Fresh Yams")
+        is_mobile = st.checkbox("This is a mobile stall", value=True)
+        location_note = st.text_input("Today's Location / Address *", value="At our stall / market spot")
+        product = st.text_input("Product Name *")
         price = st.number_input("Deal Price in Naira (₦) *", min_value=50, value=1000, step=50)
+        uploaded_file = st.file_uploader("Photo (Optional)", type=["jpg", "jpeg", "png", "webp"])
+        ai_language = st.radio("Ad language:", ["Nigerian Pidgin (Recommended)", "Standard English"], horizontal=True)
         
-        uploaded_file = st.file_uploader("Product Photo (Optional)", type=["jpg", "jpeg", "png", "webp"])
-        if uploaded_file is not None:
-            st.image(uploaded_file, caption="Preview", width=180)
-            
-        ai_language = st.radio("Ad tone & language:", ["Nigerian Pidgin (Recommended)", "Standard English"], horizontal=True)
         if ai_language == "Nigerian Pidgin (Recommended)":
-            default_copy = f"🔥 Sweet deal for {shop['area']}! High quality {product} now going for just ₦{price:,}. Limited stock today. Chat me sharp on WhatsApp before e finish!"
+            default_copy = f"🔥 Sweet deal for {shop['area']}! High quality {product} for just ₦{price:,}. Chat on WhatsApp sharp!"
         else:
-            default_copy = f"🥗 Fresh and authentic {product} available today at {shop['name']} for just ₦{price:,}! Message us on WhatsApp to order directly."
-        desc = st.text_area("Ad Description:", value=default_copy, height=80)
+            default_copy = f"✨ Fresh {product} available at {shop['name']} for ₦{price:,}. Order via WhatsApp!"
+        desc = st.text_area("Ad Description:", value=default_copy, height=70)
         
         if st.button("🚀 Publish Deal Now", type="primary", use_container_width=True):
             if not product:
@@ -324,42 +326,136 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
             else:
                 final_img = convert_to_base64_img(uploaded_file) if uploaded_file else None
                 new_data = {
-                    "shop": shop["name"],
-                    "category": shop["category"],
-                    "area": shop["area"],
-                    "is_mobile": is_mobile,
-                    "location_note": location_note,
-                    "phone": shop["phone"],
-                    "product": product,
-                    "price": int(price),
-                    "description": desc,
-                    "img_src": final_img,
-                    "status": "active"
+                    "shop": shop["name"], "category": shop["category"], "area": shop["area"],
+                    "is_mobile": is_mobile, "location_note": location_note, "phone": shop["phone"],
+                    "product": product, "price": int(price), "description": desc,
+                    "img_src": final_img, "status": "active"
                 }
                 supabase.table("offers").insert(new_data).execute()
                 st.session_state.current_view = "🛒 Browse Deals"
                 st.rerun()
 
         st.markdown("---")
-        st.markdown("### Your Shop's Official QR Code")
-        st.caption("Print and stick this at your stall. Customers who scan it will ONLY see your offers:")
-        
+        st.markdown("### Store QR Code")
         direct_shop_url = f"https://lagos-commerce-pzru6e8tsftfmt72gbjnhz.streamlit.app/?shop={shop['slug']}"
-        qr_img = generate_qr(direct_shop_url)
-        st.image(qr_img, width=170, caption=f"Scan to view {shop['name']}")
-        st.caption(f"Direct link: `{direct_shop_url}`")
+        st.image(generate_qr(direct_shop_url), width=160, caption=f"Scan for {shop['name']}")
 
 # ====================================================
-# VISNING 3: BUDE & KURÉR
+# VISNING 3: BUDE & KURÉR (LOGIN & ORDRE-HÅNDTERING)
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
-    st.markdown("### Courier & Dispatch Portal")
-    with st.container(border=True):
-        st.markdown("**Order #1042**")
-        st.markdown("📦 **Item:** Fresh Homemade Abacha with Coconut (Bulk Order: 10 packs)")
-        st.markdown("📍 **Pickup:** Sweet Debbie & Mom's Kitchen (Yaba Market)")
-        st.markdown("🎯 **Drop-off:** 14 Commercial Avenue, Sabo Yaba (approx. 1.8 km)")
-        st.markdown("💵 **Delivery Fee:** ₦1,500")
-        st.caption("*(Rider Payout: ₦1,350 • Platform Fee: ₦150)*")
-        if st.button("🛵 Accept Delivery Request", key="accept_1", use_container_width=True):
-            st.success("Delivery run accepted! Store and customer have been notified.")
+    
+    # 1. KURÉR IKKE LOGGET IND: LOGIN ELLER REGISTRERING
+    if not st.session_state.logged_courier:
+        courier_auth = st.radio("Rider Action:", ["🔑 Rider Log In", "📝 Register New Rider / Courier"], horizontal=True)
+        
+        if courier_auth == "🔑 Rider Log In":
+            st.markdown("### 🛵 Dispatch Rider Login")
+            with st.container(border=True):
+                r_phone = st.text_input("Phone Number", placeholder="080...")
+                r_pin = st.text_input("4-Digit PIN", type="password", placeholder="1234")
+                if st.button("Rider Log In", type="primary", use_container_width=True):
+                    res = supabase.table("couriers").select("*").eq("phone", r_phone.strip()).eq("pin", r_pin.strip()).execute()
+                    if res.data:
+                        st.session_state.logged_courier = res.data[0]
+                        st.success(f"Welcome back, {res.data[0]['name']}!")
+                        st.rerun()
+                    else:
+                        st.error("Invalid phone or PIN.")
+        else:
+            st.markdown("### 📝 Register as Dispatch Rider")
+            with st.container(border=True):
+                r_name = st.text_input("Rider / Company Name *", placeholder="e.g. Ibrahim Okada Express")
+                r_phone_new = st.text_input("Phone Number (WhatsApp) *", placeholder="080...")
+                r_pin_new = st.text_input("Create 4-Digit PIN *", type="password", max_chars=4, placeholder="1234")
+                r_area = st.selectbox("Primary Operating Area", ["Yaba / Sabo", "Ikeja / Maryland", "Surulere", "Island / Lekki", "All Lagos"])
+                vehicle = st.selectbox("Vehicle Type", ["Motorcycle (Okada)", "Bicycle", "Van / Car"])
+                
+                if st.button("🚀 Register Rider Profile", type="primary", use_container_width=True):
+                    if not r_name or not r_phone_new or not r_pin_new or len(r_pin_new) != 4:
+                        st.error("Please fill in all details and 4-digit PIN.")
+                    else:
+                        r_data = {
+                            "name": r_name.strip(), "phone": r_phone_new.strip(),
+                            "pin": r_pin_new.strip(), "area": r_area, "vehicle": vehicle
+                        }
+                        ins = supabase.table("couriers").insert(r_data).execute()
+                        if ins.data:
+                            st.session_state.logged_courier = ins.data[0]
+                            st.rerun()
+                            
+    # 2. KURÉR LOGGET IND: SE LEDIGE OG EGNE LEVERINGER
+    else:
+        rider = st.session_state.logged_courier
+        c_hdr1, c_hdr2 = st.columns([3, 1])
+        with c_hdr1:
+            st.markdown(f"### 🛵 Rider: {rider['name']}")
+            st.caption(f"📍 Area: {rider['area']} • 🛵 {rider.get('vehicle', 'Motorcycle')}")
+        with c_hdr2:
+            if st.button("🚪 Log Out", key="rider_logout", use_container_width=True):
+                st.session_state.logged_courier = None
+                st.rerun()
+
+        st.markdown("---")
+        
+        # A. DINE NUVÆRENDE OPGAVER
+        st.markdown("#### 📦 Your Accepted Deliveries")
+        my_jobs = supabase.table("orders").select("*").eq("courier_id", rider["id"]).neq("status", "delivered").order("id", desc=True).execute().data or []
+        
+        if not my_jobs:
+            st.info("You don't have any active delivery runs right now.")
+        else:
+            for job in my_jobs:
+                with st.container(border=True):
+                    st.markdown(f"**Order #{job['id']} — {job['product']}**")
+                    st.markdown(f"🏪 **Pickup:** {job['shop']} ({job['pickup_location']}) — 📞 `{job['shop_phone']}`")
+                    st.markdown(f"🎯 **Drop-off:** {job['customer_name']} ({job['customer_area']}) — 📞 `{job['customer_phone']}`")
+                    st.markdown(f"📍 **Address:** {job['delivery_address']}")
+                    st.markdown(f"💵 **Collect from Customer:** ₦{job['item_price'] + job['delivery_fee']:,} *(Your pay: ₦{job['rider_payout']:,})*")
+                    st.caption(f"Status: **{job['status'].upper()}**")
+                    
+                    wa_pickup = make_wa_link(job['shop_phone'], f"Hello {job['shop']}, I am rider {rider['name']}. I am coming to pick up Order #{job['id']}.")
+                    wa_cust = make_wa_link(job['customer_phone'], f"Hello {job['customer_name']}, I am rider {rider['name']} delivering your {job['product']}.")
+                    
+                    cw1, cw2 = st.columns(2)
+                    with cw1:
+                        st.link_button("💬 WhatsApp Shop", wa_pickup, use_container_width=True)
+                    with cw2:
+                        st.link_button("💬 WhatsApp Customer", wa_cust, use_container_width=True)
+                        
+                    cb1, cb2 = st.columns(2)
+                    with cb1:
+                        if job["status"] == "accepted":
+                            if st.button("📦 Mark as Picked Up", key=f"pk_{job['id']}", use_container_width=True):
+                                supabase.table("orders").update({"status": "picked_up"}).eq("id", job["id"]).execute()
+                                st.rerun()
+                    with cb2:
+                        if st.button("✅ Mark as Delivered", key=f"dl_{job['id']}", type="primary", use_container_width=True):
+                            supabase.table("orders").update({"status": "delivered"}).eq("id", job["id"]).execute()
+                            st.success(f"Delivery completed! ₦{job['rider_payout']:,} credited to your summary.")
+                            st.rerun()
+
+        st.markdown("---")
+        
+        # B. LEDIGE OPGAVER I NÆRHEDEN
+        st.markdown("#### ⚡ Available Delivery Jobs Nearby")
+        open_jobs = supabase.table("orders").select("*").eq("status", "pending").order("id", desc=True).execute().data or []
+        
+        if not open_jobs:
+            st.write("No pending delivery jobs right now. Check back shortly!")
+        else:
+            for ojob in open_jobs:
+                with st.container(border=True):
+                    st.markdown(f"**{ojob['product']}** (₦{ojob['item_price']:,})")
+                    st.markdown(f"📍 **Pickup:** {ojob['shop']} — {ojob['pickup_location']}")
+                    st.markdown(f"🎯 **Drop-off Area:** {ojob['customer_area']}")
+                    st.markdown(f"💵 **Your Payout:** **₦{ojob['rider_payout']:,}** *(Total fee: ₦{ojob['delivery_fee']:,})*")
+                    
+                    if st.button("🛵 Accept Delivery Job", key=f"acc_{ojob['id']}", type="primary", use_container_width=True):
+                        supabase.table("orders").update({
+                            "status": "accepted",
+                            "courier_id": rider["id"],
+                            "courier_name": rider["name"]
+                        }).eq("id", ojob["id"]).execute()
+                        st.success("You accepted this job! Check 'Your Accepted Deliveries' above.")
+                        st.rerun()
