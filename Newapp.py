@@ -329,17 +329,17 @@ if "logged_courier" not in st.session_state:
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
-# HEADER MED KLAR OG STABIL TEMA-KNAP
+# HEADER MED FAST OG STABIL TEMA-KNAP
     st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
     st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
 
-    # Skift-knap til lyst/mørkt tema placeret rent på sin egen linje
+    # Tema-knap i naturlig størrelse (uden container-udvidelse)
     if st.session_state.dark_mode:
-        if st.button("☀️ Switch to Day Mode (Sunlight)", key="toggle_day_mode", use_container_width=True):
+        if st.button("☀️ Switch to Day Mode (Sunlight)", key="toggle_day_mode"):
             st.session_state.dark_mode = False
             st.rerun()
     else:
-        if st.button("🌙 Switch to Night Mode (Save Power)", key="toggle_night_mode", use_container_width=True):
+        if st.button("🌙 Switch to Night Mode (Save Power)", key="toggle_night_mode"):
             st.session_state.dark_mode = True
             st.rerun()
 
