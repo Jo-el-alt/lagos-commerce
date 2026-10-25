@@ -33,7 +33,7 @@ border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
 
-# Fuld og korrekt CSS-styling inklusive Popover- og PopoverBody-fix
+# Fuld og korrekt CSS-styling inkl. aggressive tvingninger af input-felter og select-bokse
 st.markdown(f"""
 <style>
     /* Global baggrund og tekst */
@@ -53,6 +53,27 @@ st.markdown(f"""
     .stTabs [data-baseweb="tab"] p {{
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
+    }}
+
+    /* Tving alle standard input-felter, textareas og select-bokse til mørk/lys baggrund */
+    div[data-baseweb="input"] input,
+    div[data-baseweb="base-input"] textarea,
+    div[data-baseweb="select"] span,
+    input[type="text"], textarea, div[data-baseweb="select"] > div {{
+        background-color: {card_bg} !important;
+        color: {text_color} !important;
+        -webkit-text-fill-color: {text_color} !important;
+    }}
+    
+    div[data-baseweb="input"],
+    div[data-baseweb="base-input"],
+    div[data-baseweb="select"],
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stTextArea"] textarea {{
+        background-color: {card_bg} !important;
+        border-color: {border_color} !important;
+        color: {text_color} !important;
+        border-radius: 8px !important;
     }}
 
     /* Popover knap styling i lukket tilstand */
@@ -432,7 +453,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
     else:
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown("<div style='font-size: 0.85rem; font-weight: bold; margin-bottom: 4px;'>Market / Area</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size: 0.85rem; font-weight: bold; color: {text_color}; margin-bottom: 4px;'>Market / Area</div>", unsafe_allow_html=True)
             with st.popover(f"📍 {st.session_state.sel_area}", use_container_width=True):
                 areas = ["All Areas", "Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"]
                 for a in areas:
@@ -440,7 +461,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
                         st.session_state.sel_area = a
                         st.rerun()
         with c2:
-            st.markdown("<div style='font-size: 0.85rem; font-weight: bold; margin-bottom: 4px;'>Category</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size: 0.85rem; font-weight: bold; color: {text_color}; margin-bottom: 4px;'>Category</div>", unsafe_allow_html=True)
             with st.popover(f"📂 {st.session_state.sel_cat}", use_container_width=True):
                 cats = ["All Categories", "Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"]
                 for c in cats:
