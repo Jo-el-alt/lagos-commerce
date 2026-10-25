@@ -131,13 +131,14 @@ st.markdown(f"""
     }}
 
     /* Footer & Disclaimer */
-    .disclaimer-box {{
+    .disclaimer-box {
         font-size: 0.8rem;
-        background-color: #f8f9fa;
-        color: #4b5563;
+        background-color: rgba(128, 128, 128, 0.12) !important;
+        color: inherit !important;
+        opacity: 0.85;
         padding: 12px;
         border-radius: 8px;
-        border: 1px solid #e5e7eb;
+        border: 1px solid rgba(128, 128, 128, 0.25) !important;
         margin-top: 25px;
     }}
 </style>
