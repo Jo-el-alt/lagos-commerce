@@ -1,13 +1,14 @@
 import streamlit as st
 from PIL import Image, ImageOps
 from supabase import create_client, Client
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import urllib.parse
 import qrcode
 import io
 import base64
 import re
 import random
+from openai import OpenAI
 
 # Mobil opsætning
 st.set_page_config(
@@ -64,6 +65,26 @@ st.markdown("""
         margin-bottom: 8px;
         border: 1px solid #c8e6c9;
     }
+    .status-light-red {
+        background-color: #ffebee;
+        color: #c62828;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: bold;
+        border: 1px solid #ffcdd2;
+        display: inline-block;
+        margin-bottom: 6px;
+    }
+    .status-light-green {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: bold;
+        border: 1px solid #c8e6c9;
+        display: inline-block;
+        margin-bottom: 6px;
+    }
     .disclaimer-box {
         font-size: 0.8rem;
         color: #666;
@@ -84,6 +105,16 @@ def get_supabase() -> Client:
     return create_client(url, key)
 
 supabase = get_supabase()
+
+# OpenAI klient
+@st.cache_resource
+def get_openai_client():
+    api_key = st.secrets.get("OPENAI_API_KEY", None)
+    if api_key:
+        return OpenAI(api_key=api_key)
+    return None
+
+openai_client = get_openai_client()
 
 # --- HJÆLPEFUNKTIONER ---
 def make_slug(name: str) -> str:
@@ -129,6 +160,56 @@ def calculate_hours_left(expires_at_str: str) -> int:
         return max(0, int(diff.total_seconds() // 3600))
     except Exception:
         return 48
+
+def get_billing_status(valid_until_str: str, is_paid: bool):
+    if not is_paid or not valid_until_str:
+        return False, "🔴 UNPAID / NOT REGISTERED", 0
+    try:
+        clean_str = valid_until_str.replace("Z", "+00:00")
+        valid_until = datetime.fromisoformat(clean_str)
+        now_time = datetime.now(timezone.utc)
+        diff = valid_until - now_time
+        days_left = int(diff.total_seconds() // 86400)
+        if diff.total_seconds() > 0:
+            return True, f"🟢 ACTIVE ({days_left}d left)", days_left
+        else:
+            return False, "🔴 EXPIRED (Time Over)", 0
+    except Exception:
+        return False, "🔴 STATUS UNKNOWN", 0
+
+def generate_ai_ad_copy(product_name: str, price_val: int, shop_name: str, market_area: str, tone_style: str) -> str:
+    """Kalder GPT-6 Luna for at skrive salgsteksten."""
+    if not openai_client:
+        if "Pidgin" in tone_style:
+            return f"🔥 Omo! Sweet deal don land for {market_area}! Quality {product_name} now going for ₦{price_val:,}. Chat me sharp on WhatsApp before stock finish!"
+        return f"✨ Premium quality {product_name} now available at {shop_name} ({market_area}) for only ₦{price_val:,}! Send a WhatsApp message to order."
+    
+    prompt = f"""
+    You are an expert market copywriter in Lagos, Nigeria. Write a high-converting, short ad description (maximum 3 sentences) for a local marketplace.
+    Product: {product_name}
+    Price: ₦{price_val:,}
+    Store Name: {shop_name}
+    Market Area: {market_area}
+    Style requested: {tone_style}
+
+    Instructions based on style:
+    - If style is 'Nigerian Pidgin', write natural, authentic street Nigerian Pidgin with authentic Lagos slang (omo, sharp sharp, don land, chop better life, etc.).
+    - If style is 'Standard English', write clean, trustworthy, appealing commercial retail copy.
+    - If style is 'Urgent Flash Deal', focus heavily on 48-hour FOMO, limited quantity, and chat immediately on WhatsApp.
+    Output ONLY the ad copy text, no extra explanations or quotation marks.
+    """
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-6-luna",
+            messages=[
+                {"role": "system", "content": "You write engaging, authentic marketplace ad copy for Lagos traders."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=150
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"🔥 Better deal on {product_name} at {shop_name} ({market_area}) for ₦{price_val:,}! Chat sharp on WhatsApp before e finish!"
 
 # URL Parametre & Sessions
 query_params = st.query_params
@@ -364,16 +445,34 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         st.markdown("#### Post a New 48-Hour Deal")
         is_mobile = st.checkbox("This is a mobile stall", value=True)
         location_note = st.text_input("Today's Location / Address *", value="At our stall / market spot")
-        product = st.text_input("Product Name *")
+        product = st.text_input("Product Name *", placeholder="e.g. 5L Power Oil, Nike Air, Original 20W Charger")
         price = st.number_input("Deal Price in Naira (₦) *", min_value=50, value=1000, step=50)
         uploaded_file = st.file_uploader("Photo (Optional)", type=["jpg", "jpeg", "png", "webp"])
-        ai_language = st.radio("Ad language:", ["Nigerian Pidgin (Recommended)", "Standard English"], horizontal=True)
         
-        if ai_language == "Nigerian Pidgin (Recommended)":
-            default_copy = f"🔥 Sweet deal for {shop['area']}! High quality {product} for just ₦{price:,}. Chat on WhatsApp sharp!"
-        else:
-            default_copy = f"✨ Fresh {product} available at {shop['name']} for ₦{price:,}. Order via WhatsApp!"
-        desc = st.text_area("Ad Description:", value=default_copy, height=70)
+        # --- GPT-6 LUNA AI ASSISTENT ---
+        st.markdown("##### ✨ AI Ad Copy Generator (GPT-6 Luna)")
+        c_tone1, c_tone2 = st.columns([2, 1])
+        with c_tone1:
+            tone_style = st.selectbox(
+                "Select Tone & Language:", 
+                ["Nigerian Pidgin (High Conversion)", "Standard English (Clean & Formal)", "Urgent Flash Deal (FOMO 48h)"]
+            )
+        with c_tone2:
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+            if st.button("🪄 Generate Text", use_container_width=True):
+                if not product:
+                    st.warning("Please enter product name first!")
+                else:
+                    with st.spinner("GPT-6 Luna is generating your ad..."):
+                        ai_result = generate_ai_ad_copy(product, int(price), shop["name"], shop["area"], tone_style)
+                        st.session_state["ai_ad_copy"] = ai_result
+
+        # Hent genereret tekst eller standardtekst
+        default_ad_text = st.session_state.get(
+            "ai_ad_copy", 
+            f"🔥 Quality {product} now available at {shop['name']} for only ₦{price:,}! Limited stock today in {shop['area']}."
+        )
+        desc = st.text_area("Ad Description (Review or edit before posting):", value=default_ad_text, height=85)
         
         if st.button("🚀 Publish Deal Now", type="primary", use_container_width=True):
             if not product:
@@ -387,6 +486,8 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                     "img_src": final_img, "status": "active"
                 }
                 supabase.table("offers").insert(new_data).execute()
+                if "ai_ad_copy" in st.session_state:
+                    del st.session_state["ai_ad_copy"]
                 st.session_state.current_view = "🛒 Browse Deals"
                 st.rerun()
 
@@ -430,7 +531,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                 if id_file:
                     st.image(id_file, width=220, caption="Uploaded ID Preview")
                 
-                rider_consent = st.checkbox("I agree to terms: Riders operate as independent agents. Platform is not liable for traffic, loss, or transit issues.")
+                rider_consent = st.checkbox("I agree to terms: Riders operate as independent agents. Platform is not liable for transit issues.")
                 
                 if st.button("🚀 Submit Profile for Verification", type="primary", use_container_width=True):
                     if not r_name or not r_phone_new or not r_pin_new or len(r_pin_new) != 4 or not id_file:
@@ -550,7 +651,7 @@ elif st.session_state.current_view == "💬 Support":
         u_name = st.text_input("Your Name / Business Name *", value=default_name)
         u_phone = st.text_input("WhatsApp / Phone Number *", value=default_phone)
         u_role = st.selectbox("I am a:", ["Store Owner", "Courier / Rider", "Customer", "Other"], index=["Store Owner", "Courier / Rider", "Customer", "Other"].index(user_category) if user_category in ["Store Owner", "Courier / Rider", "Customer"] else 0)
-        u_subject = st.selectbox("Topic / Subject *", ["Payment & Billing Inquiry", "Raffle / Promo Inquiry", "Forgotten PIN", "Account Verification", "Order Issue", "General Suggestion"])
+        u_subject = st.selectbox("Topic / Subject *", ["Payment & Subscription Inquiry", "Raffle / Promo Inquiry", "Forgotten PIN", "Account Verification", "Order Issue", "General Suggestion"])
         u_message = st.text_area("Your Message / Question *", placeholder="Describe your inquiry...")
         
         if st.button("📨 Send Message to Admin", type="primary", use_container_width=True):
@@ -569,7 +670,7 @@ elif st.session_state.current_view == "💬 Support":
                 st.success("✅ Message sent to the admin team! We will contact you on WhatsApp shortly.")
 
 # ====================================================
-# VISNING 5: PLATFORM SUPER ADMIN (INKL. REGNSKAB)
+# VISNING 5: PLATFORM SUPER ADMIN (INKL. LODTRÆKNING FIX)
 # ====================================================
 elif st.session_state.current_view == "🛡️ Platform Admin":
     st.markdown("### 🛡️ Platform Super Admin")
@@ -593,101 +694,115 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
         st.markdown("---")
 
-        admin_tabs = st.tabs(["💰 Billing & Accounting", "🎉 Raffle / Draw", "📬 Messages", "🛵 Riders", "🏪 Stores", "📦 Orders", "🔥 Offers"])
+        admin_tabs = st.tabs(["🚦 Subscriptions & Fees", "🎉 Raffle / Draw", "📬 Messages", "🛵 Riders", "🏪 Stores", "📦 Orders", "🔥 Offers"])
 
-        # --- FANE 0: REGNSKAB & OPKRÆVNING ---
+        # --- FANE 0: ABONNEMENTER & REGNSKAB ---
         with admin_tabs[0]:
-            st.markdown("#### 💰 Accounting & Merchant Fee Collection")
-            st.caption("Track monthly stall subscriptions, ad fees, and record cash/transfer payments.")
-            
-            # Hent alle betalinger
+            st.markdown("#### 🚦 Subscription Status & Fee Collection")
             bills = supabase.table("billing_records").select("*").order("id", desc=True).execute().data or []
             
-            total_collected = sum(b["amount"] for b in bills if b.get("is_paid"))
-            total_pending = sum(b["amount"] for b in bills if not b.get("is_paid"))
-            
-            # Nøgletal i toppen
+            active_count = 0
+            expired_count = 0
+            for b in bills:
+                is_active, _, _ = get_billing_status(b.get("valid_until"), b.get("is_paid", False))
+                if is_active:
+                    active_count += 1
+                else:
+                    expired_count += 1
+                    
             m1, m2 = st.columns(2)
             with m1:
-                st.metric("Total Collected (Paid)", f"₦{total_collected:,}")
+                st.metric("🟢 Active Subscriptions", f"{active_count}")
             with m2:
-                st.metric("Outstanding (Unpaid)", f"₦{total_pending:,}")
+                st.metric("🔴 Expired / Unpaid", f"{expired_count}")
                 
             st.markdown("---")
             
-            # Opret en ny opkrævning
-            with st.expander("➕ Create New Fee / Invoice for Store or Courier"):
-                all_shops = supabase.table("shops").select("name, phone, member_id").execute().data or []
-                all_couriers = supabase.table("couriers").select("name, phone, member_id").execute().data or []
+            with st.expander("➕ Register New Subscription / Fee"):
+                all_shops = supabase.table("shops").select("*").execute().data or []
+                all_couriers = supabase.table("couriers").select("*").execute().data or []
                 
                 target_payer_type = st.radio("Bill to:", ["Store", "Courier"], horizontal=True)
                 
                 if target_payer_type == "Store" and all_shops:
-                    shop_names = [f"{s['name']} ({s.get('member_id', '')})" for s in all_shops]
+                    shop_names = [f"{s.get('name', 'Shop')} ({s.get('member_id', '')})" for s in all_shops]
                     sel_s_idx = st.selectbox("Select Store:", range(len(shop_names)), format_func=lambda x: shop_names[x])
                     chosen_payer = all_shops[sel_s_idx]
                 elif target_payer_type == "Courier" and all_couriers:
-                    c_names = [f"{c['name']} ({c.get('member_id', '')})" for c in all_couriers]
+                    c_names = [f"{c.get('name', 'Rider')} ({c.get('member_id', '')})" for c in all_couriers]
                     sel_c_idx = st.selectbox("Select Courier:", range(len(c_names)), format_func=lambda x: c_names[x])
                     chosen_payer = all_couriers[sel_c_idx]
                 else:
                     chosen_payer = None
-                    st.info("No records found in this category.")
+                    st.info("No records found.")
                     
-                fee_title = st.selectbox("Fee Type / Description:", [
-                    "Monthly Platform Listing Fee",
-                    "Featured Deal Boost (48h)",
-                    "Courier Accreditation Fee",
-                    "Weekly Commission Settlement"
-                ])
-                fee_val = st.number_input("Amount in Naira (₦):", min_value=100, value=2000, step=100)
+                col_p1, col_p2 = st.columns(2)
+                with col_p1:
+                    period_choice = st.selectbox("Period Duration:", ["Weekly (7 Days)", "Monthly (30 Days)"])
+                with col_p2:
+                    default_amount = 1000 if "Weekly" in period_choice else 3500
+                    fee_val = st.number_input("Fee in Naira (₦):", min_value=100, value=default_amount, step=100)
+                    
+                fee_title = st.text_input("Fee Description:", value=f"{'Weekly' if 'Weekly' in period_choice else 'Monthly'} Stall Access Fee")
                 
-                if st.button("📝 Generate Invoice / Bill", type="primary"):
+                if st.button("📝 Create Subscription Record", type="primary"):
                     if chosen_payer:
                         new_bill = {
                             "payer_type": target_payer_type,
-                            "payer_name": chosen_payer["name"],
-                            "payer_phone": chosen_payer["phone"],
+                            "payer_name": chosen_payer.get("name", "Unknown"),
+                            "payer_phone": chosen_payer.get("phone", ""),
                             "member_id": chosen_payer.get("member_id"),
                             "fee_description": fee_title,
                             "amount": int(fee_val),
+                            "period_type": "Weekly" if "Weekly" in period_choice else "Monthly",
                             "is_paid": False
                         }
                         supabase.table("billing_records").insert(new_bill).execute()
-                        st.success(f"Invoice generated for {chosen_payer['name']}!")
+                        st.success(f"Subscription recorded for {chosen_payer.get('name')}!")
                         st.rerun()
 
-            st.markdown("#### All Payment Records")
+            st.markdown("#### Live Subscriptions & Payment Records")
             if not bills:
-                st.info("No billing records created yet.")
+                st.info("No subscription records created yet.")
             else:
                 for b in bills:
+                    is_active, status_label, _ = get_billing_status(b.get("valid_until"), b.get("is_paid", False))
+                    period = b.get("period_type", "Weekly")
+                    
                     with st.container(border=True):
                         cb_col1, cb_col2 = st.columns([3, 2])
                         with cb_col1:
-                            st.markdown(f"**{b['payer_name']}** ({b.get('member_id', 'N/A')}) — `{b['payer_type']}`")
-                            st.markdown(f"📌 **{b['fee_description']}** — **₦{b['amount']:,}**")
-                            st.caption(f"Phone: `{b['payer_phone']}` • Created: {b['created_at'][:10]}")
-                            if b.get("is_paid"):
-                                st.success(f"🟢 PAID on {b.get('paid_at', '')[:10]}")
+                            if is_active:
+                                st.markdown(f'<div class="status-light-green">{status_label}</div>', unsafe_allow_html=True)
                             else:
-                                st.error("🔴 UNPAID (Payment Pending)")
+                                st.markdown(f'<div class="status-light-red">{status_label}</div>', unsafe_allow_html=True)
+                                
+                            st.markdown(f"**{b['payer_name']}** ({b.get('member_id', 'N/A')}) — `{b['payer_type']}`")
+                            st.markdown(f"📌 **{b['fee_description']}** ({period}) — **₦{b['amount']:,}**")
+                            st.caption(f"Phone: `{b['payer_phone']}` • Valid until: `{b.get('valid_until', 'Not started')[:10]}`")
                                 
                         with cb_col2:
-                            if not b.get("is_paid"):
-                                if st.button("✅ Mark as Paid", key=f"pay_btn_{b['id']}", type="primary", use_container_width=True):
-                                    now_paid = datetime.now(timezone.utc).isoformat()
-                                    supabase.table("billing_records").update({"is_paid": True, "paid_at": now_paid}).eq("id", b["id"]).execute()
-                                    st.success("Payment recorded!")
+                            if not is_active:
+                                days_to_add = 7 if period == "Weekly" else 30
+                                btn_label = f"✅ Mark Paid (+{days_to_add} days)"
+                                if st.button(btn_label, key=f"pay_btn_{b['id']}", type="primary", use_container_width=True):
+                                    now_paid = datetime.now(timezone.utc)
+                                    new_valid_until = now_paid + timedelta(days=days_to_add)
+                                    supabase.table("billing_records").update({
+                                        "is_paid": True,
+                                        "paid_at": now_paid.isoformat(),
+                                        "valid_until": new_valid_until.isoformat()
+                                    }).eq("id", b["id"]).execute()
+                                    st.success(f"Payment marked! Extended by {days_to_add} days.")
                                     st.rerun()
                                     
-                                wa_bill_reminder = f"Hello {b['payer_name']}! This is a friendly reminder regarding your {b['fee_description']} (₦{b['amount']:,}) for Lagos Local Commerce."
-                                st.link_button("💬 Request Payment", make_wa_link(b['payer_phone'], wa_bill_reminder), use_container_width=True)
+                                wa_reminder = f"Hello {b['payer_name']}! Your {period.lower()} subscription for Lagos Local Commerce ({b.get('member_id')}) is currently due/expired. Please renew with our market coordinator to keep your deals active."
+                                st.link_button("💬 Send WhatsApp Reminder", make_wa_link(b['payer_phone'], wa_reminder), use_container_width=True)
                             else:
-                                wa_receipt = f"Official Receipt: Hello {b['payer_name']}, we confirm receipt of ₦{b['amount']:,} for '{b['fee_description']}'. Thank you for doing business with Lagos Local Commerce!"
+                                wa_receipt = f"Official Receipt: Hello {b['payer_name']}, payment confirmed for {period.lower()} access (₦{b['amount']:,}). Valid until {b.get('valid_until', '')[:10]}. Thank you!"
                                 st.link_button("🧾 Send WhatsApp Receipt", make_wa_link(b['payer_phone'], wa_receipt), use_container_width=True)
                                 
-                            if st.button("🗑️ Delete Bill", key=f"del_b_{b['id']}", type="secondary", use_container_width=True):
+                            if st.button("🗑️ Delete", key=f"del_b_{b['id']}", type="secondary", use_container_width=True):
                                 supabase.table("billing_records").delete().eq("id", b["id"]).execute()
                                 st.rerun()
 
@@ -701,10 +816,10 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 for s in s_list:
                     s_id = s.get("member_id") or f"SHOP-{1000 + s.get('id', 1)}"
                     pool.append({"type": "Store", "name": s.get("name", "Unknown"), "phone": s.get("phone", ""), "id": s_id})
+                    
             if "Riders" in target_group or "Both" in target_group:
                 c_list = supabase.table("couriers").select("*").execute().data or []
                 for c in c_list:
-                    # Tjekker godkendelse defensivt i Python
                     if c.get("is_approved", True):
                         c_id = c.get("member_id") or f"RIDER-{2000 + c.get('id', 1)}"
                         pool.append({"type": "Courier", "name": c.get("name", "Unknown"), "phone": c.get("phone", ""), "id": c_id})
@@ -745,11 +860,11 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
             for c in all_couriers:
                 with st.container(border=True):
                     is_appr = c.get("is_approved", False)
-                    r_id_val = c.get("member_id") or f"RIDER-{2000 + c['id']}"
+                    r_id_val = c.get("member_id") or f"RIDER-{2000 + c.get('id', 1)}"
                     col_cr1, col_cr2 = st.columns([2, 1])
                     with col_cr1:
-                        st.markdown(f"**{c['name']}** (🎟️ `{r_id_val}`) — 📞 `{c['phone']}`")
-                        st.caption(f"Area: {c['area']} • PIN: `{c['pin']}`")
+                        st.markdown(f"**{c.get('name', 'Rider')}** (🎟️ `{r_id_val}`) — 📞 `{c.get('phone', '')}`")
+                        st.caption(f"Area: {c.get('area', '')} • PIN: `{c.get('pin', '')}`")
                         if is_appr:
                             st.success("✅ Status: Approved & Active")
                         else:
@@ -776,10 +891,10 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
             all_shops = supabase.table("shops").select("*").order("id", desc=True).execute().data or []
             for s in all_shops:
                 with st.container(border=True):
-                    s_id_val = s.get("member_id") or f"SHOP-{1000 + s['id']}"
+                    s_id_val = s.get("member_id") or f"SHOP-{1000 + s.get('id', 1)}"
                     col_s1, col_s2 = st.columns([3, 1])
                     with col_s1:
-                        st.markdown(f"**{s['name']}** (🎟️ `{s_id_val}`) — 📞 `{s['phone']}` — PIN: `{s['pin']}`")
+                        st.markdown(f"**{s.get('name', 'Shop')}** (🎟️ `{s_id_val}`) — 📞 `{s.get('phone', '')}` — PIN: `{s.get('pin', '')}`")
                     with col_s2:
                         if st.button("🗑️ Delete", key=f"adm_del_shop_{s['id']}", type="secondary"):
                             supabase.table("offers").delete().eq("shop", s["name"]).execute()
