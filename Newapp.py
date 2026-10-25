@@ -92,7 +92,7 @@ st.markdown(f"""
         st.rerun()
         /* Låser knap-pladsen fast, så den ikke hopper eller forsvinder ved re-render */
     .stButton {
-        min-height: 45px;
+        
     }
     div[data-testid="stButton"] button {
         width: 100% !important;
