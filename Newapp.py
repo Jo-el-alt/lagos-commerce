@@ -279,7 +279,7 @@ Price: NGN {price_val:,}
 Store Name: {shop_name}
 Market Area: {market_area}
 Style requested: {tone_style}
-Output ONLY the ad copy text, no extra explanations or quotation marks."""
+Output ONLY the ad copy text, no extra explanations or quotation marks.
 
     try:
         response = openai_client.chat.completions.create(
