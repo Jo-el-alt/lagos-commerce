@@ -15,16 +15,20 @@ st.set_page_config(
 # --- HELPER FUNCTIONS ---
 def compress_image(uploaded_file, max_width=600):
     """Compresses uploaded images to web-friendly JPEG to save mobile data."""
-    img = Image.open(uploaded_file)
-    if img.mode in ("RGBA", "P"):
-        img = img.convert("RGB")
-    if img.width > max_width:
-        ratio = max_width / float(img.width)
-        height = int(float(img.height) * ratio)
-        img = img.resize((max_width, height), Image.Resampling.LANCZOS)
-    output = io.BytesIO()
-    img.save(output, format="JPEG", quality=75, optimize=True)
-    return output.getvalue()
+    try:
+        img = Image.open(uploaded_file)
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        if img.width > max_width:
+            ratio = max_width / float(img.width)
+            height = int(float(img.height) * ratio)
+            img = img.resize((max_width, height), Image.Resampling.LANCZOS)
+        output = io.BytesIO()
+        img.save(output, format="JPEG", quality=75, optimize=True)
+        return output.getvalue()
+    except Exception as e:
+        st.warning(f"Note: Could not compress image, saving original ({e})")
+        return uploaded_file.getvalue()
 
 def make_wa_link(phone: str, product: str, price: int, shop: str) -> str:
     """Creates a direct WhatsApp link with prefilled order inquiry."""
@@ -56,6 +60,7 @@ if "offers" not in st.session_state:
             "price": 200,
             "desc": "🥗 100% fresh, homemade Abacha with sweet crunchy coconut! Prepared daily with clean village ingredients. Only ₦200 per portion. We also produce & deliver bulk orders for events, meetings, and parties! Chat us on WhatsApp now to place your order.",
             "hours_left": 48,
+            "image_url": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80",
             "image_bytes": None
         },
         {
@@ -69,6 +74,7 @@ if "offers" not in st.session_state:
             "price": 14500,
             "desc": "⚡ No NEPA wahala! Heavy-duty fast charge powerbank can charge your phone 4 times full. 6 months shop warranty included.",
             "hours_left": 18,
+            "image_url": "https://images.unsplash.com/photo-1609592424109-dd9892f1b177?w=600&auto=format&fit=crop&q=80",
             "image_bytes": None
         }
     ]
@@ -106,8 +112,10 @@ with tab1:
             
         shown_count += 1
         with st.container(border=True):
-            if item["image_bytes"]:
+            if item.get("image_bytes"):
                 st.image(item["image_bytes"], use_container_width=True)
+            elif item.get("image_url"):
+                st.image(item["image_url"], use_container_width=True)
                 
             st.markdown(f"### {item['product']}")
             st.markdown(f"**Price: ₦{item['price']:,}**")
@@ -127,61 +135,63 @@ with tab1:
         st.info("No active deals found for this selection right now.")
 
 # ----------------------------------------------------
-# TAB 2: STORE OWNER ADMIN & AI GENERATOR
+# TAB 2: STORE OWNER ADMIN & POST DEAL
 # ----------------------------------------------------
 with tab2:
     st.markdown("### Post a New Deal (Active for 48 Hours)")
     
-    with st.form("new_offer_form"):
-        shop_name = st.text_input("Store Name *", value="Sweet Debbie & Mom's Kitchen")
-        category = st.selectbox("Category", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
-        area = st.selectbox("Area / Market", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
+    shop_name = st.text_input("Store Name *", value="Sweet Debbie & Mom's Kitchen")
+    category = st.selectbox("Category", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
+    area = st.selectbox("Area / Market", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
+    
+    is_mobile = st.checkbox("This is a mobile stall (moves location daily)", value=True)
+    location_note = st.text_input("Today's Location / Address *", value="Near Tejuosho main entrance today")
+    phone = st.text_input("WhatsApp Number (e.g., 08012345678) *", value="08012345678")
+    
+    st.markdown("---")
+    product = st.text_input("What are you selling? *", value="Fresh Homemade Abacha with Coconut")
+    price = st.number_input("Deal Price in Naira (₦) *", min_value=50, value=200, step=50)
+    
+    st.markdown("**Product Photo (Optional)**")
+    uploaded_img = st.file_uploader("Upload photo or snap with camera", type=["jpg", "jpeg", "png", "webp"])
+    if uploaded_img:
+        st.image(uploaded_img, caption="Preview of selected photo", width=200)
+
+    ai_language = st.radio("Ad tone & language:", ["Nigerian Pidgin (Recommended)", "Standard English"], horizontal=True)
+    
+    if ai_language == "Nigerian Pidgin (Recommended)":
+        default_copy = f"🔥 Sweet deal for {area}! High quality {product} now going for just ₦{price:,}. Very limited quantity available today. Chat me sharp on WhatsApp before e finish!"
+    else:
+        default_copy = f"🥗 Fresh homemade {product} for only ₦{price:,} today in {area}! Bulk orders available on demand. Chat with us on WhatsApp to order!"
         
-        is_mobile = st.checkbox("This is a mobile stall (moves location daily)", value=True)
-        location_note = st.text_input("Today's Location / Address *", value="Near Tejuosho main entrance today")
-        phone = st.text_input("WhatsApp Number (e.g., 08012345678) *", value="08012345678")
-        
-        st.markdown("---")
-        product = st.text_input("What are you selling? *", value="Fresh Homemade Abacha with Coconut")
-        price = st.number_input("Deal Price in Naira (₦) *", min_value=50, value=200, step=50)
-        uploaded_img = st.file_uploader("Upload product photo", type=["jpg", "jpeg", "png"])
-        
-        ai_language = st.radio("Ad tone & language:", ["Nigerian Pidgin (Recommended)", "Standard English"], horizontal=True)
-        
-        # Pre-generated AI ad template
-        if ai_language == "Nigerian Pidgin (Recommended)":
-            default_copy = f"🔥 Sweet deal for {area}! High quality {product} now going for just ₦{price:,}. Very limited quantity available today. Chat me sharp on WhatsApp before e finish!"
+    desc = st.text_area("Ad Description (feel free to edit):", value=default_copy, height=100)
+    
+    # Send-knap uden for en form for at garantere øjeblikkelig opdatering
+    if st.button("🚀 Publish Deal Now", type="primary", use_container_width=True):
+        if not product or not shop_name or not phone:
+            st.error("Please fill in Store Name, Product Name, and WhatsApp Number.")
         else:
-            default_copy = f"🥗 Fresh homemade {product} for only ₦{price:,} today in {area}! Bulk orders available on demand. Chat with us on WhatsApp to order!"
-            
-        desc = st.text_area("Ad Description (feel free to edit):", value=default_copy, height=100)
-        
-        submitted = st.form_submit_button("🚀 Publish Deal Now", use_container_width=True)
-        
-        if submitted:
-            if not product or not shop_name or not phone:
-                st.error("Please fill in all required fields marked with *.")
-            else:
-                img_data = compress_image(uploaded_img) if uploaded_img else None
-                new_item = {
-                    "shop": shop_name,
-                    "category": category,
-                    "area": area,
-                    "is_mobile": is_mobile,
-                    "location_note": location_note,
-                    "phone": phone,
-                    "product": product,
-                    "price": price,
-                    "desc": desc,
-                    "hours_left": 48,
-                    "image_bytes": img_data
-                }
-                st.session_state.offers.insert(0, new_item)
-                st.success("Your deal is live for 48 hours! Check the 'Browse Deals' tab to view it.")
+            img_data = compress_image(uploaded_img) if uploaded_img else None
+            new_item = {
+                "shop": shop_name,
+                "category": category,
+                "area": area,
+                "is_mobile": is_mobile,
+                "location_note": location_note,
+                "phone": phone,
+                "product": product,
+                "price": price,
+                "desc": desc,
+                "hours_left": 48,
+                "image_url": None,
+                "image_bytes": img_data
+            }
+            # Indsæt øverst i listen
+            st.session_state.offers.insert(0, new_item)
+            st.success("✅ Your deal was published! Switch to the 'Browse Deals' tab above to see it live.")
 
     st.markdown("---")
     st.markdown("### Store QR Code")
-    st.caption("Print and place this on your stall counter:")
     clean_shop_slug = urllib.parse.quote(shop_name.lower().replace(" ", "-"))
     shop_demo_url = f"https://lagos-commerce-pzru6e8tsftfmt72gbjnhz.streamlit.app/?shop={clean_shop_slug}"
     qr_img = generate_qr(shop_demo_url)
