@@ -18,116 +18,187 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Tema-tilstand i session
+# Tema-tilstand i session (starter som Lyst tema til dagslys)
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
-# CSS: Lyst fundament til skarp sol, inverteret skærm til aften/nat
-if st.session_state.dark_mode:
-    filter_style = """
-    html {
-        filter: invert(0.92) hue-rotate(180deg) !important;
-        background-color: #0d1117 !important;
-    }
-    img, [data-testid="stImage"], .grid-img-box img {
-        filter: invert(1) hue-rotate(180deg) contrast(1.1) !important;
-    }
-    """
-else:
-    filter_style = ""
+is_dark = st.session_state.dark_mode
 
-base_css = """
+# Farvepalet til Sol/Dag vs. Nat/Strøm
+c_bg = "#0f172a" if is_dark else "#ffffff"
+c_text = "#f8fafc" if is_dark else "#0f172a"
+c_card = "#1e293b" if is_dark else "#f8fafc"
+c_border = "#334155" if is_dark else "#e2e8f0"
+c_input_bg = "#1e293b" if is_dark else "#ffffff"
+c_input_text = "#ffffff" if is_dark else "#0f172a"
+c_btn_bg = "#334155" if is_dark else "#f1f5f9"
+c_btn_text = "#ffffff" if is_dark else "#0f172a"
+
+# Direkte CSS-styling uden forstyrrende rod-filtre
+st.markdown(f"""
 <style>
-    .stApp {
+    /* Grundlæggende baggrund og tekst */
+    .stApp {{
+        background-color: {c_bg} !important;
+        color: {c_text} !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    .grid-img-box {
+    }}
+
+    /* Alle overskrifter, labels og menutekst */
+    .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5,
+    label[data-testid="stWidgetLabel"] p,
+    div[data-testid="stRadio"] label p,
+    div[data-testid="stRadio"] label span,
+    div[data-testid="stCheckbox"] label p,
+    [data-testid="stCaptionContainer"] p,
+    .stTabs [data-baseweb="tab"] p {{
+        color: {c_text} !important;
+        -webkit-text-fill-color: {c_text} !important;
+    }}
+
+    /* Formularfelter, dropdowns og tekstbokse */
+    div[data-baseweb="input"],
+    div[data-baseweb="base-input"],
+    div[data-baseweb="select"] > div {{
+        background-color: {c_input_bg} !important;
+        border: 1px solid {c_border} !important;
+        border-radius: 8px !important;
+    }}
+    div[data-baseweb="input"] input,
+    div[data-baseweb="base-input"] textarea,
+    div[data-baseweb="select"] div,
+    div[data-baseweb="select"] span {{
+        color: {c_input_text} !important;
+        -webkit-text-fill-color: {c_input_text} !important;
+    }}
+    div[data-baseweb="select"] svg {{
+        fill: {c_input_text} !important;
+    }}
+
+    /* Åbne dropdown-lister */
+    div[data-baseweb="popover"],
+    div[data-baseweb="menu"],
+    ul[data-testid="stSelectboxVirtualDropdown"],
+    li[role="option"] {{
+        background-color: {c_card} !important;
+        color: {c_text} !important;
+        -webkit-text-fill-color: {c_text} !important;
+    }}
+    li[role="option"]:hover,
+    li[role="option"][aria-selected="true"] {{
+        background-color: {"#475569" if is_dark else "#e2e8f0"} !important;
+    }}
+
+    /* Knapper */
+    .stButton button {{
+        background-color: {c_btn_bg} !important;
+        color: {c_btn_text} !important;
+        -webkit-text-fill-color: {c_btn_text} !important;
+        border: 1px solid {c_border} !important;
+        font-weight: 600 !important;
+    }}
+
+    /* Produktgrid */
+    .grid-img-box {{
         width: 100%;
         height: 125px;
         overflow: hidden;
         border-radius: 8px;
         margin-bottom: 8px;
-        background-color: #f0f2f6;
+        background-color: {"#334155" if is_dark else "#f1f5f9"};
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-    .grid-img-box img {
+    }}
+    .grid-img-box img {{
         width: 100%;
         height: 100%;
         object-fit: cover;
-    }
-    .grid-title {
+    }}
+    .grid-title {{
         font-size: 0.95rem;
         font-weight: 700;
         line-height: 1.2;
         margin-bottom: 4px;
+        color: {c_text} !important;
+        -webkit-text-fill-color: {c_text} !important;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
         height: 2.4em;
-    }
-    .grid-price {
+    }}
+    .grid-price {{
         font-size: 1.05rem;
         font-weight: 800;
-        color: #0e8a16;
+        color: {"#4ade80" if is_dark else "#16a34a"};
         margin-bottom: 4px;
-    }
-    .member-badge {
+    }}
+
+    /* Badges */
+    .member-badge {{
         display: inline-block;
-        background-color: #e8f5e9;
-        color: #1b5e20;
+        background-color: {"#064e3b" if is_dark else "#dcfce7"};
+        color: {"#6ee7b7" if is_dark else "#15803d"} !important;
+        -webkit-text-fill-color: {"#6ee7b7" if is_dark else "#15803d"} !important;
         padding: 4px 10px;
         border-radius: 6px;
         font-weight: bold;
         font-size: 0.9rem;
         margin-bottom: 8px;
-        border: 1px solid #c8e6c9;
-    }
-    .referral-badge {
+        border: 1px solid {"#047857" if is_dark else "#bbf7d0"};
+    }}
+    .referral-badge {{
         display: inline-block;
-        background-color: #fff3e0;
-        color: #e65100;
+        background-color: {"#451a03" if is_dark else "#ffedd5"};
+        color: {"#fdba74" if is_dark else "#c2410c"} !important;
+        -webkit-text-fill-color: {"#fdba74" if is_dark else "#c2410c"} !important;
         padding: 4px 8px;
         border-radius: 6px;
         font-size: 0.85rem;
         font-weight: 700;
-        border: 1px solid #ffe0b2;
+        border: 1px solid {"#9a3412" if is_dark else "#fed7aa"};
         margin-bottom: 6px;
-    }
-    .status-light-red {
-        background-color: #ffebee;
-        color: #c62828;
+    }}
+
+    /* Trafiklys */
+    .status-light-red {{
+        background-color: {"#450a0a" if is_dark else "#fee2e2"};
+        color: {"#fca5a5" if is_dark else "#b91c1c"} !important;
+        -webkit-text-fill-color: {"#fca5a5" if is_dark else "#b91c1c"} !important;
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
-        border: 1px solid #ffcdd2;
+        border: 1px solid {"#991b1b" if is_dark else "#fecaca"};
         display: inline-block;
         margin-bottom: 6px;
-    }
-    .status-light-green {
-        background-color: #e8f5e9;
-        color: #2e7d32;
+    }}
+    .status-light-green {{
+        background-color: {"#064e3b" if is_dark else "#dcfce7"};
+        color: {"#6ee7b7" if is_dark else "#15803d"} !important;
+        -webkit-text-fill-color: {"#6ee7b7" if is_dark else "#15803d"} !important;
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
-        border: 1px solid #c8e6c9;
+        border: 1px solid {"#047857" if is_dark else "#bbf7d0"};
         display: inline-block;
         margin-bottom: 6px;
-    }
-    .disclaimer-box {
+    }}
+
+    /* Footer & Disclaimer */
+    .disclaimer-box {{
         font-size: 0.8rem;
-        background-color: rgba(128, 128, 128, 0.12) !important;
-        color: inherit !important;
+        background-color: {c_card};
+        color: {c_text} !important;
+        -webkit-text-fill-color: {c_text} !important;
         opacity: 0.85;
         padding: 12px;
         border-radius: 8px;
-        border: 1px solid rgba(128, 128, 128, 0.25) !important;
+        border: 1px solid {c_border};
         margin-top: 25px;
-    }
+    }}
 </style>
-"""
+""", unsafe_allow_html=True)
 
 # Kør CSS ind uden f-string for at undgå klamme-fejl
 st.markdown(f"<style>{filter_style}</style>" + base_css, unsafe_allow_html=True)
