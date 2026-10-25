@@ -54,17 +54,20 @@ st.markdown(f"""
         -webkit-text-fill-color: {text_color} !important;
     }}
 
-    /* Input-felter og dropdowns */
+    /* Input-felter og selve select-bjælkerne */
     div[data-baseweb="input"],
     div[data-baseweb="base-input"],
-    div[data-baseweb="select"] > div {{
+    div[data-baseweb="select"],
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="select"] div {{
         background-color: {card_bg} !important;
         border: 1px solid {border_color} !important;
         border-radius: 8px !important;
+        color: {text_color} !important;
     }}
+    
     div[data-baseweb="input"] input,
     div[data-baseweb="base-input"] textarea,
-    div[data-baseweb="select"] div,
     div[data-baseweb="select"] span {{
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
@@ -73,7 +76,7 @@ st.markdown(f"""
         fill: {text_color} !important;
     }}
 
-    /* Aggressiv tvingning af Åbne rullemenuer (Dropdowns & Popovers) i mørk/lys tilstand */
+    /* Åbne rullemenuer (Dropdowns & Popovers) */
     div[data-baseweb="popover"],
     div[data-baseweb="menu"],
     div[data-baseweb="select-dropdown"],
