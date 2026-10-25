@@ -1,5 +1,5 @@
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageOps
 from supabase import create_client, Client
 from datetime import datetime, timezone
 import urllib.parse
@@ -7,7 +7,7 @@ import qrcode
 import io
 import base64
 
-# Mobile setup
+# Mobil konfiguration
 st.set_page_config(
     page_title="Lagos Local Commerce",
     page_icon="🇳🇬",
@@ -25,16 +25,16 @@ def get_supabase() -> Client:
 supabase = get_supabase()
 
 # --- HJÆLPEFUNKTIONER ---
-def convert_to_base64_img(uploaded_file, max_width=600):
-    """Krymper billedet og laver det til en data-streng, der gemmes direkte i databasen."""
+def convert_to_base64_img(uploaded_file, target_size=(500, 375)):
+    """Beskærer og skalerer billedet til pænt fast 4:3 format så det ikke fylder hele skærmen."""
     try:
         img = Image.open(uploaded_file)
+        # Roter billedet rigtigt ift. mobilens orientering
+        img = ImageOps.exif_transpose(img)
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
-        if img.width > max_width:
-            ratio = max_width / float(img.width)
-            height = int(float(img.height) * ratio)
-            img = img.resize((max_width, height), Image.Resampling.LANCZOS)
+        # Beskær pænt til 4:3
+        img = ImageOps.fit(img, target_size, Image.Resampling.LANCZOS)
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=75, optimize=True)
         encoded = base64.b64encode(buf.getvalue()).decode()
@@ -56,9 +56,7 @@ def generate_qr(url: str) -> bytes:
     return buf.getvalue()
 
 def calculate_hours_left(expires_at_str: str) -> int:
-    """Beregner hvor mange timer der er tilbage af de 48 timer."""
     try:
-        # Håndter ISO format fra Supabase
         clean_str = expires_at_str.replace("Z", "+00:00")
         exp_time = datetime.fromisoformat(clean_str)
         now_time = datetime.now(timezone.utc)
@@ -79,7 +77,7 @@ current_tab = st.radio("Nav", views, index=views.index(st.session_state.current_
 st.session_state.current_view = current_tab
 
 # ====================================================
-# VISNING 1: KUNDEPORTAL (KUN AKTIVE OG IKKE-UDLØBNE TILBUD)
+# VISNING 1: KUNDEPORTAL
 # ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
     c1, c2 = st.columns(2)
@@ -90,7 +88,6 @@ if st.session_state.current_view == "🛒 Browse Deals":
 
     st.markdown("---")
 
-    # Hent kun tilbud, hvor 48 timer IKKE er udløbet (expires_at > nu)
     now_iso = datetime.now(timezone.utc).isoformat()
     query = supabase.table("offers").select("*").gt("expires_at", now_iso).order("id", desc=True)
     
@@ -110,14 +107,14 @@ if st.session_state.current_view == "🛒 Browse Deals":
         status = item.get("status", "active")
         
         with st.container(border=True):
+            # Centreret billede med pæn, afgrænset bredde
             if item.get("img_src"):
-                st.image(item["img_src"], use_container_width=True)
+                st.image(item["img_src"], width=320)
                 
             st.markdown(f"### {item['product']}")
             st.markdown(f"**Price: ₦{item['price']:,}**")
             st.write(item.get("description", ""))
             
-            # Status badge
             if status == "sold_out":
                 st.error("⛔ Sold Out for Today")
             elif status == "back_tomorrow":
@@ -139,18 +136,16 @@ if st.session_state.current_view == "🛒 Browse Deals":
                 st.button("Item Unavailable", disabled=True, use_container_width=True)
 
 # ====================================================
-# VISNING 2: BUTIKSEJER ADMIN (STYR TILBUD & STATUS)
+# VISNING 2: BUTIKSEJER ADMIN
 # ====================================================
 elif st.session_state.current_view == "🏪 Store Owner Admin":
     st.markdown("### Manage Store Deals")
     
-    # Simpel butiks-vælger til demo
     current_shop = st.selectbox(
         "Select your shop to manage:",
         ["Sweet Debbie & Mom's Kitchen", "Chinedu Electronics Hub"]
     )
     
-    # 1. VIS EKSISTERENDE OPSLAG FOR DENNE BUTIK MED KNAPPER
     st.markdown("#### Your Active Deals")
     my_offers_res = supabase.table("offers").select("*").eq("shop", current_shop).order("id", desc=True).execute()
     my_offers = my_offers_res.data or []
@@ -161,7 +156,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         for deal in my_offers:
             with st.container(border=True):
                 st.markdown(f"**{deal['product']}** — ₦{deal['price']:,}")
-                st.caption(f"Current Status: `{deal.get('status', 'active')}` • Expires in: {calculate_hours_left(deal['expires_at'])}h")
+                st.caption(f"Status: `{deal.get('status', 'active')}` • Expires in: {calculate_hours_left(deal['expires_at'])}h")
                 
                 col_btn1, col_btn2, col_btn3 = st.columns(3)
                 with col_btn1:
@@ -184,7 +179,6 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
 
     st.markdown("---")
     
-    # 2. OPRET NYT TILBUD (GEMMES I SUPABASE)
     st.markdown("#### Post a New 48-Hour Deal")
     category = st.selectbox("Category", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
     area = st.selectbox("Area / Market", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
@@ -213,7 +207,6 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         else:
             final_img = convert_to_base64_img(uploaded_file) if uploaded_file else None
             
-            # Gem i Supabase
             new_data = {
                 "shop": current_shop,
                 "category": category,
@@ -239,7 +232,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
     st.image(qr_img, width=160, caption=f"Scan to view {current_shop}")
 
 # ====================================================
-# VISNING 3: BUDE & KURÉR (FASE 4 PREVIEW)
+# VISNING 3: BUDE & KURÉR
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
     st.markdown("### Courier & Dispatch Portal")
