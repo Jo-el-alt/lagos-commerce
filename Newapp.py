@@ -16,31 +16,47 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS til faste mobilbilleder og footer
+# CSS til grid og kompakte kort
 st.markdown("""
 <style>
-    .product-img-box {
+    .grid-img-box {
         width: 100%;
-        max-width: 400px;
-        height: 200px;
+        height: 125px;
         overflow: hidden;
-        border-radius: 10px;
-        margin-bottom: 12px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        background-color: #f0f2f6;
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #f0f2f6;
     }
-    .product-img-box img {
+    .grid-img-box img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
+    .grid-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        line-height: 1.2;
+        margin-bottom: 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        height: 2.4em;
+    }
+    .grid-price {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #0e8a16;
+        margin-bottom: 4px;
+    }
     .privacy-notice {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
         color: #555;
         background-color: #f8f9fa;
-        padding: 12px;
+        padding: 10px;
         border-radius: 8px;
         border: 1px solid #e9ecef;
         margin-top: 25px;
@@ -117,12 +133,64 @@ if "admin_logged_in" not in st.session_state:
 st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>🇳🇬 Lagos Local Commerce</h2>", unsafe_allow_html=True)
 st.caption("<p style='text-align: center;'>Discover top deals & order directly from nearby stores</p>", unsafe_allow_html=True)
 
-views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "🛡️ Platform Admin"]
+views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 current_tab = st.radio("Nav", views, index=views.index(st.session_state.current_view), horizontal=True, label_visibility="collapsed")
 st.session_state.current_view = current_tab
 
 # ====================================================
-# VISNING 1: KUNDEPORTAL & BESTILLING
+# MODAL TIL DETALJEVISNING AF ET PRODUKT
+# ====================================================
+@st.dialog("Product Details & Order")
+def show_offer_modal(item):
+    if item.get("img_src"):
+        st.image(item["img_src"], use_container_width=True)
+    st.markdown(f"### {item['product']}")
+    st.markdown(f"**Price: ₦{item['price']:,}**")
+    st.write(item.get("description", ""))
+    
+    hours_left = calculate_hours_left(item["expires_at"])
+    st.caption(f"🏪 **{item['shop']}** ({item['category']}) • ⏳ Expires in {hours_left}h")
+    
+    pickup_loc = item.get("location_note") or f"{item['shop']}, {item['area']}"
+    if item.get("is_mobile"):
+        st.info(f"📍 **Mobile Stall Today:** {pickup_loc}")
+    else:
+        st.caption(f"📍 Address: {pickup_loc}")
+        
+    st.markdown("---")
+    
+    # 1. WhatsApp
+    wa_msg = f"Hello {item['shop']}! I saw *{item['product']}* (₦{item['price']:,}) on Lagos Local Commerce. Is it available?"
+    wa_url = make_wa_link(item["phone"], wa_msg)
+    st.link_button("💬 Order Directly via WhatsApp", wa_url, use_container_width=True)
+    
+    # 2. Kurér-bestilling
+    st.markdown("#### 🛵 Or Order with Dispatch Delivery")
+    with st.form(f"modal_order_form_{item['id']}"):
+        cust_name = st.text_input("Your Full Name *", placeholder="e.g. Tunde Bakare")
+        cust_phone = st.text_input("Your Phone (WhatsApp) *", placeholder="080...")
+        cust_area = st.selectbox("Your Neighborhood *", ["Yaba / Sabo", "Ikeja / Allen", "Surulere", "Victoria Island / Lekki", "Other"])
+        cust_addr = st.text_area("Full Address & Nearby Landmark *")
+        st.markdown(f"**Total to Pay (Item + Delivery):** ₦{item['price'] + 1500:,}")
+        
+        c_consent = st.checkbox("I agree to share my details for delivery coordination (NDPA).", value=True)
+        if st.form_submit_button("🚀 Confirm Dispatch Delivery", type="primary", use_container_width=True):
+            if not cust_name or not cust_phone or not cust_addr or not c_consent:
+                st.error("Please fill all required delivery details.")
+            else:
+                new_order = {
+                    "offer_id": item["id"], "product": item["product"], "shop": item["shop"],
+                    "shop_phone": item["phone"], "pickup_location": pickup_loc,
+                    "customer_name": cust_name.strip(), "customer_phone": cust_phone.strip(),
+                    "customer_area": cust_area, "delivery_address": cust_addr.strip(),
+                    "item_price": item["price"], "delivery_fee": 1500,
+                    "rider_payout": 1350, "platform_fee": 150, "status": "pending"
+                }
+                supabase.table("orders").insert(new_order).execute()
+                st.success("✅ Order placed! A verified rider will contact you.")
+
+# ====================================================
+# VISNING 1: KUNDEPORTAL (2-KOLONNE GRID)
 # ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
     if active_shop_slug:
@@ -155,82 +223,32 @@ if st.session_state.current_view == "🛒 Browse Deals":
 
     if not offers:
         st.info("No active deals found right now. Check back soon!")
-
-    for item in offers:
-        hours_left = calculate_hours_left(item["expires_at"])
-        status = item.get("status", "active")
-        
-        with st.container(border=True):
-            if item.get("img_src"):
-                st.markdown(
-                    f'<div class="product-img-box"><img src="{item["img_src"]}" alt="Product"></div>',
-                    unsafe_allow_html=True
-                )
-                
-            st.markdown(f"### {item['product']}")
-            st.markdown(f"**Price: ₦{item['price']:,}**")
-            st.write(item.get("description", ""))
-            
-            if status == "sold_out":
-                st.error("⛔ Sold Out for Today")
-            elif status == "back_tomorrow":
-                st.warning("⏳ Sold Out – Back Fresh Tomorrow Morning!")
-            else:
-                st.success("🟢 In Stock Now")
-            
-            st.caption(f"🏪 **{item['shop']}** ({item['category']}) • ⏳ Expires in {hours_left}h")
-            
-            pickup_loc = item.get("location_note") or f"{item['shop']}, {item['area']}"
-            if item.get("is_mobile"):
-                st.info(f"📍 **Mobile Stall Today:** {pickup_loc}")
-            else:
-                st.caption(f"📍 Address: {pickup_loc}")
-                
-            if status == "active":
-                wa_msg = f"Hello {item['shop']}! I saw *{item['product']}* (₦{item['price']:,}) on Lagos Local Commerce. Is it available?"
-                wa_url = make_wa_link(item["phone"], wa_msg)
-                st.link_button("💬 Chat on WhatsApp", wa_url, use_container_width=True)
-                
-                with st.expander("🛵 Request Dispatch Delivery to Your Door"):
-                    with st.form(f"order_form_{item['id']}"):
-                        cust_name = st.text_input("Your Full Name *", placeholder="e.g. Tunde Bakare")
-                        cust_phone = st.text_input("Your Phone Number (WhatsApp) *", placeholder="080...")
-                        cust_area = st.selectbox("Your Area / Neighborhood *", ["Yaba / Sabo", "Ikeja / Allen", "Surulere", "Victoria Island / Lekki", "Other"], key=f"area_{item['id']}")
-                        cust_addr = st.text_area("Full Delivery Address & Landmark *", placeholder="e.g. 14 Commercial Ave, Sabo, opposite First Bank")
-                        
-                        st.markdown(f"**Item Price:** ₦{item['price']:,}")
-                        st.markdown("**Estimated Delivery Fee:** ₦1,500")
-                        st.markdown(f"**Total to Pay:** ₦{item['price'] + 1500:,}")
-                        
-                        order_consent = st.checkbox("I consent to share my contact & delivery details with the merchant and assigned rider for order fulfillment.", value=True)
-                        
-                        btn_order = st.form_submit_button("🚀 Confirm Delivery Order", type="primary", use_container_width=True)
-                        if btn_order:
-                            if not cust_name or not cust_phone or not cust_addr:
-                                st.error("Please fill in your Name, Phone, and Delivery Address.")
-                            elif not order_consent:
-                                st.error("Please agree to the delivery data consent.")
+    else:
+        # 2-kolonne grid
+        for i in range(0, len(offers), 2):
+            cols = st.columns(2)
+            for j in range(2):
+                if i + j < len(offers):
+                    deal = offers[i + j]
+                    with cols[j]:
+                        with st.container(border=True):
+                            if deal.get("img_src"):
+                                st.markdown(f'<div class="grid-img-box"><img src="{deal["img_src"]}"></div>', unsafe_allow_html=True)
                             else:
-                                new_order = {
-                                    "offer_id": item["id"],
-                                    "product": item["product"],
-                                    "shop": item["shop"],
-                                    "shop_phone": item["phone"],
-                                    "pickup_location": pickup_loc,
-                                    "customer_name": cust_name.strip(),
-                                    "customer_phone": cust_phone.strip(),
-                                    "customer_area": cust_area,
-                                    "delivery_address": cust_addr.strip(),
-                                    "item_price": item["price"],
-                                    "delivery_fee": 1500,
-                                    "rider_payout": 1350,
-                                    "platform_fee": 150,
-                                    "status": "pending"
-                                }
-                                supabase.table("orders").insert(new_order).execute()
-                                st.success("✅ Delivery order placed! A verified dispatch rider will pick it up.")
-            else:
-                st.button("Item Unavailable", disabled=True, use_container_width=True)
+                                st.markdown('<div class="grid-img-box" style="font-size:1.5rem;">🛍️</div>', unsafe_allow_html=True)
+                                
+                            st.markdown(f'<div class="grid-title">{deal["product"]}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="grid-price">₦{deal["price"]:,}</div>', unsafe_allow_html=True)
+                            st.caption(f"🏪 {deal['shop']}")
+                            
+                            status = deal.get("status", "active")
+                            if status == "sold_out":
+                                st.error("⛔ Sold Out")
+                            elif status == "back_tomorrow":
+                                st.warning("⏳ Back Tomorrow")
+                            else:
+                                if st.button("👀 View Deal", key=f"view_btn_{deal['id']}", use_container_width=True):
+                                    show_offer_modal(deal)
 
 # ====================================================
 # VISNING 2: BUTIKSEJER ADMIN & OPRETTELSE
@@ -262,7 +280,6 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 new_area = st.selectbox("Market / Area *", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
                 new_cat = st.selectbox("Main Category *", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
                 
-                # NDPA Samtykkeboks
                 shop_consent = st.checkbox("I agree that my shop details and phone number are displayed to customers for business and orders in accordance with NDPA.")
                 
                 if st.button("🚀 Complete Registration & Enter", type="primary", use_container_width=True):
@@ -360,7 +377,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         st.image(generate_qr(direct_shop_url), width=160, caption=f"Scan for {shop['name']}")
 
 # ====================================================
-# VISNING 3: BUDE & KURÉR (MED NDPA SAMTYKKE)
+# VISNING 3: BUDE & KURÉR
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
     if not st.session_state.logged_courier:
@@ -381,7 +398,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                         st.error("Invalid phone or PIN.")
         else:
             st.markdown("### 📝 Register as Verified Dispatch Rider")
-            st.caption("To prevent fraud and protect stores, all riders must upload a valid ID card for admin verification.")
+            st.caption("To prevent fraud, all riders must upload a valid ID card for admin verification.")
             with st.container(border=True):
                 r_name = st.text_input("Rider / Company Full Name *", placeholder="e.g. Ibrahim Babatunde")
                 r_phone_new = st.text_input("Phone Number (WhatsApp) *", placeholder="080...")
@@ -394,24 +411,19 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                 if id_file:
                     st.image(id_file, width=220, caption="Uploaded ID Preview")
                 
-                # NDPA Samtykkeboks for bude
-                rider_consent = st.checkbox("I consent to upload my ID solely for verification under Nigeria Data Protection Act (NDPA). I understand I can request profile deletion anytime.")
+                rider_consent = st.checkbox("I consent to upload my ID solely for verification under NDPA.")
                 
                 if st.button("🚀 Submit Profile for Verification", type="primary", use_container_width=True):
                     if not r_name or not r_phone_new or not r_pin_new or len(r_pin_new) != 4 or not id_file:
-                        st.error("Please fill in all details, 4-digit PIN, and upload your ID card.")
+                        st.error("Please fill all details and upload ID card.")
                     elif not rider_consent:
-                        st.error("Please acknowledge the data consent to register.")
+                        st.error("Please acknowledge data consent.")
                     else:
                         id_base64 = convert_to_base64_img(id_file, target_size=(600, 400))
                         r_data = {
-                            "name": r_name.strip(),
-                            "phone": r_phone_new.strip(),
-                            "pin": r_pin_new.strip(),
-                            "area": r_area,
-                            "vehicle": vehicle,
-                            "id_card_img": id_base64,
-                            "is_approved": False
+                            "name": r_name.strip(), "phone": r_phone_new.strip(),
+                            "pin": r_pin_new.strip(), "area": r_area, "vehicle": vehicle,
+                            "id_card_img": id_base64, "is_approved": False
                         }
                         ins = supabase.table("couriers").insert(r_data).execute()
                         if ins.data:
@@ -434,8 +446,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
         
         if not rider.get("is_approved", False):
             st.warning("⏳ **Account Under Review (Pending Verification)**")
-            st.info("Your ID document has been submitted. For safety reasons, our local coordinator in Lagos must review and verify your identity before you can see or accept delivery jobs.")
-            st.caption("You will receive a WhatsApp message once your profile is approved.")
+            st.info("Your ID document has been submitted. Our local coordinator must verify your identity before you can take delivery jobs.")
         else:
             st.success("🛡️ **Verified Dispatch Rider (Approved)**")
             
@@ -443,77 +454,111 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
             my_jobs = supabase.table("orders").select("*").eq("courier_id", rider["id"]).neq("status", "delivered").order("id", desc=True).execute().data or []
             
             if not my_jobs:
-                st.info("You don't have any active delivery runs right now.")
+                st.info("No active delivery runs right now.")
             else:
                 for job in my_jobs:
                     with st.container(border=True):
                         st.markdown(f"**Order #{job['id']} — {job['product']}**")
-                        st.markdown(f"🏪 **Pickup:** {job['shop']} ({job['pickup_location']}) — 📞 `{job['shop_phone']}`")
-                        st.markdown(f"🎯 **Drop-off:** {job['customer_name']} ({job['customer_area']}) — 📞 `{job['customer_phone']}`")
+                        st.markdown(f"🏪 **Pickup:** {job['shop']} — 📞 `{job['shop_phone']}`")
+                        st.markdown(f"🎯 **Drop-off:** {job['customer_name']} — 📞 `{job['customer_phone']}`")
                         st.markdown(f"📍 **Address:** {job['delivery_address']}")
-                        st.markdown(f"💵 **Collect from Customer:** ₦{job['item_price'] + job['delivery_fee']:,} *(Your pay: ₦{job['rider_payout']:,})*")
-                        st.caption(f"Status: **{job['status'].upper()}**")
+                        st.markdown(f"💵 **Collect:** ₦{job['item_price'] + job['delivery_fee']:,} *(Your pay: ₦{job['rider_payout']:,})*")
                         
-                        wa_pickup = make_wa_link(job['shop_phone'], f"Hello {job['shop']}, I am verified rider {rider['name']}. I am coming to pick up Order #{job['id']}.")
-                        wa_cust = make_wa_link(job['customer_phone'], f"Hello {job['customer_name']}, I am verified rider {rider['name']} delivering your {job['product']}.")
+                        wa_pickup = make_wa_link(job['shop_phone'], f"Hello {job['shop']}, rider {rider['name']} picking up Order #{job['id']}.")
+                        wa_cust = make_wa_link(job['customer_phone'], f"Hello {job['customer_name']}, rider {rider['name']} delivering your {job['product']}.")
                         
                         cw1, cw2 = st.columns(2)
                         with cw1:
-                            st.link_button("💬 WhatsApp Shop", wa_pickup, use_container_width=True)
+                            st.link_button("💬 WA Shop", wa_pickup, use_container_width=True)
                         with cw2:
-                            st.link_button("💬 WhatsApp Customer", wa_cust, use_container_width=True)
+                            st.link_button("💬 WA Customer", wa_cust, use_container_width=True)
                             
                         cb1, cb2 = st.columns(2)
                         with cb1:
                             if job["status"] == "accepted":
-                                if st.button("📦 Mark as Picked Up", key=f"pk_{job['id']}", use_container_width=True):
+                                if st.button("📦 Mark Picked Up", key=f"pk_{job['id']}", use_container_width=True):
                                     supabase.table("orders").update({"status": "picked_up"}).eq("id", job["id"]).execute()
                                     st.rerun()
                         with cb2:
-                            if st.button("✅ Mark as Delivered", key=f"dl_{job['id']}", type="primary", use_container_width=True):
+                            if st.button("✅ Mark Delivered", key=f"dl_{job['id']}", type="primary", use_container_width=True):
                                 supabase.table("orders").update({"status": "delivered"}).eq("id", job["id"]).execute()
-                                st.success(f"Delivery completed! ₦{job['rider_payout']:,} credited to your summary.")
                                 st.rerun()
 
             st.markdown("---")
             st.markdown("#### ⚡ Available Delivery Jobs Nearby")
             open_jobs = supabase.table("orders").select("*").eq("status", "pending").order("id", desc=True).execute().data or []
-            
             if not open_jobs:
-                st.write("No pending delivery jobs right now. Check back shortly!")
+                st.write("No pending delivery jobs right now.")
             else:
                 for ojob in open_jobs:
                     with st.container(border=True):
                         st.markdown(f"**{ojob['product']}** (₦{ojob['item_price']:,})")
                         st.markdown(f"📍 **Pickup:** {ojob['shop']} — {ojob['pickup_location']}")
                         st.markdown(f"🎯 **Drop-off Area:** {ojob['customer_area']}")
-                        st.markdown(f"💵 **Your Payout:** **₦{ojob['rider_payout']:,}** *(Total fee: ₦{ojob['delivery_fee']:,})*")
-                        
-                        if st.button("🛵 Accept Delivery Job", key=f"acc_{ojob['id']}", type="primary", use_container_width=True):
+                        st.markdown(f"💵 **Your Payout:** **₦{ojob['rider_payout']:,}**")
+                        if st.button("🛵 Accept Job", key=f"acc_{ojob['id']}", type="primary", use_container_width=True):
                             supabase.table("orders").update({
-                                "status": "accepted",
-                                "courier_id": rider["id"],
-                                "courier_name": rider["name"]
+                                "status": "accepted", "courier_id": rider["id"], "courier_name": rider["name"]
                             }).eq("id", ojob["id"]).execute()
                             st.rerun()
 
 # ====================================================
-# VISNING 4: PLATFORM SUPER ADMIN
+# VISNING 4: BRUGER-SUPPORT & FEEDBACK PORTAL
+# ====================================================
+elif st.session_state.current_view == "💬 Support":
+    st.markdown("### 💬 User Support & Helpdesk")
+    st.caption("Need help, forgotten PIN, or have a suggestion? Send a direct message to our coordinator team.")
+    
+    # Automatisk forudfyldning hvis brugeren er logget ind
+    default_name = ""
+    default_phone = ""
+    user_category = "Customer"
+    
+    if st.session_state.logged_shop:
+        default_name = st.session_state.logged_shop["name"]
+        default_phone = st.session_state.logged_shop["phone"]
+        user_category = "Store Owner"
+    elif st.session_state.logged_courier:
+        default_name = st.session_state.logged_courier["name"]
+        default_phone = st.session_state.logged_courier["phone"]
+        user_category = "Courier / Rider"
+        
+    with st.container(border=True):
+        u_name = st.text_input("Your Name / Business Name *", value=default_name)
+        u_phone = st.text_input("WhatsApp / Phone Number *", value=default_phone)
+        u_role = st.selectbox("I am a:", ["Store Owner", "Courier / Rider", "Customer", "Other"], index=["Store Owner", "Courier / Rider", "Customer", "Other"].index(user_category) if user_category in ["Store Owner", "Courier / Rider", "Customer"] else 0)
+        u_subject = st.selectbox("Topic / Subject *", ["Forgotten PIN", "Account Verification", "Order Issue", "Payment Query", "General Suggestion / Feedback"])
+        u_message = st.text_area("Your Message / Question *", placeholder="Describe your issue or inquiry here...")
+        
+        if st.button("📨 Send Message to Admin", type="primary", use_container_width=True):
+            if not u_name or not u_phone or not u_message:
+                st.error("Please fill in your name, phone, and message.")
+            else:
+                msg_data = {
+                    "sender_name": u_name.strip(),
+                    "sender_phone": u_phone.strip(),
+                    "user_type": u_role,
+                    "subject": u_subject,
+                    "message": u_message.strip(),
+                    "status": "open"
+                }
+                supabase.table("support_messages").insert(msg_data).execute()
+                st.success("✅ Your message has been sent to the admin team! We will contact you on WhatsApp shortly.")
+
+# ====================================================
+# VISNING 5: PLATFORM SUPER ADMIN (INKL. BESKED-INDBAKKE)
 # ====================================================
 elif st.session_state.current_view == "🛡️ Platform Admin":
     st.markdown("### 🛡️ Platform Super Admin")
     
     if not st.session_state.admin_logged_in:
-        st.caption("Enter Super Admin PIN to manage database records, shops, and couriers.")
         admin_pass = st.text_input("Admin PIN", type="password", placeholder="Master key")
-        
         if st.button("Unlock Admin Panel", type="primary"):
             if admin_pass == "lagos2026":
                 st.session_state.admin_logged_in = True
                 st.rerun()
             else:
-                st.error("Incorrect Admin PIN! (Default is: lagos2026)")
-                
+                st.error("Incorrect Admin PIN!")
     else:
         c_a1, c_a2 = st.columns([3, 1])
         with c_a1:
@@ -525,45 +570,55 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
         st.markdown("---")
         
+        # SØGNING
         st.markdown("#### 🔍 Quick Lookup (Forgotten PIN / Support)")
-        search_query = st.text_input("Search by phone number or name (Store or Rider):", placeholder="e.g. 08012345678 or Ibrahim")
-        
+        search_query = st.text_input("Search by phone number or name:", placeholder="e.g. 08012345678")
         if search_query.strip():
             sq = search_query.strip().lower()
             clean_sq = re.sub(r'[^0-9]', '', sq)
             
             all_shops_lookup = supabase.table("shops").select("*").execute().data or []
             matched_shops = [s for s in all_shops_lookup if (sq in s["name"].lower()) or (clean_sq and clean_sq in s["phone"])]
-            
             all_couriers_lookup = supabase.table("couriers").select("*").execute().data or []
             matched_couriers = [c for c in all_couriers_lookup if (sq in c["name"].lower()) or (clean_sq and clean_sq in c["phone"])]
             
-            if not matched_shops and not matched_couriers:
-                st.warning(f"No shop or courier found matching '{search_query}'.")
-            else:
-                for s in matched_shops:
-                    with st.container(border=True):
-                        st.markdown(f"🏪 **STORE: {s['name']}**")
-                        st.markdown(f"📞 **Phone:** `{s['phone']}` | 🔑 **PIN:** `{s['pin']}`")
-                        wa_pin_msg = f"Hello {s['name']}! Your login PIN for Lagos Local Commerce is: {s['pin']}."
-                        st.link_button(f"💬 Send PIN on WhatsApp", make_wa_link(s['phone'], wa_pin_msg), use_container_width=True)
+            for s in matched_shops:
+                with st.container(border=True):
+                    st.markdown(f"🏪 **STORE: {s['name']}** | 📞 `{s['phone']}` | 🔑 PIN: `{s['pin']}`")
+                    st.link_button("💬 Send PIN on WhatsApp", make_wa_link(s['phone'], f"Hello {s['name']}! Your PIN is: {s['pin']}."), use_container_width=True)
+            for c in matched_couriers:
+                with st.container(border=True):
+                    st.markdown(f"🛵 **COURIER: {c['name']}** | 📞 `{c['phone']}` | 🔑 PIN: `{c['pin']}`")
+                    st.link_button("💬 Send PIN on WhatsApp", make_wa_link(c['phone'], f"Hello {c['name']}! Your PIN is: {c['pin']}."), use_container_width=True)
 
-                for c in matched_couriers:
-                    with st.container(border=True):
-                        st.markdown(f"🛵 **COURIER: {c['name']}**")
-                        st.markdown(f"📞 **Phone:** `{c['phone']}` | 🔑 **PIN:** `{c['pin']}` | Status: **{'✅ Approved' if c.get('is_approved') else '⏳ Pending'}**")
-                        wa_rider_pin = f"Hello {c['name']}! Your rider PIN for Lagos Local Commerce is: {c['pin']}."
-                        st.link_button(f"💬 Send PIN on WhatsApp", make_wa_link(c['phone'], wa_rider_pin), use_container_width=True)
-                        
         st.markdown("---")
 
-        admin_tabs = st.tabs(["🛵 Riders Verification & Management", "🏪 All Stores", "📦 All Orders", "🔥 All Offers"])
+        admin_tabs = st.tabs(["📬 Messages & Support", "🛵 Riders Verification", "🏪 All Stores", "📦 All Orders", "🔥 All Offers"])
 
+        # --- FANE 0: SUPPORT BESKEDER ---
         with admin_tabs[0]:
-            st.markdown("#### Couriers & Identity Verification")
+            st.markdown("#### Support Inbox")
+            msgs = supabase.table("support_messages").select("*").order("id", desc=True).execute().data or []
+            if not msgs:
+                st.info("No incoming messages right now.")
+            for m in msgs:
+                with st.container(border=True):
+                    col_m1, col_m2 = st.columns([3, 1])
+                    with col_m1:
+                        st.markdown(f"**{m['subject']}** — From: `{m['sender_name']}` ({m['user_type']})")
+                        st.write(m['message'])
+                        st.caption(f"Phone: `{m['sender_phone']}` • Status: **{m['status']}**")
+                    with col_m2:
+                        wa_reply = make_wa_link(m['sender_phone'], f"Hello {m['sender_name']}, regarding your support message '{m['subject']}': ")
+                        st.link_button("💬 Reply WhatsApp", wa_reply, use_container_width=True)
+                        if st.button("🗑️ Delete", key=f"del_msg_{m['id']}", type="secondary", use_container_width=True):
+                            supabase.table("support_messages").delete().eq("id", m["id"]).execute()
+                            st.rerun()
+
+        # --- FANE 1: KURIER VERIFIKATION ---
+        with admin_tabs[1]:
+            st.markdown("#### Couriers Verification")
             all_couriers = supabase.table("couriers").select("*").order("id", desc=True).execute().data or []
-            if not all_couriers:
-                st.info("No couriers registered yet.")
             for c in all_couriers:
                 with st.container(border=True):
                     is_appr = c.get("is_approved", False)
@@ -581,56 +636,48 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                 supabase.table("couriers").update({"is_approved": True}).eq("id", c["id"]).execute()
                                 st.rerun()
                         else:
-                            if st.button("⛔ Revoke Approval", key=f"rev_{c['id']}", use_container_width=True):
+                            if st.button("⛔ Revoke", key=f"rev_{c['id']}", use_container_width=True):
                                 supabase.table("couriers").update({"is_approved": False}).eq("id", c["id"]).execute()
                                 st.rerun()
-                                
-                        if st.button("🗑️ Delete Rider", key=f"adm_del_c_{c['id']}", type="secondary", use_container_width=True):
+                        if st.button("🗑️ Delete", key=f"adm_del_c_{c['id']}", type="secondary", use_container_width=True):
                             supabase.table("couriers").delete().eq("id", c["id"]).execute()
                             st.rerun()
-                            
                     if c.get("id_card_img"):
-                        with st.expander("🪪 View Uploaded ID Document"):
-                            st.image(c["id_card_img"], width=300, caption=f"ID Document: {c['name']}")
-                    else:
-                        st.caption("*(No ID document uploaded)*")
+                        with st.expander("🪪 View ID"):
+                            st.image(c["id_card_img"], width=300)
 
-        with admin_tabs[1]:
+        # --- FANE 2: BUTIKKER ---
+        with admin_tabs[2]:
             st.markdown("#### Registered Shops")
             all_shops = supabase.table("shops").select("*").order("id", desc=True).execute().data or []
-            if not all_shops:
-                st.info("No shops found.")
             for s in all_shops:
                 with st.container(border=True):
                     col_s1, col_s2 = st.columns([3, 1])
                     with col_s1:
-                        st.markdown(f"**{s['name']}**")
-                        st.caption(f"Phone: `{s['phone']}` • PIN: `{s['pin']}` • Area: `{s['area']}`")
+                        st.markdown(f"**{s['name']}** (📞 `{s['phone']}`) — PIN: `{s['pin']}`")
                     with col_s2:
                         if st.button("🗑️ Delete", key=f"adm_del_shop_{s['id']}", type="secondary"):
                             supabase.table("offers").delete().eq("shop", s["name"]).execute()
                             supabase.table("shops").delete().eq("id", s["id"]).execute()
-                            st.success(f"Deleted {s['name']}")
                             st.rerun()
 
-        with admin_tabs[2]:
-            st.markdown("#### All Orders / Deliveries")
+        # --- FANE 3: ORDRER ---
+        with admin_tabs[3]:
+            st.markdown("#### All Orders")
             all_orders = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
-            if not all_orders:
-                st.info("No orders found.")
             for o in all_orders:
                 with st.container(border=True):
                     col_o1, col_o2 = st.columns([3, 1])
                     with col_o1:
                         st.markdown(f"**Order #{o['id']}** — {o['product']} (₦{o['item_price']:,})")
                         st.caption(f"Customer: `{o['customer_name']}` ({o['customer_phone']}) • Status: **{o['status']}**")
-                        st.caption(f"From: `{o['shop']}` ➡️ To: `{o['delivery_address']}`")
                     with col_o2:
                         if st.button("🗑️ Delete", key=f"adm_del_ord_{o['id']}"):
                             supabase.table("orders").delete().eq("id", o["id"]).execute()
                             st.rerun()
 
-        with admin_tabs[3]:
+        # --- FANE 4: TILBUD ---
+        with admin_tabs[4]:
             st.markdown("#### All Product Deals")
             all_deals = supabase.table("offers").select("*").order("id", desc=True).execute().data or []
             for d in all_deals:
@@ -644,7 +691,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             st.rerun()
 
 # ====================================================
-# GLOBAL PRIVACY FOOTER (NDPA COMPLIANCE NOTICE)
+# GLOBAL PRIVACY FOOTER
 # ====================================================
 st.markdown("---")
 st.markdown("""
