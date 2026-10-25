@@ -90,6 +90,14 @@ st.markdown(f"""
     if st.button(current_label, key="theme_toggle_btn"):
         st.session_state.dark_mode = not st.session_state.dark_mode
         st.rerun()
+        /* Låser knap-pladsen fast, så den ikke hopper eller forsvinder ved re-render */
+    .stButton {
+        min-height: 45px;
+    }
+    div[data-testid="stButton"] button {
+        width: 100% !important;
+        transition: none !important;
+    }
 
     /* Produktgrid */
     .grid-img-box {{
