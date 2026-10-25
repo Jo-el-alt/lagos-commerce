@@ -6,6 +6,7 @@ import urllib.parse
 import qrcode
 import io
 import base64
+import re
 
 # Mobil opsætning
 st.set_page_config(
@@ -48,6 +49,11 @@ def get_supabase() -> Client:
 supabase = get_supabase()
 
 # --- HJÆLPEFUNKTIONER ---
+def make_slug(name: str) -> str:
+    """Laver et pænt url-slug af et butiksnavn (f.eks. 'Mama Joy & Sons' -> 'mama-joy-sons')."""
+    clean = re.sub(r'[^a-zA-Z0-9\s-]', '', name).strip().lower()
+    return re.sub(r'[\s-]+', '-', clean)
+
 def convert_to_base64_img(uploaded_file, target_size=(500, 375)):
     try:
         img = Image.open(uploaded_file)
@@ -85,15 +91,13 @@ def calculate_hours_left(expires_at_str: str) -> int:
     except Exception:
         return 48
 
-# Tjek om kunden kommer ind via et QR-kode link (f.eks. ?shop=sweet-debbie)
+# Tjek om kunden kommer ind via et QR-kode link
 query_params = st.query_params
 active_shop_slug = query_params.get("shop", None)
 
-# Styr visning
 if "current_view" not in st.session_state:
     st.session_state.current_view = "🛒 Browse Deals"
 
-# Logget ind sælger
 if "logged_shop" not in st.session_state:
     st.session_state.logged_shop = None
 
@@ -105,13 +109,10 @@ current_tab = st.radio("Nav", views, index=views.index(st.session_state.current_
 st.session_state.current_view = current_tab
 
 # ====================================================
-# VISNING 1: KUNDEPORTAL (MED QR-KODE FILTER)
+# VISNING 1: KUNDEPORTAL
 # ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
-    
-    # HVIS KUNDEN SCANNEDE EN QR-KODE:
     if active_shop_slug:
-        # Hent butiksnavn
         shop_info = supabase.table("shops").select("*").eq("slug", active_shop_slug).execute()
         shop_name = shop_info.data[0]["name"] if shop_info.data else active_shop_slug
         
@@ -123,9 +124,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
         now_iso = datetime.now(timezone.utc).isoformat()
         res = supabase.table("offers").select("*").eq("shop", shop_name).gt("expires_at", now_iso).order("id", desc=True).execute()
         offers = res.data or []
-        
     else:
-        # STANDARD FORSIDE:
         c1, c2 = st.columns(2)
         with c1:
             sel_area = st.selectbox("Market / Area", ["All Areas", "Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
@@ -181,32 +180,77 @@ if st.session_state.current_view == "🛒 Browse Deals":
                 st.button("Item Unavailable", disabled=True, use_container_width=True)
 
 # ====================================================
-# VISNING 2: BUTIKSEJER ADMIN (MED PIN-KODE LOGIN)
+# VISNING 2: BUTIKSEJER ADMIN & OPRETTELSE
 # ====================================================
 elif st.session_state.current_view == "🏪 Store Owner Admin":
     
-    # 1. HVIS IKKE LOGGET IND: VIS LOGIN FORMULAR
+    # 1. IKKE LOGGET IND: VÆLG MELLEM LOGIN ELLER OPRET NY BUTIK
     if not st.session_state.logged_shop:
-        st.markdown("### 🔒 Store Owner Login")
-        st.caption("Sign in with your phone number and 4-digit PIN to manage your offers.")
+        auth_mode = st.radio("Choose action:", ["🔑 Log In to Existing Store", "📝 Register New Store / Stall"], horizontal=True)
         
-        with st.container(border=True):
-            phone_input = st.text_input("WhatsApp / Phone Number", placeholder="e.g., 08012345678", value="08012345678")
-            pin_input = st.text_input("4-Digit PIN", type="password", placeholder="1234", value="1234")
-            
-            if st.button("🔑 Log In", type="primary", use_container_width=True):
-                # Slå butikken op i databasen
-                clean_phone = phone_input.strip()
-                res = supabase.table("shops").select("*").eq("phone", clean_phone).eq("pin", pin_input.strip()).execute()
+        # --- LOGIN FORM ---
+        if auth_mode == "🔑 Log In to Existing Store":
+            st.markdown("### Store Owner Login")
+            with st.container(border=True):
+                phone_input = st.text_input("WhatsApp / Phone Number", placeholder="08012345678", value="")
+                pin_input = st.text_input("4-Digit PIN", type="password", placeholder="1234", value="")
                 
-                if res.data:
-                    st.session_state.logged_shop = res.data[0]
-                    st.success(f"Welcome back, {res.data[0]['name']}!")
-                    st.rerun()
-                else:
-                    st.error("Invalid phone number or PIN. Try phone: 08012345678 and PIN: 1234")
+                if st.button("Log In Now", type="primary", use_container_width=True):
+                    clean_phone = phone_input.strip()
+                    res = supabase.table("shops").select("*").eq("phone", clean_phone).eq("pin", pin_input.strip()).execute()
+                    if res.data:
+                        st.session_state.logged_shop = res.data[0]
+                        st.success(f"Welcome back, {res.data[0]['name']}!")
+                        st.rerun()
+                    else:
+                        st.error("Incorrect phone number or PIN. Check details or register below.")
 
-    # 2. HVIS LOGGET IND: VIS BUTIKKENS KONTROLPANEL
+        # --- OPRETTELSE AF NY BUTIK ---
+        else:
+            st.markdown("### 📝 Register New Store or Stall")
+            st.caption("Sign up in 30 seconds to start posting 48-hour deals and get your store QR code.")
+            
+            with st.container(border=True):
+                new_shop_name = st.text_input("Store or Stall Name *", placeholder="e.g. Mama Funke Provisions")
+                new_phone = st.text_input("WhatsApp Number *", placeholder="08012345678")
+                new_pin = st.text_input("Create a 4-Digit Secret PIN *", type="password", max_chars=4, placeholder="4 digits e.g. 2468")
+                new_area = st.selectbox("Market / Area *", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
+                new_cat = st.selectbox("Main Category *", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
+                
+                if st.button("🚀 Complete Registration & Enter", type="primary", use_container_width=True):
+                    if not new_shop_name or not new_phone or not new_pin:
+                        st.error("Please fill in Store Name, WhatsApp Number, and 4-Digit PIN.")
+                    elif len(new_pin) != 4:
+                        st.error("Your PIN must be exactly 4 digits.")
+                    else:
+                        clean_phone = new_phone.strip()
+                        # Tjek om nummeret allerede er registreret
+                        existing = supabase.table("shops").select("id").eq("phone", clean_phone).execute()
+                        if existing.data:
+                            st.error("This phone number is already registered! Please switch to 'Log In'.")
+                        else:
+                            base_slug = make_slug(new_shop_name)
+                            unique_slug = f"{base_slug}-{clean_phone[-4:]}" # Garanterer unikt slug
+                            
+                            shop_record = {
+                                "slug": unique_slug,
+                                "name": new_shop_name.strip(),
+                                "phone": clean_phone,
+                                "pin": new_pin.strip(),
+                                "area": new_area,
+                                "category": new_cat
+                            }
+                            
+                            try:
+                                ins = supabase.table("shops").insert(shop_record).execute()
+                                if ins.data:
+                                    st.session_state.logged_shop = ins.data[0]
+                                    st.success("🎉 Shop registered successfully! Welcome aboard.")
+                                    st.rerun()
+                            except Exception as e:
+                                st.error(f"Error registering shop: {e}")
+
+    # 2. LOGGET IND: BUTIKKENS KONTROLPANEL
     else:
         shop = st.session_state.logged_shop
         
@@ -221,13 +265,13 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
 
         st.markdown("---")
         
-        # VIS BUTIKKENS EGNE TILBUD
+        # AKTIVE TILBUD
         st.markdown("#### Your Active Deals")
         my_offers_res = supabase.table("offers").select("*").eq("shop", shop["name"]).order("id", desc=True).execute()
         my_offers = my_offers_res.data or []
         
         if not my_offers:
-            st.write("You don't have any deals posted right now.")
+            st.info("You haven't posted any active deals yet. Post your first one below!")
         else:
             for deal in my_offers:
                 with st.container(border=True):
@@ -258,10 +302,10 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         # OPRET NYT TILBUD
         st.markdown("#### Post a New 48-Hour Deal")
         is_mobile = st.checkbox("This is a mobile stall (moves location daily)", value=True)
-        location_note = st.text_input("Today's Location / Address *", value="Near Tejuosho main entrance today")
+        location_note = st.text_input("Today's Location / Address *", value="At our shop / market stall")
         
-        product = st.text_input("What are you selling? *", value="Fresh Homemade Abacha with Coconut")
-        price = st.number_input("Deal Price in Naira (₦) *", min_value=50, value=200, step=50)
+        product = st.text_input("What are you selling? *", placeholder="e.g. 5L Cooking Oil, Ankara Fabric, Fresh Yams")
+        price = st.number_input("Deal Price in Naira (₦) *", min_value=50, value=1000, step=50)
         
         uploaded_file = st.file_uploader("Product Photo (Optional)", type=["jpg", "jpeg", "png", "webp"])
         if uploaded_file is not None:
@@ -269,12 +313,12 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
             
         ai_language = st.radio("Ad tone & language:", ["Nigerian Pidgin (Recommended)", "Standard English"], horizontal=True)
         if ai_language == "Nigerian Pidgin (Recommended)":
-            default_copy = f"🔥 Sweet deal for {shop['area']}! High quality {product} now going for just ₦{price:,}. Very limited quantity available today. Chat me sharp on WhatsApp before e finish!"
+            default_copy = f"🔥 Sweet deal for {shop['area']}! High quality {product} now going for just ₦{price:,}. Limited stock today. Chat me sharp on WhatsApp before e finish!"
         else:
-            default_copy = f"🥗 Fresh homemade {product} for only ₦{price:,} today in {shop['area']}! Bulk orders available on demand. Chat with us on WhatsApp to order!"
+            default_copy = f"🥗 Fresh and authentic {product} available today at {shop['name']} for just ₦{price:,}! Message us on WhatsApp to order directly."
         desc = st.text_area("Ad Description:", value=default_copy, height=80)
         
-        if st.button("🚀 Publish to Lagos Commerce", type="primary", use_container_width=True):
+        if st.button("🚀 Publish Deal Now", type="primary", use_container_width=True):
             if not product:
                 st.error("Please enter a product name.")
             else:
@@ -298,9 +342,8 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
 
         st.markdown("---")
         st.markdown("### Your Shop's Official QR Code")
-        st.caption("When customers scan this code, they will ONLY see your offers:")
+        st.caption("Print and stick this at your stall. Customers who scan it will ONLY see your offers:")
         
-        # Genererer det rigtige link med shop-slug parameter
         direct_shop_url = f"https://lagos-commerce-pzru6e8tsftfmt72gbjnhz.streamlit.app/?shop={shop['slug']}"
         qr_img = generate_qr(direct_shop_url)
         st.image(qr_img, width=170, caption=f"Scan to view {shop['name']}")
