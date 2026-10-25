@@ -96,6 +96,13 @@ st.markdown("""
         display: inline-block;
         margin-bottom: 6px;
     }
+    .broadcast-box {
+        background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+        border-left: 5px solid #ff9800;
+        padding: 12px 14px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+    }
     .disclaimer-box {
         font-size: 0.8rem;
         color: #666;
@@ -195,17 +202,12 @@ def generate_ai_ad_copy(product_name: str, price_val: int, shop_name: str, marke
         return f"✨ Premium quality {product_name} now available at {shop_name} ({market_area}) for only ₦{price_val:,}! Send a WhatsApp message to order."
     
     prompt = f"""
-    You are an expert market copywriter in Lagos, Nigeria. Write a high-converting, short ad description (maximum 3 sentences) for a local marketplace.
+    You are an expert market copywriter in Lagos, Nigeria. Write a short, high-converting ad description (maximum 3 sentences).
     Product: {product_name}
     Price: ₦{price_val:,}
     Store Name: {shop_name}
     Market Area: {market_area}
     Style requested: {tone_style}
-
-    Instructions:
-    - If 'Nigerian Pidgin', write natural, authentic street Nigerian Pidgin with authentic Lagos slang (omo, sharp sharp, don land, chop better life).
-    - If 'Standard English', write clean, trustworthy commercial copy.
-    - If 'Urgent Flash Deal', focus heavily on 48-hour FOMO, limited quantity, and chat immediately on WhatsApp.
     Output ONLY the ad copy text, no extra explanations or quotation marks.
     """
     try:
@@ -220,6 +222,15 @@ def generate_ai_ad_copy(product_name: str, price_val: int, shop_name: str, marke
         return response.choices[0].message.content.strip()
     except Exception:
         return f"🔥 Better deal on {product_name} at {shop_name} ({market_area}) for ₦{price_val:,}! Chat sharp on WhatsApp before e finish!"
+
+def render_broadcast_alerts(target: str):
+    """Viser aktive broadcast-beskeder for en målgruppe"""
+    try:
+        notices = supabase.table("broadcast_messages").select("*").eq("is_active", True).in_("target_audience", [target, "All"]).order("id", desc=True).execute().data or []
+        for n in notices:
+            st.info(f"**{n['notice_type']} — {n['title']}**\n\n{n['message']}")
+    except Exception:
+        pass
 
 # URL Parametre & Sessions
 query_params = st.query_params
@@ -298,6 +309,9 @@ def show_offer_modal(item):
 # VISNING 1: KUNDEPORTAL (2-KOLONNE GRID)
 # ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
+    # Vis globale meddelelser/events til alle
+    render_broadcast_alerts("All")
+    
     if active_shop_slug:
         shop_info = supabase.table("shops").select("*").eq("slug", active_shop_slug).execute()
         shop_name = shop_info.data[0]["name"] if shop_info.data else active_shop_slug
@@ -384,9 +398,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 new_area = st.selectbox("Market / Area *", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
                 new_cat = st.selectbox("Main Category *", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
                 
-                # HENVISNINGSFELT (REFERRAL)
                 referred_code = st.text_input("Referred by another Store ID? (Optional)", placeholder="e.g. SHOP-1002")
-                
                 shop_consent = st.checkbox("I accept Platform Terms & Disclaimer: Lagos Local Commerce is an intermediary discovery tool.")
                 
                 if st.button("🚀 Complete Registration & Enter", type="primary", use_container_width=True):
@@ -402,14 +414,12 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                         else:
                             unique_slug = f"{make_slug(new_shop_name)}-{clean_phone[-4:]}"
                             new_member_code = generate_member_code("SHOP")
-                            
                             clean_ref = referred_code.strip().upper() if referred_code else None
                             
                             shop_record = {
                                 "slug": unique_slug, "name": new_shop_name.strip(), "phone": clean_phone,
                                 "pin": new_pin.strip(), "area": new_area, "category": new_cat,
-                                "member_id": new_member_code,
-                                "referred_by": clean_ref
+                                "member_id": new_member_code, "referred_by": clean_ref
                             }
                             ins = supabase.table("shops").insert(shop_record).execute()
                             if ins.data:
@@ -419,7 +429,9 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         shop = st.session_state.logged_shop
         member_id = shop.get("member_id") or f"SHOP-{1000 + shop.get('id', 1)}"
         
-        # Hent hvor mange denne butik har henvist
+        # Vis aktive beskeder til butikker
+        render_broadcast_alerts("Stores")
+        
         ref_count_res = supabase.table("shops").select("id").eq("referred_by", member_id).execute()
         referred_count = len(ref_count_res.data or [])
         
@@ -428,7 +440,6 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
             st.markdown(f"### 🏪 {shop['name']}")
             st.markdown(f'<div class="member-badge">🎟️ Store ID / Raffle No: {member_id}</div>', unsafe_allow_html=True)
             
-            # Vis referral status
             if referred_count >= 5:
                 st.markdown(f'<div class="referral-badge" style="background-color:#e8f5e9; color:#2e7d32; border-color:#c8e6c9;">🎯 Referral Target Met: {referred_count}/5 stores referred! (Qualified for Lucky Draw)</div>', unsafe_allow_html=True)
             else:
@@ -476,7 +487,6 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         price = st.number_input("Deal Price in Naira (₦) *", min_value=50, value=1000, step=50)
         uploaded_file = st.file_uploader("Photo (Optional)", type=["jpg", "jpeg", "png", "webp"])
         
-        # AI Generator
         st.markdown("##### ✨ AI Ad Copy Generator (GPT-6 Luna)")
         c_tone1, c_tone2 = st.columns([2, 1])
         with c_tone1:
@@ -583,6 +593,9 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
         rider = rider_res.data[0] if rider_res.data else st.session_state.logged_courier
         r_member_id = rider.get("member_id") or f"RIDER-{2000 + rider.get('id', 1)}"
         
+        # Vis aktive beskeder til kurerer
+        render_broadcast_alerts("Couriers")
+        
         c_hdr1, c_hdr2 = st.columns([3, 1])
         with c_hdr1:
             st.markdown(f"### 🛵 Rider: {rider['name']}")
@@ -605,7 +618,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
             my_jobs = supabase.table("orders").select("*").eq("courier_id", rider["id"]).neq("status", "delivered").order("id", desc=True).execute().data or []
             
             if not my_jobs:
-                st.info("No active delivery runs right now.")
+                st.info("You don't have any active delivery runs right now.")
             else:
                 for job in my_jobs:
                     with st.container(border=True):
@@ -696,7 +709,7 @@ elif st.session_state.current_view == "💬 Support":
                 st.success("✅ Message sent to the admin team! We will contact you on WhatsApp shortly.")
 
 # ====================================================
-# VISNING 5: PLATFORM SUPER ADMIN (INKL. REFERRALS & RAFFLE)
+# VISNING 5: PLATFORM SUPER ADMIN (MED BROADCASTS)
 # ====================================================
 elif st.session_state.current_view == "🛡️ Platform Admin":
     st.markdown("### 🛡️ Platform Super Admin")
@@ -720,16 +733,64 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
         st.markdown("---")
 
-        admin_tabs = st.tabs(["🤝 Referrals (5 Target)", "🚦 Subscriptions", "🎉 Lucky Draw", "📬 Messages", "🛵 Riders", "🏪 Stores", "📦 Orders", "🔥 Offers"])
+        admin_tabs = st.tabs(["📢 Broadcast Notices", "🤝 Referrals", "🚦 Subscriptions", "🎉 Lucky Draw", "📬 Messages", "🛵 Riders", "🏪 Stores", "📦 Orders", "🔥 Offers"])
 
-        # --- FANE 0: HENVISNINGER & 5-STORES MÅL ---
+        # --- FANE 0: BROADCAST BESKEDER ---
         with admin_tabs[0]:
-            st.markdown("#### 🤝 Store Referral Program (Target: 5 Referrals)")
-            st.caption("Stores that successfully refer 5 other stores enter the exclusive 1st-tier Lucky Draw.")
+            st.markdown("#### 📢 Platform Broadcast Messages & Reminders")
+            st.caption("Post live banners and reminders directly into the apps of Stores, Riders, or All Customers.")
             
+            with st.expander("➕ Create New Broadcast Message"):
+                b_target = st.selectbox("Send To Audience:", ["Stores", "Couriers", "All"])
+                b_type = st.selectbox("Notice Type / Badge:", ["🎉 Event / Raffle", "⏳ Referral Reminder", "⚠️ Important Notice", "📢 Platform Update"])
+                b_title = st.text_input("Notice Title *", placeholder="e.g. ₦50,000 Friday Market Raffle Draw!")
+                b_body = st.text_area("Notice Message *", placeholder="e.g. Remember to refer 5 stores with your ID before Friday 6PM to qualify for the first cash draw!")
+                
+                if st.button("🚀 Publish Broadcast Alert", type="primary"):
+                    if not b_title or not b_body:
+                        st.error("Please fill in title and message.")
+                    else:
+                        new_alert = {
+                            "target_audience": b_target,
+                            "notice_type": b_type,
+                            "title": b_title.strip(),
+                            "message": b_body.strip(),
+                            "is_active": True
+                        }
+                        supabase.table("broadcast_messages").insert(new_alert).execute()
+                        st.success("Broadcast message published live!")
+                        st.rerun()
+
+            st.markdown("##### Active Broadcasts")
+            broadcasts = supabase.table("broadcast_messages").select("*").order("id", desc=True).execute().data or []
+            if not broadcasts:
+                st.info("No active broadcast messages.")
+            else:
+                for b in broadcasts:
+                    with st.container(border=True):
+                        col_b1, col_b2 = st.columns([3, 1])
+                        with col_b1:
+                            st.markdown(f"**{b['notice_type']} — {b['title']}** (Audience: `{b['target_audience']}`)")
+                            st.write(b["message"])
+                            st.caption(f"Created: {b['created_at'][:10]} • Status: **{'🟢 Active' if b['is_active'] else '⚪ Disabled'}**")
+                        with col_b2:
+                            if b["is_active"]:
+                                if st.button("Turn Off", key=f"dis_{b['id']}", use_container_width=True):
+                                    supabase.table("broadcast_messages").update({"is_active": False}).eq("id", b["id"]).execute()
+                                    st.rerun()
+                            else:
+                                if st.button("Turn On", key=f"ena_{b['id']}", use_container_width=True):
+                                    supabase.table("broadcast_messages").update({"is_active": True}).eq("id", b["id"]).execute()
+                                    st.rerun()
+                            if st.button("🗑️ Delete", key=f"del_bc_{b['id']}", type="secondary", use_container_width=True):
+                                supabase.table("broadcast_messages").delete().eq("id", b["id"]).execute()
+                                st.rerun()
+
+        # --- FANE 1: HENVISNINGER ---
+        with admin_tabs[1]:
+            st.markdown("#### 🤝 Store Referral Program (Target: 5 Referrals)")
             all_shops = supabase.table("shops").select("*").execute().data or []
             
-            # Tæl henvisninger per butik
             referral_counts = {}
             for s in all_shops:
                 ref_by = s.get("referred_by")
@@ -761,17 +822,15 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 st.metric("⏳ Working Towards Target", f"{len(in_progress_stores)}")
                 
             st.markdown("---")
-            
-            # QUALIFIED LIST
             st.markdown("##### 🏆 Qualified Stores (5/5 Referrals Completed)")
             if not qualified_stores:
-                st.info("No store has reached the 5-referral milestone yet.")
+                st.info("No store has reached 5 referrals yet.")
             else:
                 for q in qualified_stores:
                     with st.container(border=True):
                         st.markdown(f"**{q['name']}** — 🎟️ `{q['id']}`")
                         st.success(f"✅ {q['count']} stores referred! (Qualified for Lucky Draw)")
-                        wa_ref_msg = f"Congratulations {q['name']}! You have successfully referred {q['count']} stores with your ID ({q['id']}). You are officially entered into our exclusive Lucky Draw!"
+                        wa_ref_msg = f"Congratulations {q['name']}! You have referred {q['count']} stores. You are officially entered into our exclusive Lucky Draw!"
                         st.link_button("💬 Congratulate on WhatsApp", make_wa_link(q['phone'], wa_ref_msg), use_container_width=True)
 
             st.markdown("##### ⏳ Active Progress (1 to 4 Referrals)")
@@ -785,8 +844,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         wa_encourage = f"Hello {p['name']}! You currently have {p['count']}/5 referrals for Lagos Local Commerce. Refer just {5 - p['count']} more store(s) with your ID ({p['id']}) to enter our Lucky Draw!"
                         st.link_button("💬 Send Progress WhatsApp", make_wa_link(p['phone'], wa_encourage), use_container_width=True)
 
-        # --- FANE 1: ABONNEMENTER & REGNSKAB ---
-        with admin_tabs[1]:
+        # --- FANE 2: ABONNEMENTER ---
+        with admin_tabs[2]:
             st.markdown("#### 🚦 Subscription Status & Fee Collection")
             bills = supabase.table("billing_records").select("*").order("id", desc=True).execute().data or []
             
@@ -806,7 +865,6 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 st.metric("🔴 Expired / Unpaid", f"{expired_count}")
                 
             st.markdown("---")
-            
             with st.expander("➕ Register New Subscription / Fee"):
                 all_couriers = supabase.table("couriers").select("*").execute().data or []
                 target_payer_type = st.radio("Bill to:", ["Store", "Courier"], horizontal=True)
@@ -883,18 +941,18 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                     st.success(f"Payment marked! Extended by {days_to_add} days.")
                                     st.rerun()
                                     
-                                wa_reminder = f"Hello {b['payer_name']}! Your {period.lower()} subscription for Lagos Local Commerce ({b.get('member_id')}) is currently due/expired. Please renew with our market coordinator to keep your deals active."
-                                st.link_button("💬 Send WhatsApp Reminder", make_wa_link(b['payer_phone'], wa_reminder), use_container_width=True)
+                                wa_reminder = f"Hello {b['payer_name']}! Your {period.lower()} subscription for Lagos Local Commerce ({b.get('member_id')}) is currently due/expired. Please renew with our coordinator."
+                                st.link_button("💬 WhatsApp Reminder", make_wa_link(b['payer_phone'], wa_reminder), use_container_width=True)
                             else:
-                                wa_receipt = f"Official Receipt: Hello {b['payer_name']}, payment confirmed for {period.lower()} access (₦{b['amount']:,}). Valid until {b.get('valid_until', '')[:10]}. Thank you!"
-                                st.link_button("🧾 Send WhatsApp Receipt", make_wa_link(b['payer_phone'], wa_receipt), use_container_width=True)
+                                wa_receipt = f"Official Receipt: Hello {b['payer_name']}, payment confirmed for {period.lower()} access (₦{b['amount']:,}). Valid until {b.get('valid_until', '')[:10]}."
+                                st.link_button("🧾 WhatsApp Receipt", make_wa_link(b['payer_phone'], wa_receipt), use_container_width=True)
                                 
                             if st.button("🗑️ Delete", key=f"del_b_{b['id']}", type="secondary", use_container_width=True):
                                 supabase.table("billing_records").delete().eq("id", b["id"]).execute()
                                 st.rerun()
 
-        # --- FANE 2: LODTRÆKNING (INKL. 5-REFERRAL POOL) ---
-        with admin_tabs[2]:
+        # --- FANE 3: LODTRÆKNING ---
+        with admin_tabs[3]:
             st.markdown("#### 🎉 Member Lucky Draw")
             draw_type = st.radio(
                 "Select Raffle Category:",
@@ -932,8 +990,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                     win_wa = make_wa_link(winner['phone'], f"Congratulations {winner['name']}! Your ID ({winner['id']}) has officially won the Lagos Local Commerce Lucky Draw!")
                     st.link_button("💬 Congratulate on WhatsApp", win_wa, use_container_width=True)
 
-        # --- FANE 3: SUPPORT BESKEDER ---
-        with admin_tabs[3]:
+        # --- FANE 4: SUPPORT BESKEDER ---
+        with admin_tabs[4]:
             st.markdown("#### Support Inbox")
             msgs = supabase.table("support_messages").select("*").order("id", desc=True).execute().data or []
             if not msgs:
@@ -952,8 +1010,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             supabase.table("support_messages").delete().eq("id", m["id"]).execute()
                             st.rerun()
 
-        # --- FANE 4: KURIER VERIFIKATION ---
-        with admin_tabs[4]:
+        # --- FANE 5: KURIER VERIFIKATION ---
+        with admin_tabs[5]:
             st.markdown("#### Couriers Verification")
             all_couriers = supabase.table("couriers").select("*").order("id", desc=True).execute().data or []
             for c in all_couriers:
@@ -984,8 +1042,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         with st.expander("🪪 View ID"):
                             st.image(c["id_card_img"], width=300)
 
-        # --- FANE 5: BUTIKKER ---
-        with admin_tabs[5]:
+        # --- FANE 6: BUTIKKER ---
+        with admin_tabs[6]:
             st.markdown("#### Registered Shops")
             for s in all_shops:
                 with st.container(border=True):
@@ -1001,8 +1059,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             supabase.table("shops").delete().eq("id", s["id"]).execute()
                             st.rerun()
 
-        # --- FANE 6: ORDRER ---
-        with admin_tabs[6]:
+        # --- FANE 7: ORDRER ---
+        with admin_tabs[7]:
             st.markdown("#### All Orders")
             all_orders = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
             for o in all_orders:
@@ -1016,8 +1074,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             supabase.table("orders").delete().eq("id", o["id"]).execute()
                             st.rerun()
 
-        # --- FANE 7: TILBUD ---
-        with admin_tabs[7]:
+        # --- FANE 8: TILBUD ---
+        with admin_tabs[8]:
             st.markdown("#### All Product Deals")
             all_deals = supabase.table("offers").select("*").order("id", desc=True).execute().data or []
             for d in all_deals:
