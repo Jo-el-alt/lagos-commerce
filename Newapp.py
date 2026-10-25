@@ -17,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS til grid, badges og ansvarsfraskrivelse
+# CSS styling
 st.markdown("""
 <style>
     .grid-img-box {
@@ -91,7 +91,6 @@ def make_slug(name: str) -> str:
     return re.sub(r'[\s-]+', '-', clean)
 
 def generate_member_code(prefix: str) -> str:
-    """Genererer f.eks. SHOP-5842 eller RIDER-9124 til identifikation og lodtrækning"""
     num = random.randint(1000, 9999)
     return f"{prefix}-{num}"
 
@@ -176,12 +175,10 @@ def show_offer_modal(item):
         
     st.markdown("---")
     
-    # 1. WhatsApp
     wa_msg = f"Hello {item['shop']}! I saw *{item['product']}* (₦{item['price']:,}) on Lagos Local Commerce. Is it available?"
     wa_url = make_wa_link(item["phone"], wa_msg)
     st.link_button("💬 Order Directly via WhatsApp", wa_url, use_container_width=True)
     
-    # 2. Kurér-bestilling
     st.markdown("#### 🛵 Or Order with Dispatch Delivery")
     with st.form(f"modal_order_form_{item['id']}"):
         cust_name = st.text_input("Your Full Name *", placeholder="e.g. Tunde Bakare")
@@ -190,7 +187,7 @@ def show_offer_modal(item):
         cust_addr = st.text_area("Full Address & Nearby Landmark *")
         st.markdown(f"**Total to Pay (Item + Delivery):** ₦{item['price'] + 1500:,}")
         
-        c_consent = st.checkbox("I agree to terms: Lagos Local Commerce acts solely as a listing & coordination platform. (NDPA Consent).", value=True)
+        c_consent = st.checkbox("I agree to terms: Platform acts solely as a discovery intermediary (NDPA Consent).", value=True)
         if st.form_submit_button("🚀 Confirm Dispatch Delivery", type="primary", use_container_width=True):
             if not cust_name or not cust_phone or not cust_addr or not c_consent:
                 st.error("Please fill all required delivery details and accept terms.")
@@ -296,7 +293,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 new_area = st.selectbox("Market / Area *", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
                 new_cat = st.selectbox("Main Category *", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
                 
-                shop_consent = st.checkbox("I accept the Platform Terms & Disclaimer: Lagos Local Commerce facilitates connections and is not liable for transactions or merchant goods.")
+                shop_consent = st.checkbox("I accept Platform Terms & Disclaimer: Lagos Local Commerce is an intermediary discovery tool.")
                 
                 if st.button("🚀 Complete Registration & Enter", type="primary", use_container_width=True):
                     if not new_shop_name or not new_phone or not new_pin or len(new_pin) != 4:
@@ -433,7 +430,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                 if id_file:
                     st.image(id_file, width=220, caption="Uploaded ID Preview")
                 
-                rider_consent = st.checkbox("I agree to terms: Riders operate as independent agents. Lagos Local Commerce is not liable for traffic violations, road incidents, or disputes.")
+                rider_consent = st.checkbox("I agree to terms: Riders operate as independent agents. Platform is not liable for traffic, loss, or transit issues.")
                 
                 if st.button("🚀 Submit Profile for Verification", type="primary", use_container_width=True):
                     if not r_name or not r_phone_new or not r_pin_new or len(r_pin_new) != 4 or not id_file:
@@ -534,7 +531,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
 # ====================================================
 elif st.session_state.current_view == "💬 Support":
     st.markdown("### 💬 User Support & Helpdesk")
-    st.caption("Need help, forgotten PIN, or have a suggestion? Send a direct message to our coordinator team.")
+    st.caption("Need help, billing inquiry, or forgotten PIN? Send a message to our coordinator team.")
     
     default_name = ""
     default_phone = ""
@@ -553,7 +550,7 @@ elif st.session_state.current_view == "💬 Support":
         u_name = st.text_input("Your Name / Business Name *", value=default_name)
         u_phone = st.text_input("WhatsApp / Phone Number *", value=default_phone)
         u_role = st.selectbox("I am a:", ["Store Owner", "Courier / Rider", "Customer", "Other"], index=["Store Owner", "Courier / Rider", "Customer", "Other"].index(user_category) if user_category in ["Store Owner", "Courier / Rider", "Customer"] else 0)
-        u_subject = st.selectbox("Topic / Subject *", ["Raffle / Promo Inquiry", "Forgotten PIN", "Account Verification", "Order Issue", "Payment Query", "General Suggestion"])
+        u_subject = st.selectbox("Topic / Subject *", ["Payment & Billing Inquiry", "Raffle / Promo Inquiry", "Forgotten PIN", "Account Verification", "Order Issue", "General Suggestion"])
         u_message = st.text_area("Your Message / Question *", placeholder="Describe your inquiry...")
         
         if st.button("📨 Send Message to Admin", type="primary", use_container_width=True):
@@ -572,7 +569,7 @@ elif st.session_state.current_view == "💬 Support":
                 st.success("✅ Message sent to the admin team! We will contact you on WhatsApp shortly.")
 
 # ====================================================
-# VISNING 5: PLATFORM SUPER ADMIN (INKL. LODTRÆKNING)
+# VISNING 5: PLATFORM SUPER ADMIN (INKL. REGNSKAB)
 # ====================================================
 elif st.session_state.current_view == "🛡️ Platform Admin":
     st.markdown("### 🛡️ Platform Super Admin")
@@ -595,65 +592,130 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 st.rerun()
 
         st.markdown("---")
-        
-        # HURTIG SØGNING
-        st.markdown("#### 🔍 Quick Lookup (Member ID, Phone or Name)")
-        search_query = st.text_input("Search:", placeholder="e.g. SHOP-1002, 08012345678, or Ibrahim")
-        if search_query.strip():
-            sq = search_query.strip().lower()
-            clean_sq = re.sub(r'[^0-9]', '', sq)
-            
-            all_shops_lookup = supabase.table("shops").select("*").execute().data or []
-            matched_shops = [s for s in all_shops_lookup if (sq in s["name"].lower()) or (clean_sq and clean_sq in s["phone"]) or (sq in (s.get("member_id") or "").lower())]
-            
-            all_couriers_lookup = supabase.table("couriers").select("*").execute().data or []
-            matched_couriers = [c for c in all_couriers_lookup if (sq in c["name"].lower()) or (clean_sq and clean_sq in c["phone"]) or (sq in (c.get("member_id") or "").lower())]
-            
-            for s in matched_shops:
-                with st.container(border=True):
-                    st.markdown(f"🏪 **STORE: {s['name']}** (🎟️ `{s.get('member_id', 'N/A')}`) | 📞 `{s['phone']}` | 🔑 PIN: `{s['pin']}`")
-                    st.link_button("💬 Send PIN on WhatsApp", make_wa_link(s['phone'], f"Hello {s['name']}! Your ID is {s.get('member_id')} and PIN is: {s['pin']}."), use_container_width=True)
-            for c in matched_couriers:
-                with st.container(border=True):
-                    st.markdown(f"🛵 **COURIER: {c['name']}** (🎟️ `{c.get('member_id', 'N/A')}`) | 📞 `{c['phone']}` | 🔑 PIN: `{c['pin']}`")
-                    st.link_button("💬 Send PIN on WhatsApp", make_wa_link(c['phone'], f"Hello {c['name']}! Your Rider ID is {c.get('member_id')} and PIN is: {c['pin']}."), use_container_width=True)
 
-        st.markdown("---")
+        admin_tabs = st.tabs(["💰 Billing & Accounting", "🎉 Raffle / Draw", "📬 Messages", "🛵 Riders", "🏪 Stores", "📦 Orders", "🔥 Offers"])
 
-        admin_tabs = st.tabs(["🎉 Raffle / Giveaway", "📬 Messages & Support", "🛵 Riders Verification", "🏪 All Stores", "📦 All Orders", "🔥 All Offers"])
-
-        # --- FANE 0: LODTRÆKNINGSVÆRKTØJ ---
+        # --- FANE 0: REGNSKAB & OPKRÆVNING ---
         with admin_tabs[0]:
+            st.markdown("#### 💰 Accounting & Merchant Fee Collection")
+            st.caption("Track monthly stall subscriptions, ad fees, and record cash/transfer payments.")
+            
+            # Hent alle betalinger
+            bills = supabase.table("billing_records").select("*").order("id", desc=True).execute().data or []
+            
+            total_collected = sum(b["amount"] for b in bills if b.get("is_paid"))
+            total_pending = sum(b["amount"] for b in bills if not b.get("is_paid"))
+            
+            # Nøgletal i toppen
+            m1, m2 = st.columns(2)
+            with m1:
+                st.metric("Total Collected (Paid)", f"₦{total_collected:,}")
+            with m2:
+                st.metric("Outstanding (Unpaid)", f"₦{total_pending:,}")
+                
+            st.markdown("---")
+            
+            # Opret en ny opkrævning
+            with st.expander("➕ Create New Fee / Invoice for Store or Courier"):
+                all_shops = supabase.table("shops").select("name, phone, member_id").execute().data or []
+                all_couriers = supabase.table("couriers").select("name, phone, member_id").execute().data or []
+                
+                target_payer_type = st.radio("Bill to:", ["Store", "Courier"], horizontal=True)
+                
+                if target_payer_type == "Store" and all_shops:
+                    shop_names = [f"{s['name']} ({s.get('member_id', '')})" for s in all_shops]
+                    sel_s_idx = st.selectbox("Select Store:", range(len(shop_names)), format_func=lambda x: shop_names[x])
+                    chosen_payer = all_shops[sel_s_idx]
+                elif target_payer_type == "Courier" and all_couriers:
+                    c_names = [f"{c['name']} ({c.get('member_id', '')})" for c in all_couriers]
+                    sel_c_idx = st.selectbox("Select Courier:", range(len(c_names)), format_func=lambda x: c_names[x])
+                    chosen_payer = all_couriers[sel_c_idx]
+                else:
+                    chosen_payer = None
+                    st.info("No records found in this category.")
+                    
+                fee_title = st.selectbox("Fee Type / Description:", [
+                    "Monthly Platform Listing Fee",
+                    "Featured Deal Boost (48h)",
+                    "Courier Accreditation Fee",
+                    "Weekly Commission Settlement"
+                ])
+                fee_val = st.number_input("Amount in Naira (₦):", min_value=100, value=2000, step=100)
+                
+                if st.button("📝 Generate Invoice / Bill", type="primary"):
+                    if chosen_payer:
+                        new_bill = {
+                            "payer_type": target_payer_type,
+                            "payer_name": chosen_payer["name"],
+                            "payer_phone": chosen_payer["phone"],
+                            "member_id": chosen_payer.get("member_id"),
+                            "fee_description": fee_title,
+                            "amount": int(fee_val),
+                            "is_paid": False
+                        }
+                        supabase.table("billing_records").insert(new_bill).execute()
+                        st.success(f"Invoice generated for {chosen_payer['name']}!")
+                        st.rerun()
+
+            st.markdown("#### All Payment Records")
+            if not bills:
+                st.info("No billing records created yet.")
+            else:
+                for b in bills:
+                    with st.container(border=True):
+                        cb_col1, cb_col2 = st.columns([3, 2])
+                        with cb_col1:
+                            st.markdown(f"**{b['payer_name']}** ({b.get('member_id', 'N/A')}) — `{b['payer_type']}`")
+                            st.markdown(f"📌 **{b['fee_description']}** — **₦{b['amount']:,}**")
+                            st.caption(f"Phone: `{b['payer_phone']}` • Created: {b['created_at'][:10]}")
+                            if b.get("is_paid"):
+                                st.success(f"🟢 PAID on {b.get('paid_at', '')[:10]}")
+                            else:
+                                st.error("🔴 UNPAID (Payment Pending)")
+                                
+                        with cb_col2:
+                            if not b.get("is_paid"):
+                                if st.button("✅ Mark as Paid", key=f"pay_btn_{b['id']}", type="primary", use_container_width=True):
+                                    now_paid = datetime.now(timezone.utc).isoformat()
+                                    supabase.table("billing_records").update({"is_paid": True, "paid_at": now_paid}).eq("id", b["id"]).execute()
+                                    st.success("Payment recorded!")
+                                    st.rerun()
+                                    
+                                wa_bill_reminder = f"Hello {b['payer_name']}! This is a friendly reminder regarding your {b['fee_description']} (₦{b['amount']:,}) for Lagos Local Commerce."
+                                st.link_button("💬 Request Payment", make_wa_link(b['payer_phone'], wa_bill_reminder), use_container_width=True)
+                            else:
+                                wa_receipt = f"Official Receipt: Hello {b['payer_name']}, we confirm receipt of ₦{b['amount']:,} for '{b['fee_description']}'. Thank you for doing business with Lagos Local Commerce!"
+                                st.link_button("🧾 Send WhatsApp Receipt", make_wa_link(b['payer_phone'], wa_receipt), use_container_width=True)
+                                
+                            if st.button("🗑️ Delete Bill", key=f"del_b_{b['id']}", type="secondary", use_container_width=True):
+                                supabase.table("billing_records").delete().eq("id", b["id"]).execute()
+                                st.rerun()
+
+        # --- FANE 1: LODTRÆKNING ---
+        with admin_tabs[1]:
             st.markdown("#### 🎉 Member Raffle & Lucky Draw")
-            st.caption("Pick a random winner among registered stores or active riders using their Member IDs.")
-            
             target_group = st.radio("Raffle Pool:", ["🏪 Stores Only", "🛵 Approved Riders Only", "🌍 Both Stores & Riders"], horizontal=True)
-            
             pool = []
             if "Stores" in target_group or "Both" in target_group:
                 s_list = supabase.table("shops").select("id, name, phone, member_id").execute().data or []
                 for s in s_list:
                     pool.append({"type": "Store", "name": s["name"], "phone": s["phone"], "id": s.get("member_id") or f"SHOP-{1000+s['id']}"})
-                    
             if "Riders" in target_group or "Both" in target_group:
                 c_list = supabase.table("couriers").select("id, name, phone, member_id").eq("is_approved", True).execute().data or []
                 for c in c_list:
                     pool.append({"type": "Courier", "name": c["name"], "phone": c["phone"], "id": c.get("member_id") or f"RIDER-{2000+c['id']}"})
                     
-            st.write(f"Total eligible participants in draw: **{len(pool)}**")
-            
+            st.write(f"Total eligible participants: **{len(pool)}**")
             if st.button("🎲 Draw Random Winner Now", type="primary", use_container_width=True):
-                if not pool:
-                    st.warning("No eligible participants found.")
-                else:
+                if pool:
                     winner = random.choice(pool)
                     st.balloons()
-                    st.success(f"🏆 **WINNER SELECTED!**\n\n**{winner['name']}** ({winner['type']})\n\n🎟️ **Winning ID:** `{winner['id']}`\n\n📞 Phone: `{winner['phone']}`")
+                    st.success(f"🏆 **WINNER SELECTED!**\n\n**{winner['name']}** ({winner['type']})\n\n🎟️ ID: `{winner['id']}`\n\n📞 Phone: `{winner['phone']}`")
                     win_wa = make_wa_link(winner['phone'], f"Congratulations {winner['name']}! Your ID ({winner['id']}) has won in the Lagos Local Commerce Lucky Draw!")
-                    st.link_button("💬 Congratulate Winner on WhatsApp", win_wa, use_container_width=True)
+                    st.link_button("💬 Congratulate on WhatsApp", win_wa, use_container_width=True)
 
-        # --- FANE 1: SUPPORT ---
-        with admin_tabs[1]:
+        # --- FANE 2: SUPPORT BESKEDER ---
+        with admin_tabs[2]:
             st.markdown("#### Support Inbox")
             msgs = supabase.table("support_messages").select("*").order("id", desc=True).execute().data or []
             if not msgs:
@@ -672,8 +734,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             supabase.table("support_messages").delete().eq("id", m["id"]).execute()
                             st.rerun()
 
-        # --- FANE 2: KURIER VERIFIKATION ---
-        with admin_tabs[2]:
+        # --- FANE 3: KURIER VERIFIKATION ---
+        with admin_tabs[3]:
             st.markdown("#### Couriers Verification")
             all_couriers = supabase.table("couriers").select("*").order("id", desc=True).execute().data or []
             for c in all_couriers:
@@ -704,8 +766,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         with st.expander("🪪 View ID"):
                             st.image(c["id_card_img"], width=300)
 
-        # --- FANE 3: BUTIKKER ---
-        with admin_tabs[3]:
+        # --- FANE 4: BUTIKKER ---
+        with admin_tabs[4]:
             st.markdown("#### Registered Shops")
             all_shops = supabase.table("shops").select("*").order("id", desc=True).execute().data or []
             for s in all_shops:
@@ -720,8 +782,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             supabase.table("shops").delete().eq("id", s["id"]).execute()
                             st.rerun()
 
-        # --- FANE 4: ORDRER ---
-        with admin_tabs[4]:
+        # --- FANE 5: ORDRER ---
+        with admin_tabs[5]:
             st.markdown("#### All Orders")
             all_orders = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
             for o in all_orders:
@@ -735,8 +797,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             supabase.table("orders").delete().eq("id", o["id"]).execute()
                             st.rerun()
 
-        # --- FANE 5: TILBUD ---
-        with admin_tabs[5]:
+        # --- FANE 6: TILBUD ---
+        with admin_tabs[6]:
             st.markdown("#### All Product Deals")
             all_deals = supabase.table("offers").select("*").order("id", desc=True).execute().data or []
             for d in all_deals:
@@ -750,13 +812,13 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             st.rerun()
 
 # ====================================================
-# GLOBAL FOOTER: PRIVACY & ANSVARSFRASKRIVELSE (DISCLAIMER)
+# GLOBAL FOOTER: PRIVACY & ANSVARSFRASKRIVELSE
 # ====================================================
 st.markdown("---")
 st.markdown("""
 <div class="disclaimer-box">
     <strong>⚖️ Platform Disclaimer & Limitation of Liability:</strong><br>
-    Lagos Local Commerce is an intermediary discovery and connection platform. We do not manufacture, sell, store, or inspect the products listed. All sale agreements and quality warranties exist strictly between the independent merchant and the customer. Dispatch couriers operate as independent contractors. To the maximum extent permitted under Nigerian law, Lagos Local Commerce shall not be liable for any product defect, delivery loss, delayed dispatch, personal injury, road incident, or transaction dispute.
+    Lagos Local Commerce is an intermediary discovery and connection platform. We do not manufacture, sell, store, or inspect the products listed. All sale agreements and warranties exist strictly between the merchant and the customer. Dispatch couriers operate as independent contractors. To the maximum extent permitted under Nigerian law, Lagos Local Commerce shall not be liable for any product defect, delivery loss, delayed dispatch, personal injury, road incident, or transaction dispute.
     <br><br>
     <strong>🔒 Privacy (NDPA / NDPR):</strong> User data is processed strictly for commerce fulfillment and identity accreditation. Registered users retain the right to rectify or request full deletion of records anytime.
 </div>
