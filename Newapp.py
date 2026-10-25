@@ -18,93 +18,123 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS styling
-st.markdown("""
+# Session state til nat-tilstand / mørkt tema
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+
+# Håndter mørk vs. lys styling dynamisk
+if st.session_state.dark_mode:
+    theme_bg = "#121212"
+    theme_card_bg = "#1e1e1e"
+    theme_text = "#e0e0e0"
+    theme_border = "#333333"
+    theme_img_bg = "#2a2a2a"
+    notice_bg = "#1f2421"
+    disclaimer_bg = "#1a1a1a"
+else:
+    theme_bg = "#ffffff"
+    theme_card_bg = "#ffffff"
+    theme_text = "#262730"
+    theme_border = "#e0e0e0"
+    theme_img_bg = "#f0f2f6"
+    notice_bg = "#fdfbfb"
+    disclaimer_bg = "#f8f9fa"
+
+# Dynamisk CSS
+st.markdown(f"""
 <style>
-    .grid-img-box {
+    /* Generel app baggrund og tekst */
+    .stApp {{
+        background-color: {theme_bg};
+        color: {theme_text};
+    }}
+    
+    /* Grid billedboks */
+    .grid-img-box {{
         width: 100%;
         height: 125px;
         overflow: hidden;
         border-radius: 8px;
         margin-bottom: 8px;
-        background-color: #f0f2f6;
+        background-color: {theme_img_bg};
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-    .grid-img-box img {
+    }}
+    .grid-img-box img {{
         width: 100%;
         height: 100%;
         object-fit: cover;
-    }
-    .grid-title {
+    }}
+    .grid-title {{
         font-size: 0.95rem;
         font-weight: 600;
         line-height: 1.2;
         margin-bottom: 4px;
+        color: {theme_text};
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
         height: 2.4em;
-    }
-    .grid-price {
+    }}
+    .grid-price {{
         font-size: 1rem;
         font-weight: 700;
-        color: #0e8a16;
-        margin-bottom: 4px;
-    }
-    .member-badge {
-        display: inline-block;
-        background-color: #e8f5e9;
         color: #2e7d32;
+        margin-bottom: 4px;
+    }}
+    .member-badge {{
+        display: inline-block;
+        background-color: {"#1b3320" if st.session_state.dark_mode else "#e8f5e9"};
+        color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"};
         padding: 4px 10px;
         border-radius: 6px;
         font-weight: bold;
         font-size: 0.9rem;
         margin-bottom: 8px;
-        border: 1px solid #c8e6c9;
-    }
-    .referral-badge {
+        border: 1px solid {"#2e7d32" if st.session_state.dark_mode else "#c8e6c9"};
+    }}
+    .referral-badge {{
         display: inline-block;
-        background-color: #fff3e0;
-        color: #e65100;
+        background-color: {"#3e2723" if st.session_state.dark_mode else "#fff3e0"};
+        color: {"#ffb74d" if st.session_state.dark_mode else "#e65100"};
         padding: 4px 8px;
         border-radius: 6px;
         font-size: 0.85rem;
         font-weight: 600;
-        border: 1px solid #ffe0b2;
+        border: 1px solid {"#d84315" if st.session_state.dark_mode else "#ffe0b2"};
         margin-bottom: 6px;
-    }
-    .status-light-red {
-        background-color: #ffebee;
-        color: #c62828;
+    }}
+    .status-light-red {{
+        background-color: {"#371c1c" if st.session_state.dark_mode else "#ffebee"};
+        color: {"#ef9a9a" if st.session_state.dark_mode else "#c62828"};
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
-        border: 1px solid #ffcdd2;
+        border: 1px solid {"#b71c1c" if st.session_state.dark_mode else "#ffcdd2"};
         display: inline-block;
         margin-bottom: 6px;
-    }
-    .status-light-green {
-        background-color: #e8f5e9;
-        color: #2e7d32;
+    }}
+    .status-light-green {{
+        background-color: {"#1b3320" if st.session_state.dark_mode else "#e8f5e9"};
+        color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"};
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
-        border: 1px solid #c8e6c9;
+        border: 1px solid {"#2e7d32" if st.session_state.dark_mode else "#c8e6c9"};
         display: inline-block;
         margin-bottom: 6px;
-    }
-    .disclaimer-box {
+    }}
+    .disclaimer-box {{
         font-size: 0.8rem;
-        color: #666;
-        background-color: #f8f9fa;
+        color: {"#aaaaaa" if st.session_state.dark_mode else "#666666"};
+        background-color: {disclaimer_bg};
         padding: 12px;
         border-radius: 8px;
-        border: 1px solid #e0e0e0;
+        border: 1px solid {theme_border};
         margin-top: 25px;
-    }
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -240,9 +270,22 @@ if "logged_courier" not in st.session_state:
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
-# Hovedoverskrift og Tagline
-st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
-st.caption("<p style='text-align: center; font-size: 0.95rem;'>🇳🇬 Lagos Local Market • <i>Powered by AI</i></p>", unsafe_allow_html=True)
+# TOP LINJE MED MØRK/LYS KNAP
+top_c1, top_c2 = st.columns([3, 1])
+with top_c1:
+    st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
+    st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
+with top_c2:
+    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+    # Knap til aften/nat-tilstand
+    if st.session_state.dark_mode:
+        if st.button("☀️ Day", use_container_width=True, help="Switch to Light Mode"):
+            st.session_state.dark_mode = False
+            st.rerun()
+    else:
+        if st.button("🌙 Night", use_container_width=True, help="Dim screen for Night Trading"):
+            st.session_state.dark_mode = True
+            st.rerun()
 
 views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 current_tab = st.radio("Nav", views, index=views.index(st.session_state.current_view), horizontal=True, label_visibility="collapsed")
