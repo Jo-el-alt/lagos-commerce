@@ -18,80 +18,63 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Session state til nat-tilstand / mørkt tema
+# Session state til tema
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
-# Håndter mørk vs. lys styling dynamisk
-if st.session_state.dark_mode:
-    theme_bg = "#121212"
-    theme_card_bg = "#1e1e1e"
-    theme_text = "#e0e0e0"
-    theme_border = "#333333"
-    theme_img_bg = "#2a2a2a"
-    notice_bg = "#1f2421"
-    disclaimer_bg = "#1a1a1a"
-else:
-    theme_bg = "#ffffff"
-    theme_card_bg = "#ffffff"
-    theme_text = "#262730"
-    theme_border = "#e0e0e0"
-    theme_img_bg = "#f0f2f6"
-    notice_bg = "#fdfbfb"
-    disclaimer_bg = "#f8f9fa"
+# Farver afhængigt af lyst/mørkt tema
+is_dark = st.session_state.dark_mode
+c_bg = "#121212" if is_dark else "#ffffff"
+c_card = "#1e1e1e" if is_dark else "#ffffff"
+c_text = "#e0e0e0" if is_dark else "#262730"
+c_border = "#333333" if is_dark else "#e0e0e0"
+c_btn_bg = "#262730" if is_dark else "#f0f2f6"
+c_btn_txt = "#fafafa" if is_dark else "#262730"
+c_pop_bg = "#1f2937" if is_dark else "#ffffff"
+c_pop_txt = "#f3f4f6" if is_dark else "#262730"
+c_img_bg = "#2a2a2a" if is_dark else "#f0f2f6"
 
-# Dynamisk CSS med fuld popover- og kontraststyring
-st.markdown(f"""
+# CSS styling
+custom_css = f"""
 <style>
-    /* Generel app baggrund og tekst */
     .stApp {{
-        background-color: {theme_bg} !important;
-        color: {theme_text} !important;
+        background-color: {c_bg} !important;
+        color: {c_text} !important;
     }}
-
-    /* Input-felter, selectboxe og tekstfelter i mørk tilstand */
     .stTextInput input, .stTextArea textarea, .stSelectbox [data-baseweb="select"] {{
-        background-color: {"#1e1e1e" if st.session_state.dark_mode else "#ffffff"} !important;
-        color: {theme_text} !important;
-        -webkit-text-fill-color: {theme_text} !important;
-        border: 1px solid {theme_border} !important;
+        background-color: {c_card} !important;
+        color: {c_text} !important;
+        -webkit-text-fill-color: {c_text} !important;
+        border: 1px solid {c_border} !important;
     }}
-
-    /* Almindelige knapper */
     .stButton button {{
-        background-color: {"#262730" if st.session_state.dark_mode else "#f0f2f6"} !important;
-        color: {"#fafafa" if st.session_state.dark_mode else "#262730"} !important;
-        -webkit-text-fill-color: {"#fafafa" if st.session_state.dark_mode else "#262730"} !important;
-        border: 1px solid {"#4b5563" if st.session_state.dark_mode else "#d0d7de"} !important;
+        background-color: {c_btn_bg} !important;
+        color: {c_btn_txt} !important;
+        -webkit-text-fill-color: {c_btn_txt} !important;
+        border: 1px solid {c_border} !important;
     }}
-
-    /* Popover-knapper */
     div[data-testid="stPopover"] button,
     div[data-testid="stPopover"] > div > button {{
-        background-color: {"#262730" if st.session_state.dark_mode else "#f0f2f6"} !important;
-        color: {"#fafafa" if st.session_state.dark_mode else "#262730"} !important;
-        -webkit-text-fill-color: {"#fafafa" if st.session_state.dark_mode else "#262730"} !important;
-        border: 1px solid {"#4b5563" if st.session_state.dark_mode else "#d0d7de"} !important;
+        background-color: {c_btn_bg} !important;
+        color: {c_btn_txt} !important;
+        -webkit-text-fill-color: {c_btn_txt} !important;
+        border: 1px solid {c_border} !important;
     }}
-
-    /* Popover-indhold og dropdown-kasser */
     div[data-baseweb="popover"],
     div[data-baseweb="popover"] > div,
     div[data-testid="stPopoverBody"] {{
-        background-color: {"#1f2937" if st.session_state.dark_mode else "#ffffff"} !important;
-        color: {"#f3f4f6" if st.session_state.dark_mode else "#262730"} !important;
-        border: 1px solid {"#4b5563" if st.session_state.dark_mode else "#e0e0e0"} !important;
+        background-color: {c_pop_bg} !important;
+        color: {c_pop_txt} !important;
+        border: 1px solid {c_border} !important;
         border-radius: 8px !important;
     }}
-
-    /* Billedboks i 2-kolonne grid */
     .grid-img-box {{
         width: 100%;
         height: 125px;
         overflow: hidden;
         border-radius: 8px;
         margin-bottom: 8px;
-        background-color: {theme_img_bg};
+        background-color: {c_img_bg};
         display: flex;
         align-items: center;
         justify-content: center;
@@ -101,14 +84,12 @@ st.markdown(f"""
         height: 100%;
         object-fit: cover;
     }}
-
-    /* Varetekst & Pris */
     .grid-title {{
         font-size: 0.95rem;
         font-weight: 600;
         line-height: 1.2;
         margin-bottom: 4px;
-        color: {theme_text} !important;
+        color: {c_text} !important;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
@@ -121,71 +102,64 @@ st.markdown(f"""
         color: #2e7d32;
         margin-bottom: 4px;
     }}
-
-    /* Badges */
     .member-badge {{
         display: inline-block;
-        background-color: {"#1b3320" if st.session_state.dark_mode else "#e8f5e9"};
-        color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"} !important;
-        -webkit-text-fill-color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"} !important;
+        background-color: {"#1b3320" if is_dark else "#e8f5e9"};
+        color: {"#81c784" if is_dark else "#2e7d32"} !important;
+        -webkit-text-fill-color: {"#81c784" if is_dark else "#2e7d32"} !important;
         padding: 4px 10px;
         border-radius: 6px;
         font-weight: bold;
         font-size: 0.9rem;
         margin-bottom: 8px;
-        border: 1px solid {"#2e7d32" if st.session_state.dark_mode else "#c8e6c9"};
+        border: 1px solid {"#2e7d32" if is_dark else "#c8e6c9"};
     }}
     .referral-badge {{
         display: inline-block;
-        background-color: {"#3e2723" if st.session_state.dark_mode else "#fff3e0"};
-        color: {"#ffb74d" if st.session_state.dark_mode else "#e65100"} !important;
-        -webkit-text-fill-color: {"#ffb74d" if st.session_state.dark_mode else "#e65100"} !important;
+        background-color: {"#3e2723" if is_dark else "#fff3e0"};
+        color: {"#ffb74d" if is_dark else "#e65100"} !important;
+        -webkit-text-fill-color: {"#ffb74d" if is_dark else "#e65100"} !important;
         padding: 4px 8px;
         border-radius: 6px;
         font-size: 0.85rem;
         font-weight: 600;
-        border: 1px solid {"#d84315" if st.session_state.dark_mode else "#ffe0b2"};
+        border: 1px solid {"#d84315" if is_dark else "#ffe0b2"};
         margin-bottom: 6px;
     }}
-
-    /* Trafiklys */
     .status-light-red {{
-        background-color: {"#371c1c" if st.session_state.dark_mode else "#ffebee"};
-        color: {"#ef9a9a" if st.session_state.dark_mode else "#c62828"} !important;
-        -webkit-text-fill-color: {"#ef9a9a" if st.session_state.dark_mode else "#c62828"} !important;
+        background-color: {"#371c1c" if is_dark else "#ffebee"};
+        color: {"#ef9a9a" if is_dark else "#c62828"} !important;
+        -webkit-text-fill-color: {"#ef9a9a" if is_dark else "#c62828"} !important;
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
-        border: 1px solid {"#b71c1c" if st.session_state.dark_mode else "#ffcdd2"};
+        border: 1px solid {"#b71c1c" if is_dark else "#ffcdd2"};
         display: inline-block;
         margin-bottom: 6px;
     }}
     .status-light-green {{
-        background-color: {"#1b3320" if st.session_state.dark_mode else "#e8f5e9"};
-        color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"} !important;
-        -webkit-text-fill-color: {"#81c784" if st.session_state.dark_mode else "#2e7d32"} !important;
+        background-color: {"#1b3320" if is_dark else "#e8f5e9"};
+        color: {"#81c784" if is_dark else "#2e7d32"} !important;
+        -webkit-text-fill-color: {"#81c784" if is_dark else "#2e7d32"} !important;
         padding: 6px 12px;
         border-radius: 6px;
         font-weight: bold;
-        border: 1px solid {"#2e7d32" if st.session_state.dark_mode else "#c8e6c9"};
+        border: 1px solid {"#2e7d32" if is_dark else "#c8e6c9"};
         display: inline-block;
         margin-bottom: 6px;
     }}
-
-    /* Footer & Disclaimer */
     .disclaimer-box {{
         font-size: 0.8rem;
-        color: {"#aaaaaa" if st.session_state.dark_mode else "#666666"} !important;
-        background-color: {disclaimer_bg};
+        color: {"#aaaaaa" if is_dark else "#666666"} !important;
+        background-color: {c_card};
         padding: 12px;
         border-radius: 8px;
-        border: 1px solid {theme_border};
+        border: 1px solid {c_border};
         margin-top: 25px;
     }}
 </style>
-""", unsafe_allow_html=True)
-</style>
-""", unsafe_allow_html=True)
+"""
+st.markdown(custom_css, unsafe_allow_html=True)
 
 # Supabase forbindelse
 @st.cache_resource
@@ -206,7 +180,7 @@ def get_openai_client():
 
 openai_client = get_openai_client()
 
-# --- HJÆLPEFUNKTIONER ---
+# Hjælpefunktioner
 def make_slug(name: str) -> str:
     clean = re.sub(r'[^a-zA-Z0-9\s-]', '', name).strip().lower()
     return re.sub(r'[\s-]+', '-', clean)
@@ -270,17 +244,19 @@ def get_billing_status(valid_until_str: str, is_paid: bool):
 def generate_ai_ad_copy(product_name: str, price_val: int, shop_name: str, market_area: str, tone_style: str) -> str:
     if not openai_client:
         if "Pidgin" in tone_style:
-            return f"🔥 Omo! Sweet deal don land for {market_area}! Quality {product_name} now going for N{price_val:,}. Chat me sharp on WhatsApp before stock finish!"
-        return f"✨ Premium quality {product_name} now available at {shop_name} ({market_area}) for only N{price_val:,}! Send a WhatsApp message to order."
+            return f"🔥 Omo! Sweet deal don land for {market_area}! Quality {product_name} now going for NGN {price_val:,}. Chat me sharp on WhatsApp before stock finish!"
+        return f"✨ Premium quality {product_name} now available at {shop_name} ({market_area}) for only NGN {price_val:,}! Send a WhatsApp message to order."
     
-    prompt = f"""You are an expert market copywriter in Lagos, Nigeria for the platform 'Sweet Debbie Deals'. Write a short, high-converting ad description (maximum 3 sentences).
-Product: {product_name}
-Price: NGN {price_val:,}
-Store Name: {shop_name}
-Market Area: {market_area}
-Style requested: {tone_style}
-Output ONLY the ad copy text, no extra explanations or quotation marks.
-
+    prompt = (
+        f"You are an expert market copywriter in Lagos, Nigeria for 'Sweet Debbie Deals'.\n"
+        f"Write a short, high-converting ad description (max 3 sentences).\n"
+        f"Product: {product_name}\n"
+        f"Price: NGN {price_val:,}\n"
+        f"Store: {shop_name}\n"
+        f"Area: {market_area}\n"
+        f"Style: {tone_style}\n"
+        f"Output ONLY the text."
+    )
     try:
         response = openai_client.chat.completions.create(
             model="gpt-6-luna",
@@ -292,7 +268,7 @@ Output ONLY the ad copy text, no extra explanations or quotation marks.
         )
         return response.choices[0].message.content.strip()
     except Exception:
-        return f"🔥 Better deal on {product_name} at {shop_name} ({market_area}) for N{price_val:,}! Chat sharp on WhatsApp before e finish!"
+        return f"🔥 Better deal on {product_name} at {shop_name} ({market_area}) for NGN {price_val:,}! Chat sharp on WhatsApp before e finish!"
 
 def render_broadcast_alerts(target: str):
     try:
@@ -302,7 +278,7 @@ def render_broadcast_alerts(target: str):
     except Exception:
         pass
 
-# URL Parametre & Sessions
+# URL parametre & Session State
 query_params = st.query_params
 active_shop_slug = query_params.get("shop", None)
 
@@ -318,20 +294,19 @@ if "logged_courier" not in st.session_state:
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
-# TOP LINJE MED MØRK/LYS KNAP
+# Top bjælke med dæmpet/lyst tema
 top_c1, top_c2 = st.columns([3, 1])
 with top_c1:
     st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
     st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
 with top_c2:
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
-    # Knap til aften/nat-tilstand
     if st.session_state.dark_mode:
-        if st.button("☀️ Day", use_container_width=True, help="Switch to Light Mode"):
+        if st.button("☀️ Day", use_container_width=True):
             st.session_state.dark_mode = False
             st.rerun()
     else:
-        if st.button("🌙 Night", use_container_width=True, help="Dim screen for Night Trading"):
+        if st.button("🌙 Night", use_container_width=True):
             st.session_state.dark_mode = True
             st.rerun()
 
@@ -340,7 +315,7 @@ current_tab = st.radio("Nav", views, index=views.index(st.session_state.current_
 st.session_state.current_view = current_tab
 
 # ====================================================
-# MODAL TIL DETALJEVISNING AF ET PRODUKT
+# MODAL TIL DETALJEVISNING
 # ====================================================
 @st.dialog("Product Details & Order")
 def show_offer_modal(item):
@@ -390,7 +365,7 @@ def show_offer_modal(item):
                 st.success("✅ Order placed! A verified rider will contact you.")
 
 # ====================================================
-# VISNING 1: KUNDEPORTAL (2-KOLONNE GRID)
+# VISNING 1: KUNDEPORTAL
 # ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
     render_broadcast_alerts("All")
@@ -452,7 +427,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
                                     show_offer_modal(deal)
 
 # ====================================================
-# VISNING 2: BUTIKSEJER ADMIN & OPRETTELSE
+# VISNING 2: BUTIKSEJER ADMIN
 # ====================================================
 elif st.session_state.current_view == "🏪 Store Owner Admin":
     if not st.session_state.logged_shop:
@@ -482,13 +457,13 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 new_cat = st.selectbox("Main Category *", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
                 
                 referred_code = st.text_input("Referred by another Store ID? (Optional)", placeholder="e.g. SHOP-1002")
-                shop_consent = st.checkbox("I accept Platform Terms & Disclaimer: Sweet Debbie Deals is an intermediary discovery tool.")
+                shop_consent = st.checkbox("I accept Platform Terms: Sweet Debbie Deals acts as discovery intermediary.")
                 
                 if st.button("🚀 Complete Registration & Enter", type="primary", use_container_width=True):
                     if not new_shop_name or not new_phone or not new_pin or len(new_pin) != 4:
                         st.error("Please fill all required fields and ensure PIN is 4 digits.")
                     elif not shop_consent:
-                        st.error("Please accept the terms & disclaimer to register.")
+                        st.error("Please accept the terms to register.")
                     else:
                         clean_phone = new_phone.strip()
                         existing = supabase.table("shops").select("id").eq("phone", clean_phone).execute()
@@ -520,12 +495,12 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         col_hdr1, col_hdr2 = st.columns([3, 1])
         with col_hdr1:
             st.markdown(f"### 🏪 {shop['name']}")
-            st.markdown(f'<div class="member-badge">🎟️ Store ID / Raffle No: {member_id}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="member-badge">🎟️ Store ID: {member_id}</div>', unsafe_allow_html=True)
             
             if referred_count >= 5:
                 st.markdown(f'<div class="referral-badge" style="background-color:#e8f5e9; color:#2e7d32; border-color:#c8e6c9;">🎯 Referral Target Met: {referred_count}/5 stores referred! (Qualified for Lucky Draw)</div>', unsafe_allow_html=True)
             else:
-                st.markdown(f'<div class="referral-badge">🤝 Referred Stores: {referred_count}/5 (Refer {5 - referred_count} more to enter Lucky Draw!)</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="referral-badge">🤝 Referred Stores: {referred_count}/5 (Refer {5 - referred_count} more for Lucky Draw)</div>', unsafe_allow_html=True)
                 
             st.caption(f"📍 {shop['area']} • 📞 {shop['phone']}")
         with col_hdr2:
@@ -588,7 +563,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
 
         default_ad_text = st.session_state.get(
             "ai_ad_copy", 
-            f"🔥 Quality {product} now available at {shop['name']} for only ₦{price:,}! Limited stock today in {shop['area']}."
+            f"🔥 Quality {product} now available at {shop['name']} for only NGN {price:,}! Limited stock today in {shop['area']}."
         )
         desc = st.text_area("Ad Description (Review or edit before posting):", value=default_ad_text, height=85)
         
@@ -636,7 +611,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                         st.error("Invalid phone or PIN.")
         else:
             st.markdown("### 📝 Register as Verified Dispatch Rider")
-            st.caption("To prevent fraud, all riders must upload a valid ID card for admin verification.")
+            st.caption("Upload a valid government ID for local verification.")
             with st.container(border=True):
                 r_name = st.text_input("Rider / Company Full Name *", placeholder="e.g. Ibrahim Babatunde")
                 r_phone_new = st.text_input("Phone Number (WhatsApp) *", placeholder="080...")
@@ -644,18 +619,18 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                 r_area = st.selectbox("Primary Operating Area", ["Yaba / Sabo", "Ikeja / Maryland", "Surulere", "Island / Lekki", "All Lagos"])
                 vehicle = st.selectbox("Vehicle Type", ["Motorcycle (Okada)", "Bicycle", "Van / Car"])
                 
-                st.markdown("**Upload Government ID (NIN Slip, Voter's Card, or Driver's License) ***")
-                id_file = st.file_uploader("Snap or upload clear photo of ID", type=["jpg", "jpeg", "png", "webp"], key="id_uploader")
+                st.markdown("**Upload Government ID (NIN, Voter's Card, or Driver's License) ***")
+                id_file = st.file_uploader("Upload clear photo of ID", type=["jpg", "jpeg", "png", "webp"], key="id_uploader")
                 if id_file:
                     st.image(id_file, width=220, caption="Uploaded ID Preview")
                 
-                rider_consent = st.checkbox("I agree to terms: Riders operate as independent agents. Platform is not liable for transit issues.")
+                rider_consent = st.checkbox("I agree to terms: Riders operate as independent agents.")
                 
                 if st.button("🚀 Submit Profile for Verification", type="primary", use_container_width=True):
                     if not r_name or not r_phone_new or not r_pin_new or len(r_pin_new) != 4 or not id_file:
                         st.error("Please fill all details, upload ID, and set 4-digit PIN.")
                     elif not rider_consent:
-                        st.error("Please accept the platform terms and disclaimer.")
+                        st.error("Please accept the platform terms.")
                     else:
                         id_base64 = convert_to_base64_img(id_file, target_size=(600, 400))
                         new_rider_code = generate_member_code("RIDER")
@@ -680,7 +655,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
         c_hdr1, c_hdr2 = st.columns([3, 1])
         with c_hdr1:
             st.markdown(f"### 🛵 Rider: {rider['name']}")
-            st.markdown(f'<div class="member-badge">🎟️ Rider ID / Raffle No: {r_member_id}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="member-badge">🎟️ Rider ID: {r_member_id}</div>', unsafe_allow_html=True)
             st.caption(f"📍 Area: {rider['area']} • 🛵 {rider.get('vehicle', 'Motorcycle')}")
         with c_hdr2:
             if st.button("🚪 Log Out", key="rider_logout", use_container_width=True):
@@ -748,7 +723,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                             st.rerun()
 
 # ====================================================
-# VISNING 4: BRUGER-SUPPORT & FEEDBACK PORTAL
+# VISNING 4: BRUGER-SUPPORT
 # ====================================================
 elif st.session_state.current_view == "💬 Support":
     st.markdown("### 💬 User Support & Helpdesk")
@@ -814,18 +789,16 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
         st.markdown("---")
 
-        admin_tabs = st.tabs(["📢 Broadcast Notices", "🤝 Referrals", "🚦 Subscriptions", "🎉 Lucky Draw", "📬 Messages", "🛵 Riders", "🏪 Stores", "📦 Orders", "🔥 Offers"])
+        admin_tabs = st.tabs(["📢 Broadcasts", "🤝 Referrals", "🚦 Subscriptions", "🎉 Lucky Draw", "📬 Messages", "🛵 Riders", "🏪 Stores", "📦 Orders", "🔥 Offers"])
 
-        # --- FANE 0: BROADCAST BESKEDER ---
+        # --- FANE 0: BROADCASTS ---
         with admin_tabs[0]:
             st.markdown("#### 📢 Platform Broadcast Messages & Reminders")
-            st.caption("Post live banners and reminders directly into the apps of Stores, Riders, or All Customers.")
-            
             with st.expander("➕ Create New Broadcast Message"):
                 b_target = st.selectbox("Send To Audience:", ["Stores", "Couriers", "All"])
                 b_type = st.selectbox("Notice Type / Badge:", ["🎉 Event / Raffle", "⏳ Referral Reminder", "⚠️ Important Notice", "📢 Platform Update"])
                 b_title = st.text_input("Notice Title *", placeholder="e.g. ₦50,000 Friday Market Raffle Draw!")
-                b_body = st.text_area("Notice Message *", placeholder="e.g. Remember to refer 5 stores with your ID before Friday 6PM to qualify for the first cash draw!")
+                b_body = st.text_area("Notice Message *", placeholder="e.g. Remember to refer 5 stores with your ID before Friday 6PM!")
                 
                 if st.button("🚀 Publish Broadcast Alert", type="primary"):
                     if not b_title or not b_body:
