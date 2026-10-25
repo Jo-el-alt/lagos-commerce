@@ -697,13 +697,17 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
             target_group = st.radio("Raffle Pool:", ["🏪 Stores Only", "🛵 Approved Riders Only", "🌍 Both Stores & Riders"], horizontal=True)
             pool = []
             if "Stores" in target_group or "Both" in target_group:
-                s_list = supabase.table("shops").select("id, name, phone, member_id").execute().data or []
+                s_list = supabase.table("shops").select("*").execute().data or []
                 for s in s_list:
-                    pool.append({"type": "Store", "name": s["name"], "phone": s["phone"], "id": s.get("member_id") or f"SHOP-{1000+s['id']}"})
+                    s_id = s.get("member_id") or f"SHOP-{1000 + s.get('id', 1)}"
+                    pool.append({"type": "Store", "name": s.get("name", "Unknown"), "phone": s.get("phone", ""), "id": s_id})
             if "Riders" in target_group or "Both" in target_group:
-                c_list = supabase.table("couriers").select("id, name, phone, member_id").eq("is_approved", True).execute().data or []
+                c_list = supabase.table("couriers").select("*").execute().data or []
                 for c in c_list:
-                    pool.append({"type": "Courier", "name": c["name"], "phone": c["phone"], "id": c.get("member_id") or f"RIDER-{2000+c['id']}"})
+                    # Tjekker godkendelse defensivt i Python
+                    if c.get("is_approved", True):
+                        c_id = c.get("member_id") or f"RIDER-{2000 + c.get('id', 1)}"
+                        pool.append({"type": "Courier", "name": c.get("name", "Unknown"), "phone": c.get("phone", ""), "id": c_id})
                     
             st.write(f"Total eligible participants: **{len(pool)}**")
             if st.button("🎲 Draw Random Winner Now", type="primary", use_container_width=True):
