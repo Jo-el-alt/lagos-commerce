@@ -59,26 +59,34 @@ custom_css = f"""
         -webkit-text-fill-color: {c_text} !important;
     }}
 
-    /* Input-felter og lukkede Selectboxe */
-    .stTextInput input, .stTextArea textarea, .stNumberInput input,
-    .stSelectbox div[data-baseweb="select"],
-    .stSelectbox div[data-baseweb="select"] > div,
-    .stSelectbox div[data-baseweb="select"] span,
-    .stSelectbox div[data-baseweb="select"] div {{
+    /* Lukkede Selectboxe (Market / Area, Category osv.) og Input-felter */
+    div[data-testid="stSelectbox"] div[data-baseweb="select"],
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] div,
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] span,
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="base-input"],
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stTextArea"] textarea,
+    div[data-testid="stNumberInput"] input {{
         background-color: {c_card} !important;
         color: {c_text} !important;
         -webkit-text-fill-color: {c_text} !important;
         border-color: {c_border} !important;
     }}
-    .stSelectbox svg {{
+
+    /* Pil-ikon i Selectbox */
+    div[data-baseweb="select"] svg {{
         fill: {c_text} !important;
     }}
 
-    /* Åbne Dropdown-menuer og Popovers */
+    /* Åbne Dropdown-menuer (alle indre lag) og Popovers */
     div[data-baseweb="popover"],
-    div[data-baseweb="popover"] > div,
+    div[data-baseweb="popover"] div,
     div[data-baseweb="menu"],
+    div[data-baseweb="menu"] div,
     ul[data-testid="stSelectboxVirtualDropdown"],
+    ul[data-testid="stSelectboxVirtualDropdown"] div,
     ul[role="listbox"],
     li[role="option"],
     li[role="option"] span,
@@ -88,9 +96,17 @@ custom_css = f"""
         color: {c_pop_txt} !important;
         -webkit-text-fill-color: {c_pop_txt} !important;
     }}
+
+    /* Fremhævning når musen holdes over et punkt i rullemenuen */
     li[role="option"]:hover,
-    li[role="option"][aria-selected="true"] {{
+    li[role="option"]:hover div,
+    li[role="option"]:hover span,
+    li[role="option"][aria-selected="true"],
+    li[role="option"][aria-selected="true"] div,
+    li[role="option"][aria-selected="true"] span {{
         background-color: {"#374151" if is_dark else "#e5e7eb"} !important;
+        color: {c_pop_txt} !important;
+        -webkit-text-fill-color: {c_pop_txt} !important;
     }}
 
     /* Almindelige knapper & Popover-knapper */
@@ -322,7 +338,6 @@ active_shop_slug = query_params.get("shop", None)
 if "current_view" not in st.session_state:
     st.session_state.current_view = "🛒 Browse Deals"
 
-# Hvis en sælger lige har udgivet en annonce, send dem til forsiden før menuen tegnes
 if st.session_state.get("go_to_deals", False):
     st.session_state.current_view = "🛒 Browse Deals"
     st.session_state.go_to_deals = False
@@ -352,7 +367,7 @@ with top_c2:
             st.session_state.dark_mode = True
             st.rerun()
 
-# Navigationsmenu med key="current_view" (skifter nu på 1 klik!)
+# Navigationsmenu
 views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
 
