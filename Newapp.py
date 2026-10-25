@@ -336,7 +336,7 @@ if "admin_logged_in" not in st.session_state:
         st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
     with col_hdr_toggle:
         st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
-        if st.session_state.dark_mode:
+    if st.session_state.dark_mode:
         if st.button("☀️ Day Mode", key="toggle_day_mode", use_container_width=True):
             st.session_state.dark_mode = False
             st.rerun()
