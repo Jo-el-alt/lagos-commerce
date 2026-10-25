@@ -102,10 +102,14 @@ if "logged_shop" not in st.session_state:
 if "logged_courier" not in st.session_state:
     st.session_state.logged_courier = None
 
+if "admin_logged_in" not in st.session_state:
+    st.session_state.admin_logged_in = False
+
 st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>🇳🇬 Lagos Local Commerce</h2>", unsafe_allow_html=True)
 st.caption("<p style='text-align: center;'>Discover top deals & order directly from nearby stores</p>", unsafe_allow_html=True)
 
-views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch"]
+# Navigation
+views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "🛡️ Platform Admin"]
 current_tab = st.radio("Nav", views, index=views.index(st.session_state.current_view), horizontal=True, label_visibility="collapsed")
 st.session_state.current_view = current_tab
 
@@ -175,12 +179,10 @@ if st.session_state.current_view == "🛒 Browse Deals":
                 st.caption(f"📍 Address: {pickup_loc}")
                 
             if status == "active":
-                # Mulighed 1: WhatsApp
                 wa_msg = f"Hello {item['shop']}! I saw *{item['product']}* (₦{item['price']:,}) on Lagos Local Commerce. Is it available?"
                 wa_url = make_wa_link(item["phone"], wa_msg)
                 st.link_button("💬 Chat on WhatsApp", wa_url, use_container_width=True)
                 
-                # Mulighed 2: Bestil levering direkte med bud
                 with st.expander("🛵 Request Dispatch Delivery to Your Door"):
                     with st.form(f"order_form_{item['id']}"):
                         cust_name = st.text_input("Your Full Name *", placeholder="e.g. Tunde Bakare")
@@ -190,7 +192,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
                         
                         st.markdown(f"**Item Price:** ₦{item['price']:,}")
                         st.markdown("**Estimated Delivery Fee:** ₦1,500")
-                        st.markdown(f"**Total to Pay (Cash/Transfer on delivery):** ₦{item['price'] + 1500:,}")
+                        st.markdown(f"**Total to Pay:** ₦{item['price'] + 1500:,}")
                         
                         btn_order = st.form_submit_button("🚀 Confirm Delivery Order", type="primary", use_container_width=True)
                         if btn_order:
@@ -341,11 +343,9 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         st.image(generate_qr(direct_shop_url), width=160, caption=f"Scan for {shop['name']}")
 
 # ====================================================
-# VISNING 3: BUDE & KURÉR (LOGIN & ORDRE-HÅNDTERING)
+# VISNING 3: BUDE & KURÉR
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
-    
-    # 1. KURÉR IKKE LOGGET IND: LOGIN ELLER REGISTRERING
     if not st.session_state.logged_courier:
         courier_auth = st.radio("Rider Action:", ["🔑 Rider Log In", "📝 Register New Rider / Courier"], horizontal=True)
         
@@ -383,8 +383,6 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                         if ins.data:
                             st.session_state.logged_courier = ins.data[0]
                             st.rerun()
-                            
-    # 2. KURÉR LOGGET IND: SE LEDIGE OG EGNE LEVERINGER
     else:
         rider = st.session_state.logged_courier
         c_hdr1, c_hdr2 = st.columns([3, 1])
@@ -397,8 +395,6 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                 st.rerun()
 
         st.markdown("---")
-        
-        # A. DINE NUVÆRENDE OPGAVER
         st.markdown("#### 📦 Your Accepted Deliveries")
         my_jobs = supabase.table("orders").select("*").eq("courier_id", rider["id"]).neq("status", "delivered").order("id", desc=True).execute().data or []
         
@@ -436,8 +432,6 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                             st.rerun()
 
         st.markdown("---")
-        
-        # B. LEDIGE OPGAVER I NÆRHEDEN
         st.markdown("#### ⚡ Available Delivery Jobs Nearby")
         open_jobs = supabase.table("orders").select("*").eq("status", "pending").order("id", desc=True).execute().data or []
         
@@ -457,5 +451,109 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                             "courier_id": rider["id"],
                             "courier_name": rider["name"]
                         }).eq("id", ojob["id"]).execute()
-                        st.success("You accepted this job! Check 'Your Accepted Deliveries' above.")
                         st.rerun()
+
+# ====================================================
+# VISNING 4: PLATFORM SUPER ADMIN (SLET & RET TESTDATA)
+# ====================================================
+elif st.session_state.current_view == "🛡️ Platform Admin":
+    st.markdown("### 🛡️ Platform Super Admin")
+    
+    # 1. ADMIN LOGIN MED SIMPEL PIN-KODE
+    if not st.session_state.admin_logged_in:
+        st.caption("Enter Super Admin PIN to manage database records, shops, and couriers.")
+        admin_pass = st.text_input("Admin PIN", type="password", placeholder="Master key")
+        
+        # Standard admin pinkode sat til: lagos2026
+        if st.button("Unlock Admin Panel", type="primary"):
+            if admin_pass == "lagos2026":
+                st.session_state.admin_logged_in = True
+                st.rerun()
+            else:
+                st.error("Incorrect Admin PIN! (Default is: lagos2026)")
+                
+    # 2. LOGGET IND SOM ADMIN: OVERBLIK OG SLETTE-KNAPPER
+    else:
+        c_a1, c_a2 = st.columns([3, 1])
+        with c_a1:
+            st.success("🔓 Super Admin Mode Active")
+        with c_a2:
+            if st.button("🔒 Lock Admin"):
+                st.session_state.admin_logged_in = False
+                st.rerun()
+
+        admin_tabs = st.tabs(["🏪 Manage Stores", "🛵 Manage Couriers", "📦 Manage Orders", "🔥 All Offers"])
+
+        # --- FANE A: BUTIKKER ---
+        with admin_tabs[0]:
+            st.markdown("#### Registered Shops")
+            all_shops = supabase.table("shops").select("*").order("id", desc=True).execute().data or []
+            
+            if not all_shops:
+                st.info("No shops found.")
+            for s in all_shops:
+                with st.container(border=True):
+                    col_s1, col_s2 = st.columns([3, 1])
+                    with col_s1:
+                        st.markdown(f"**{s['name']}**")
+                        st.caption(f"Phone: `{s['phone']}` • PIN: `{s['pin']}` • Area: `{s['area']}` • Slug: `{s['slug']}`")
+                    with col_s2:
+                        if st.button("🗑️ Delete Shop", key=f"adm_del_shop_{s['id']}", type="secondary"):
+                            # Slet også butikkens tilbud
+                            supabase.table("offers").delete().eq("shop", s["name"]).execute()
+                            supabase.table("shops").delete().eq("id", s["id"]).execute()
+                            st.success(f"Deleted {s['name']}")
+                            st.rerun()
+
+        # --- FANE B: KURIERER / BUDE ---
+        with admin_tabs[1]:
+            st.markdown("#### Registered Couriers")
+            all_couriers = supabase.table("couriers").select("*").order("id", desc=True).execute().data or []
+            
+            if not all_couriers:
+                st.info("No couriers found.")
+            for c in all_couriers:
+                with st.container(border=True):
+                    col_c1, col_c2 = st.columns([3, 1])
+                    with col_c1:
+                        st.markdown(f"**{c['name']}**")
+                        st.caption(f"Phone: `{c['phone']}` • PIN: `{c['pin']}` • Vehicle: `{c.get('vehicle', 'Okada')}`")
+                    with col_c2:
+                        if st.button("🗑️ Delete Courier", key=f"adm_del_cour_{c['id']}", type="secondary"):
+                            supabase.table("couriers").delete().eq("id", c["id"]).execute()
+                            st.success(f"Deleted {c['name']}")
+                            st.rerun()
+
+        # --- FANE C: ORDRER ---
+        with admin_tabs[2]:
+            st.markdown("#### All Orders / Deliveries")
+            all_orders = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
+            
+            if not all_orders:
+                st.info("No orders found.")
+            for o in all_orders:
+                with st.container(border=True):
+                    col_o1, col_o2 = st.columns([3, 1])
+                    with col_o1:
+                        st.markdown(f"**Order #{o['id']}** — {o['product']} (₦{o['item_price']:,})")
+                        st.caption(f"Customer: `{o['customer_name']}` ({o['customer_phone']}) • Status: **{o['status']}**")
+                        st.caption(f"From: `{o['shop']}` ➡️ To: `{o['delivery_address']}`")
+                    with col_o2:
+                        if st.button("🗑️ Delete Order", key=f"adm_del_ord_{o['id']}"):
+                            supabase.table("orders").delete().eq("id", o["id"]).execute()
+                            st.success(f"Deleted Order #{o['id']}")
+                            st.rerun()
+
+        # --- FANE D: TILBUD ---
+        with admin_tabs[3]:
+            st.markdown("#### All Product Deals")
+            all_deals = supabase.table("offers").select("*").order("id", desc=True).execute().data or []
+            for d in all_deals:
+                with st.container(border=True):
+                    col_d1, col_d2 = st.columns([3, 1])
+                    with col_d1:
+                        st.markdown(f"**{d['product']}** (₦{d['price']:,}) — Shop: `{d['shop']}`")
+                    with col_d2:
+                        if st.button("🗑️ Delete Deal", key=f"adm_del_deal_{d['id']}"):
+                            supabase.table("offers").delete().eq("id", d["id"]).execute()
+                            st.rerun()
