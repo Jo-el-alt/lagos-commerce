@@ -30,17 +30,17 @@ st.set_page_config(
     menu_items=None
 )
 
-# Farver
-bg_color = "#111827" if is_dark else "#ffffff"
+# Farver baseret på Day/Night knap
+bg_color = "#111827" if is_dark else "#f8fafc"
 text_color = "#f9fafb" if is_dark else "#111827"
-card_bg = "#1f2937" if is_dark else "#f9fafb"
-border_color = "#374151" if is_dark else "#e5e7eb"
-btn_bg = "#374151" if is_dark else "#f3f4f6"
+card_bg = "#1f2937" if is_dark else "#ffffff"
+border_color = "#374151" if is_dark else "#e2e8f0"
+btn_bg = "#374151" if is_dark else "#f1f5f9"
 btn_text = "#ffffff" if is_dark else "#111827"
-hover_bg = "#4b5563" if is_dark else "#e5e7eb"
-hover_border = "#6b7280" if is_dark else "#d1d5db"
+hover_bg = "#4b5563" if is_dark else "#e2e8f0"
+hover_border = "#6b7280" if is_dark else "#cbd5e1"
 
-# CSS
+# Dynamisk CSS der følger skift-knappen
 st.html(f"""
 <style>
     .stApp {{
@@ -69,7 +69,7 @@ st.html(f"""
     }}
     
     code, span[data-testid="stMarkdownContainer"] code {{
-        background-color: {"#374151" if is_dark else "#f3f4f6"} !important;
+        background-color: {"#374151" if is_dark else "#f1f5f9"} !important;
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
         border: 1px solid {border_color} !important;
