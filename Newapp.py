@@ -1009,7 +1009,7 @@ else:
             ])
 
     all_shops_list = supabase.table("shops").select("*").execute().data or []
-        db_sub_price, db_escrow_fee = get_platform_settings()
+    db_sub_price, db_escrow_fee = get_platform_settings()
 
         # --- TAB 0: TEST SIMULATION ---
         with admin_tabs[0]:
