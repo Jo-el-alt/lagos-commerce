@@ -40,7 +40,17 @@ btn_text = "#ffffff" if is_dark else "#111827"
 hover_bg = "#4b5563" if is_dark else "#e2e8f0"
 hover_border = "#6b7280" if is_dark else "#cbd5e1"
 
-# Dynamisk CSS der følger skift-knappen
+# Farver baseret på Day/Night knap
+bg_color = "#111827" if is_dark else "#f8fafc"
+text_color = "#f9fafb" if is_dark else "#111827"
+card_bg = "#1f2937" if is_dark else "#ffffff"
+border_color = "#374151" if is_dark else "#e2e8f0"
+btn_bg = "#374151" if is_dark else "#f1f5f9"
+btn_text = "#ffffff" if is_dark else "#111827"
+hover_bg = "#4b5563" if is_dark else "#e2e8f0"
+hover_border = "#6b7280" if is_dark else "#cbd5e1"
+
+# Dynamisk CSS med den nye, skarpe fane-styling
 st.html(f"""
 <style>
     .stApp {{
@@ -57,21 +67,48 @@ st.html(f"""
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
     }}
-    /* Fastgør synlig tekst og baggrund på faner i både lys og mørk tilstand */
-    button[data-baseweb="tab"] {{
-        background-color: {card_bg} !important;
+    
+    /* VENDORA ADMIN TAB BAR STYLING */
+    div[data-baseweb="tab-list"] {{
+        background-color: {"#1f2937" if is_dark else "#f1f5f9"} !important;
+        border: 1px solid {"#374151" if is_dark else "#cbd5e1"} !important;
+        border-radius: 8px !important;
+        padding: 6px !important;
+        gap: 6px !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+    }}
+    div[data-baseweb="tab-list"] button, button[data-baseweb="tab"] {{
+        background-color: {"#374151" if is_dark else "#ffffff"} !important;
+        color: {"#f9fafb" if is_dark else "#0f172a"} !important;
+        -webkit-text-fill-color: {"#f9fafb" if is_dark else "#0f172a"} !important;
+        border: 1px solid {"#4b5563" if is_dark else "#cbd5e1"} !important;
         border-radius: 6px !important;
-        padding: 4px 12px !important;
-        margin-right: 4px !important;
+        padding: 6px 14px !important;
+        font-weight: 700 !important;
+        font-size: 0.85rem !important;
+        opacity: 1 !important;
+        transition: all 0.15s ease-in-out !important;
     }}
-    button[data-baseweb="tab"] p, 
-    button[data-baseweb="tab"] span,
-    button[data-baseweb="tab"] div {{
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
+    div[data-baseweb="tab-list"] button *, button[data-baseweb="tab"] * {{
+        color: inherit !important;
+        -webkit-text-fill-color: inherit !important;
+        opacity: 1 !important;
     }}
-    
-    
+    div[data-baseweb="tab-list"] button[aria-selected="true"], button[data-baseweb="tab"][aria-selected="true"] {{
+        background-color: {"#059669" if is_dark else "#047857"} !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        border-color: #047857 !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+    }}
+    div[data-baseweb="tab-list"] button:hover, button[data-baseweb="tab"]:hover {{
+        background-color: {"#4b5563" if is_dark else "#e2e8f0"} !important;
+        color: {"#34d399" if is_dark else "#065f46"} !important;
+        -webkit-text-fill-color: {"#34d399" if is_dark else "#065f46"} !important;
+        border-color: #10b981 !important;
+    }}
+
     code, span[data-testid="stMarkdownContainer"] code {{
         background-color: {"#374151" if is_dark else "#f1f5f9"} !important;
         color: {text_color} !important;
