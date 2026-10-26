@@ -57,18 +57,20 @@ st.html(f"""
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
     }}
-    
-    /* Gør alle faner, metrics og admin-overskrifter dynamiske i både lys og mørk tilstand */
+    /* Fastgør synlig tekst og baggrund på faner i både lys og mørk tilstand */
+    button[data-baseweb="tab"] {{
+        background-color: {card_bg} !important;
+        border-radius: 6px !important;
+        padding: 4px 12px !important;
+        margin-right: 4px !important;
+    }}
     button[data-baseweb="tab"] p, 
     button[data-baseweb="tab"] span,
-    button[data-baseweb="tab"] div,
-    div[data-testid="stMetricLabel"] *,
-    div[data-testid="stMetricValue"] *,
-    div[data-testid="stMetricDelta"] *,
-    div[data-testid="stTabs"] button p {{
+    button[data-baseweb="tab"] div {{
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
     }}
+    
     
     code, span[data-testid="stMarkdownContainer"] code {{
         background-color: {"#374151" if is_dark else "#f1f5f9"} !important;
