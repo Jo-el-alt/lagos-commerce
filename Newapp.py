@@ -1005,7 +1005,7 @@ admin_tabs = st.tabs([
     "🏪 Stores", 
     "📦 Orders"
 ])
-        admin_tabs = st.tabs([
+    admin_tabs = st.tabs([
             "🧪 Test Sim", 
             "⚙️ Pricing & Inflation", 
             "📢 Broadcasts", 
