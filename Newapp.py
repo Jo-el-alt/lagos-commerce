@@ -8,10 +8,10 @@ import io
 import base64
 import re
 import random
-from openai import OpenAI
 import hashlib
-import secret
+import secrets
 import hmac
+from openai import OpenAI
 
 # Tema-tilstand (skal sættes FØR set_page_config for at styre Streamlits indbyggede tema)
 if "dark_mode" not in st.session_state:
@@ -237,31 +237,6 @@ def get_supabase() -> Client:
 
 supabase = get_supabase()
 
-def hash_customer_pin(pin):
-    salt = secrets.token_hex(16)
-    pin_hash = hashlib.pbkdf2_hmac(
-        "sha256",
-        pin.encode("utf-8"),
-        salt.encode("utf-8"),
-        200000
-    ).hex()
-    return f"{salt}:{pin_hash}"
-
-
-def verify_customer_pin(pin, stored_hash):
-    try:
-        salt, expected_hash = stored_hash.split(":", 1)
-        actual_hash = hashlib.pbkdf2_hmac(
-            "sha256",
-            pin.encode("utf-8"),
-            salt.encode("utf-8"),
-            200000
-        ).hex()
-        return hmac.compare_digest(actual_hash, expected_hash)
-    except (ValueError, AttributeError):
-        return False
-
-
 # OpenAI klient
 @st.cache_resource
 def get_openai_client():
@@ -272,7 +247,45 @@ def get_openai_client():
 
 openai_client = get_openai_client()
 
-# Hjælpefunktioner
+# Sikker PIN-kryptering (PBKDF2-HMAC-SHA256)
+def hash_pin(pin: str) -> str:
+    salt = secrets.token_hex(16)
+    pin_hash = hashlib.pbkdf2_hmac(
+        "sha256",
+        pin.strip().encode("utf-8"),
+        salt.encode("utf-8"),
+        200000
+    ).hex()
+    return f"{salt}:{pin_hash}"
+
+def verify_pin(pin: str, stored_val: str) -> bool:
+    if not stored_val:
+        return False
+    clean_pin = pin.strip()
+    stored_str = str(stored_val).strip()
+    # Bagudkompatibel: hvis en ældre profil har en ukrypteret 4-cifret PIN
+    if ":" not in stored_str:
+        return hmac.compare_digest(clean_pin, stored_str)
+    try:
+        salt, expected_hash = stored_str.split(":", 1)
+        actual_hash = hashlib.pbkdf2_hmac(
+            "sha256",
+            clean_pin.encode("utf-8"),
+            salt.encode("utf-8"),
+            200000
+        ).hex()
+        return hmac.compare_digest(actual_hash, expected_hash)
+    except (ValueError, AttributeError):
+        return False
+
+def format_pin_for_admin(stored_val: str) -> str:
+    if not stored_val:
+        return "N/A"
+    if ":" in str(stored_val):
+        return "🔒 Encrypted"
+    return str(stored_val)
+
+# Øvrige hjælpefunktioner
 def make_slug(name: str) -> str:
     clean = re.sub(r'[^a-zA-Z0-9\s-]', '', name).strip().lower()
     return re.sub(r'[\s-]+', '-', clean)
@@ -555,21 +568,13 @@ elif st.session_state.current_view == "🎁 Customer Prizes & Referrals":
                 c_phone = st.text_input("WhatsApp / Phone Number", placeholder="080...")
                 c_pin = st.text_input("4-Digit PIN", type="password", placeholder="1234")
                 if st.button("Log In to Customer Portal", type="primary", use_container_width=True):
-                    res = (
-                            supabase.table("customers")
-                            .select("*")
-                            .eq("phone", c_phone.strip())
-                            .execute()
-                            )
-
-                    if res.data and verify_customer_pin(
-    c_pin.strip(), res.data[0].get("pin_hash")
-):
-    st.session_state.logged_customer = res.data[0]
-    st.success(f"Welcome back, {res.data[0]['name']}!")
-    st.rerun()
-else:
-    st.error("Invalid phone number or PIN.")
+                    res = supabase.table("customers").select("*").eq("phone", c_phone.strip()).execute()
+                    if res.data and verify_pin(c_pin, res.data[0].get("pin")):
+                        st.session_state.logged_customer = res.data[0]
+                        st.success(f"Welcome back, {res.data[0]['name']}!")
+                        st.rerun()
+                    else:
+                        st.error("Invalid phone number or PIN.")
         else:
             with st.container(border=True):
                 c_name = st.text_input("Full Name (Must match ID) *", placeholder="e.g. Chioma Adebayo")
@@ -594,10 +599,10 @@ else:
                             new_cust = {
                                 "name": c_name.strip(),
                                 "phone": c_phone_new.strip(),
-                                "pin_hash": hash_customer_pin(c_pin_new.strip()),
+                                "pin": hash_pin(c_pin_new),
                                 "member_id": cust_code,
                                 "referred_by": c_referred.strip().upper() if c_referred else None
-                                }
+                            }
                             ins = supabase.table("customers").insert(new_cust).execute()
                             if ins.data:
                                 st.session_state.logged_customer = ins.data[0]
@@ -644,8 +649,8 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 pin_input = st.text_input("4-Digit PIN", type="password", placeholder="1234", value="")
                 if st.button("Log In Now", type="primary", use_container_width=True):
                     clean_phone = phone_input.strip()
-                    res = supabase.table("shops").select("*").eq("phone", clean_phone).eq("pin", pin_input.strip()).execute()
-                    if res.data:
+                    res = supabase.table("shops").select("*").eq("phone", clean_phone).execute()
+                    if res.data and verify_pin(pin_input, res.data[0].get("pin")):
                         st.session_state.logged_shop = res.data[0]
                         st.success(f"Welcome back, {res.data[0]['name']}!")
                         st.rerun()
@@ -685,7 +690,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                             
                             shop_record = {
                                 "slug": unique_slug, "name": new_shop_name.strip(), "phone": clean_phone,
-                                "pin": new_pin.strip(), "area": new_area, "category": new_cat,
+                                "pin": hash_pin(new_pin), "area": new_area, "category": new_cat,
                                 "member_id": new_member_code, "referred_by": clean_ref
                             }
                             ins = supabase.table("shops").insert(shop_record).execute()
@@ -811,8 +816,8 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                 r_phone = st.text_input("Phone Number", placeholder="080...")
                 r_pin = st.text_input("4-Digit PIN", type="password", placeholder="1234")
                 if st.button("Rider Log In", type="primary", use_container_width=True):
-                    res = supabase.table("couriers").select("*").eq("phone", r_phone.strip()).eq("pin", r_pin.strip()).execute()
-                    if res.data:
+                    res = supabase.table("couriers").select("*").eq("phone", r_phone.strip()).execute()
+                    if res.data and verify_pin(r_pin, res.data[0].get("pin")):
                         st.session_state.logged_courier = res.data[0]
                         st.success(f"Welcome back, {res.data[0]['name']}!")
                         st.rerun()
@@ -851,7 +856,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                         
                         r_data = {
                             "name": r_name.strip(), "phone": r_phone_new.strip(),
-                            "pin": r_pin_new.strip(), "area": r_area, "vehicle": vehicle,
+                            "pin": hash_pin(r_pin_new), "area": r_area, "vehicle": vehicle,
                             "id_card_img": id_base64, "is_approved": False,
                             "member_id": new_rider_code
                         }
@@ -991,13 +996,12 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
     if not st.session_state.admin_logged_in:
         admin_pass = st.text_input("Admin PIN", type="password", placeholder="Master key")
         if st.button("Unlock Admin Panel", type="primary"):
-            # Hent sikkert fra st.secrets uden usikker fallback-værdi i koden
             try:
-                master_admin_pin = st.secrets["ADMIN_PASSWORD"]
+                master_admin_pin = str(st.secrets["ADMIN_PASSWORD"]).strip()
             except Exception:
                 master_admin_pin = None
 
-            if master_admin_pin and admin_pass == master_admin_pin:
+            if master_admin_pin and hmac.compare_digest(admin_pass.strip(), master_admin_pin):
                 st.session_state.admin_logged_in = True
                 st.rerun()
             else:
@@ -1306,7 +1310,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                     col_cr1, col_cr2 = st.columns([2, 1])
                     with col_cr1:
                         st.markdown(f"**{c.get('name', 'Rider')}** (🎟️ `{r_id_val}`) — 📞 `{c.get('phone', '')}`")
-                        st.caption(f"Area: {c.get('area', '')} • PIN: `{c.get('pin', '')}`")
+                        st.caption(f"Area: {c.get('area', '')} • PIN: `{format_pin_for_admin(c.get('pin'))}`")
                         if is_appr:
                             st.success("✅ Status: Approved & Active")
                         else:
@@ -1338,7 +1342,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                     with col_s1:
                         ref_info = f" • Referred by: `{s.get('referred_by')}`" if s.get('referred_by') else ""
                         st.markdown(f"**{s.get('name', 'Shop')}** (🎟️ `{s_id_val}`){ref_info}")
-                        st.caption(f"📞 `{s.get('phone', '')}` — PIN: `{s.get('pin', '')}` — Area: `{s.get('area', '')}`")
+                        st.caption(f"📞 `{s.get('phone', '')}` — PIN: `{format_pin_for_admin(s.get('pin'))}` — Area: `{s.get('area', '')}`")
                     with col_s2:
                         if st.button("🗑️ Delete", key=f"adm_del_shop_{s['id']}", type="secondary"):
                             supabase.table("offers").delete().eq("shop", s["name"]).execute()
@@ -1355,7 +1359,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 with st.container(border=True):
                     cu_id = cu.get("member_id") or f"CUST-{cu['id']}"
                     st.markdown(f"**{cu['name']}** (🎟️ `{cu_id}`)")
-                    st.caption(f"📞 `{cu['phone']}` • Referred by: `{cu.get('referred_by', 'None')}`")
+                    st.caption(f"📞 `{cu['phone']}` • PIN: `{format_pin_for_admin(cu.get('pin'))}` • Referred by: `{cu.get('referred_by', 'None')}`")
                     if st.button("🗑️ Delete Customer", key=f"del_cu_{cu['id']}", type="secondary"):
                         supabase.table("customers").delete().eq("id", cu["id"]).execute()
                         st.rerun()
