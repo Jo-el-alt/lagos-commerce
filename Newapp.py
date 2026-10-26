@@ -762,6 +762,8 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         direct_shop_url = f"https://lagos-commerce-pzru6e8tsftfmt72gbjnhz.streamlit.app/?shop={shop['slug']}"
         st.image(generate_qr(direct_shop_url), width=160, caption=f"Scan for {shop['name']}")
 
+            if st.button("🚀Register Profile & Get Customer ID")
+
 # ====================================================
 # VISNING 4: BUDE & KURÉR
 # ====================================================
