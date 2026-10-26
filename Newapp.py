@@ -59,6 +59,12 @@ st.markdown(f"""
         -webkit-text-fill-color: {text_color} !important;
     }}
     
+    /* Gør fanerne (Tabs) tydelige og lyse i mørk tilstand */
+    button[data-baseweb="tab"] p, button[data-baseweb="tab"] span {{
+        color: {text_color} !important;
+        -webkit-text-fill-color: {text_color} !important;
+    }}
+    
     /* Rettelse til code/backtick-felter i mørk tilstand */
     code, span[data-testid="stMarkdownContainer"] code {{
         background-color: {"#374151" if is_dark else "#f3f4f6"} !important;
@@ -282,24 +288,27 @@ def calculate_hours_left(expires_at_str: str) -> int:
 
 def get_shop_access_status(shop: dict):
     status = shop.get("subscription_status", "trial")
-    trial_until_str = shop.get("trial_ends_at")
+    expires_at_str = shop.get("trial_ends_at")
     
-    if status == "trial" and trial_until_str:
+    if expires_at_str:
         try:
-            clean_str = trial_until_str.replace("Z", "+00:00")
-            trial_until = datetime.fromisoformat(clean_str)
+            clean_str = expires_at_str.replace("Z", "+00:00")
+            exp_time = datetime.fromisoformat(clean_str)
             now_time = datetime.now(timezone.utc)
-            diff = trial_until - now_time
+            diff = exp_time - now_time
             days_left = int(diff.total_seconds() // 86400)
+            
             if diff.total_seconds() > 0:
-                return "trial", f"🎉 Free Launch Promo ({days_left}d left)", days_left
+                if status == "trial":
+                    return "trial", f"🎉 Free Promo ({days_left}d left)", days_left
+                else:
+                    return "active_paid", f"🟢 Active ({days_left}d left)", days_left
             else:
-                return "expired", "🔴 Free Promo Expired", 0
+                return "expired", "🔴 Expired", 0
         except Exception:
-            return "trial", "🎉 Free Launch Promo", 30
-    if status == "active_paid":
-        return "active_paid", "🟢 Paid Subscription Active", 30
-    return "expired", "🔴 Subscription Required", 0
+            pass
+            
+    return "expired", "🔴 Needs Setup", 0
 
 def render_broadcast_alerts(target: str):
     try:
@@ -950,9 +959,10 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                         
                         c_bid1, c_bid2 = st.columns(2)
                         with c_bid1:
+                            # Fejlen rettet her (fjernet courier_name opdatering)
                             if st.button("✅ Accept Customer Offer", key=f"acc_{ojob['id']}", type="primary", use_container_width=True):
                                 supabase.table("orders").update({
-                                    "status": "accepted", "courier_id": rider["id"], "courier_name": rider["name"]
+                                    "status": "accepted", "courier_id": rider["id"]
                                 }).eq("id", ojob["id"]).execute()
                                 st.rerun()
                         with c_bid2:
@@ -1222,39 +1232,78 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 st.metric("🔴 Expired / Needs Renewal", len(expired_shops))
 
             st.markdown("---")
-            st.markdown("##### 🏪 Stores on 30-Day Free Trial")
-            if not trials:
-                st.info("No active trial stores.")
+            st.markdown("##### 🏪 Stores on Active Subscription or Promo")
+            if not trials and not paid_active:
+                st.info("No active stores.")
             else:
-                for t in trials:
+                for t in trials + paid_active:
                     s_data = t["shop"]
                     with st.container(border=True):
-                        col_t1, col_t2 = st.columns([3, 1])
+                        col_t1, col_t2 = st.columns([2, 1.5])
                         with col_t1:
                             st.markdown(f"**{s_data['name']}** (`{s_data.get('member_id', 'N/A')}`) — 📞 `{s_data['phone']}`")
-                            st.info(f"⏳ Free Launch Promo: **{t['days_left']} days remaining**")
+                            st.info(f"⏳ {t['label']}")
                         with col_t2:
-                            if st.button("➕ Extend 30d", key=f"ext_{s_data['id']}", use_container_width=True):
-                                new_exp = datetime.now(timezone.utc) + timedelta(days=30)
-                                supabase.table("shops").update({
-                                    "subscription_status": "trial", "trial_ends_at": new_exp.isoformat()
-                                }).eq("id", s_data["id"]).execute()
-                                st.rerun()
+                            st.markdown("<div style='font-size: 0.8rem; margin-bottom: 2px;'><b>Add time:</b></div>", unsafe_allow_html=True)
+                            ext_c1, ext_c2, ext_c3 = st.columns(3)
+                            with ext_c1:
+                                if st.button("+7d", key=f"ext7_{s_data['id']}", use_container_width=True):
+                                    new_exp = datetime.now(timezone.utc) + timedelta(days=7)
+                                    supabase.table("shops").update({
+                                        "subscription_status": "active_paid", "trial_ends_at": new_exp.isoformat()
+                                    }).eq("id", s_data["id"]).execute()
+                                    st.rerun()
+                            with ext_c2:
+                                if st.button("+14d", key=f"ext14_{s_data['id']}", use_container_width=True):
+                                    new_exp = datetime.now(timezone.utc) + timedelta(days=14)
+                                    supabase.table("shops").update({
+                                        "subscription_status": "active_paid", "trial_ends_at": new_exp.isoformat()
+                                    }).eq("id", s_data["id"]).execute()
+                                    st.rerun()
+                            with ext_c3:
+                                if st.button("+30d", key=f"ext30_{s_data['id']}", use_container_width=True):
+                                    new_exp = datetime.now(timezone.utc) + timedelta(days=30)
+                                    supabase.table("shops").update({
+                                        "subscription_status": "active_paid", "trial_ends_at": new_exp.isoformat()
+                                    }).eq("id", s_data["id"]).execute()
+                                    st.rerun()
 
-            st.markdown("##### 🔴 Expired Access (Needs Outreach)")
+            st.markdown("##### 🔴 Expired Access (Needs Renewal)")
             if not expired_shops:
                 st.write("No expired stores.")
             else:
                 for ex in expired_shops:
                     s_data = ex["shop"]
                     with st.container(border=True):
-                        col_e1, col_e2 = st.columns([3, 1])
+                        col_e1, col_e2 = st.columns([1.5, 1])
                         with col_e1:
                             st.markdown(f"**{s_data['name']}** (`{s_data.get('member_id', 'N/A')}`) — 📞 `{s_data['phone']}`")
-                            st.error("Trial expired.")
-                        with col_e2:
                             wa_renew = make_wa_link(s_data['phone'], f"Hello {s_data['name']}! Your free launch period on Vendora has concluded. Would you like to renew for ₦1,000/week to keep receiving orders?")
                             st.link_button("💬 WhatsApp Follow-up", wa_renew, use_container_width=True)
+                        with col_e2:
+                            st.markdown("<div style='font-size: 0.8rem; margin-bottom: 2px;'><b>Renew Access:</b></div>", unsafe_allow_html=True)
+                            re_c1, re_c2, re_c3 = st.columns(3)
+                            with re_c1:
+                                if st.button("+7d", key=f"re7_{s_data['id']}", use_container_width=True):
+                                    new_exp = datetime.now(timezone.utc) + timedelta(days=7)
+                                    supabase.table("shops").update({
+                                        "subscription_status": "active_paid", "trial_ends_at": new_exp.isoformat()
+                                    }).eq("id", s_data["id"]).execute()
+                                    st.rerun()
+                            with re_c2:
+                                if st.button("+14d", key=f"re14_{s_data['id']}", use_container_width=True):
+                                    new_exp = datetime.now(timezone.utc) + timedelta(days=14)
+                                    supabase.table("shops").update({
+                                        "subscription_status": "active_paid", "trial_ends_at": new_exp.isoformat()
+                                    }).eq("id", s_data["id"]).execute()
+                                    st.rerun()
+                            with re_c3:
+                                if st.button("+30d", key=f"re30_{s_data['id']}", use_container_width=True):
+                                    new_exp = datetime.now(timezone.utc) + timedelta(days=30)
+                                    supabase.table("shops").update({
+                                        "subscription_status": "active_paid", "trial_ends_at": new_exp.isoformat()
+                                    }).eq("id", s_data["id"]).execute()
+                                    st.rerun()
 
         # --- FANE 4: ESCROW & SETTLEMENTS ---
         with admin_tabs[4]:
@@ -1282,7 +1331,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         st.markdown(f"**Order #{po['id']} — {po['product']}** (`Ref: {po.get('paystack_reference', 'N/A')}`)")
                         st.caption(f"Status: `{po['status']}` • Escrow: `{po['payment_status']}`")
                         st.markdown(f"• **Store ({po['shop']}):** ₦{po['item_price']:,} (📞 `{po['shop_phone']}`)")
-                        st.markdown(f"• **Rider ({po.get('courier_name', 'Unassigned')}):** ₦{po.get('rider_payout', 0):,}")
+                        st.markdown(f"• **Rider (ID: {po.get('courier_id', 'N/A')}):** ₦{po.get('rider_payout', 0):,}")
                         st.markdown(f"• **Debbie's Fee:** ₦{po.get('platform_fee', 150):,}")
                         
                         if po["status"] == "delivered" and po["payment_status"] == "escrow_funded":
