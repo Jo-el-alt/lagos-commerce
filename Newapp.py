@@ -419,7 +419,7 @@ if st.button(current_label, key="theme_toggle_btn"):
 
 st.markdown("---")
 
-# Navigationsmenu (Ren handelsplatform)
+# Navigationsmenu
 views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
 
@@ -603,31 +603,41 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                             shop_record = {
                                 "slug": unique_slug, "name": new_shop_name.strip(), "phone": clean_phone,
                                 "pin": hash_pin(new_pin), "area": new_area, "category": new_cat,
-                                "member_id": new_member_code, "referred_by": clean_ref
+                                "member_id": new_member_code, "referred_by": clean_ref,
+                                "airtime_paid_count": 0
                             }
                             ins = supabase.table("shops").insert(shop_record).execute()
                             if ins.data:
                                 st.session_state.logged_shop = ins.data[0]
                                 st.rerun()
     else:
-        shop = st.session_state.logged_shop
+        # Hent altid frisk shop-data for at have opdateret airtime_paid_count
+        fresh_shop = supabase.table("shops").select("*").eq("id", st.session_state.logged_shop["id"]).execute().data
+        shop = fresh_shop[0] if fresh_shop else st.session_state.logged_shop
         member_id = shop.get("member_id") or f"SHOP-{1000 + shop.get('id', 1)}"
         
         render_broadcast_alerts("Stores")
         
         ref_count_res = supabase.table("shops").select("id").eq("referred_by", member_id).execute()
-        referred_count = len(ref_count_res.data or [])
+        total_referred = len(ref_count_res.data or [])
+        already_paid = shop.get("airtime_paid_count") or 0
+        unpaid_refs = max(0, total_referred - already_paid)
+        current_progress = unpaid_refs % 5
         
         col_hdr1, col_hdr2 = st.columns([3, 1])
         with col_hdr1:
             st.markdown(f"### 🏪 {shop['name']}")
             st.markdown(f'<div class="member-badge">🏪 Store ID: {member_id}</div>', unsafe_allow_html=True)
             
-            if referred_count >= 5:
-                st.markdown(f'<div class="referral-badge" style="background-color: #e8f5e9; color:#1b5e20;">🎯 Partner Target Met: {referred_count}/5 stores referred! (Qualified for 1 Month Free Listing)</div>', unsafe_allow_html=True)
+            if unpaid_refs >= 5:
+                ready_payouts = unpaid_refs // 5
+                st.markdown(f'<div class="referral-badge" style="background-color: #e8f5e9; color:#1b5e20;">🎉 Target Met! You have <b>₦{ready_payouts * 1000:,} Airtime</b> ready for payout! Contact coordinator.</div>', unsafe_allow_html=True)
             else:
-                st.markdown(f'<div class="referral-badge">🤝 Referred Stalls: {referred_count}/5 (Refer {5 - referred_count} more for 1 Month Free Listing)</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="referral-badge">🎁 Referral Airtime Progress: <b>{current_progress}/5 stalls</b> (Refer {5 - current_progress} more to earn ₦1,000 Airtime)</div>', unsafe_allow_html=True)
                 
+            times_awarded = already_paid // 5
+            if times_awarded > 0:
+                st.caption(f"✅ Previously rewarded: **{times_awarded}x ₦1,000 Airtime** ({already_paid} referrals cleared)")
             st.caption(f"📍 {shop['area']} • 📞 {shop['phone']}")
         with col_hdr2:
             if st.button("🚪 Log Out", use_container_width=True):
@@ -858,7 +868,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
 # ====================================================
 elif st.session_state.current_view == "💬 Support":
     st.markdown("### 💬 User Support & Helpdesk")
-    st.caption("Need help, stall listing assistance, or account verification? Message our coordinator team.")
+    st.caption("Need help, stall listing assistance, or referral airtime questions? Message our coordinator team.")
     
     default_name = ""
     default_phone = ""
@@ -877,7 +887,7 @@ elif st.session_state.current_view == "💬 Support":
         u_name = st.text_input("Your Name / Business Name *", value=default_name)
         u_phone = st.text_input("WhatsApp / Phone Number *", value=default_phone)
         u_role = st.selectbox("I am a:", ["Customer / Buyer", "Store Owner", "Courier / Rider", "Other"])
-        u_subject = st.selectbox("Topic / Subject *", ["Stall Listing & Subscription", "Order Issue", "Courier Verification", "Forgotten PIN", "General Inquiry"])
+        u_subject = st.selectbox("Topic / Subject *", ["Stall Listing & Subscription", "Referral Airtime Reward", "Order Issue", "Courier Verification", "Forgotten PIN", "General Inquiry"])
         u_message = st.text_area("Your Message / Question *", placeholder="Describe your inquiry...")
         
         if st.button("📨 Send Message to Vendora Team", type="primary", use_container_width=True):
@@ -950,16 +960,16 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
         st.markdown("---")
 
-        admin_tabs = st.tabs(["📢 Broadcasts", "🚦 Subscriptions", "🤝 Partner B2B Rewards", "📬 Messages", "🛵 Couriers", "🏪 Stores", "📦 Orders", "🔥 Offers"])
+        admin_tabs = st.tabs(["📢 Broadcasts", "🎁 Airtime Rewards Tracker", "🚦 Subscriptions", "📬 Messages", "🛵 Couriers", "🏪 Stores", "📦 Orders", "🔥 Offers"])
 
         # --- FANE 0: BROADCASTS ---
         with admin_tabs[0]:
             st.markdown("#### 📢 Platform Broadcast Messages & Reminders")
             with st.expander("➕ Create New Broadcast Message"):
                 b_target = st.selectbox("Send To Audience:", ["Stores", "Couriers", "All"])
-                b_type = st.selectbox("Notice Type / Badge:", ["📢 Platform Update", "⚠️ Important Notice", "🤝 Partner Reminder"])
-                b_title = st.text_input("Notice Title *", placeholder="e.g. Weekend Market Rush!")
-                b_body = st.text_area("Notice Message *", placeholder="e.g. Ensure your active stock is updated for Saturday buyers!")
+                b_type = st.selectbox("Notice Type / Badge:", ["🎁 Airtime Promotion", "📢 Platform Update", "⚠️ Important Notice"])
+                b_title = st.text_input("Notice Title *", placeholder="e.g. Earn ₦1,000 Airtime!")
+                b_body = st.text_area("Notice Message *", placeholder="e.g. Refer 5 partner stalls with your Shop ID and get ₦1,000 instant Airtime!")
                 
                 if st.button("🚀 Publish Broadcast Alert", type="primary"):
                     if not b_title or not b_body:
@@ -1001,8 +1011,65 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                 supabase.table("broadcast_messages").delete().eq("id", b["id"]).execute()
                                 st.rerun()
 
-        # --- FANE 1: ABONNEMENTER ---
+        # --- FANE 1: AIRTIME REWARDS TRACKER (MED NULSTILLINGS-KNAP) ---
         with admin_tabs[1]:
+            st.markdown("#### 🎁 Partner Referral Airtime Rewards")
+            st.caption("Merchants qualify for ₦1,000 Airtime for every 5 new stalls referred. Send via your bank/OPay app and click to advance the counter.")
+            
+            all_shops_list = supabase.table("shops").select("*").execute().data or []
+            referral_map = {}
+            for s in all_shops_list:
+                ref_by = s.get("referred_by")
+                if ref_by:
+                    referral_map[ref_by] = referral_map.get(ref_by, 0) + 1
+
+            pending_payouts = []
+            for s in all_shops_list:
+                s_id = s.get("member_id") or f"SHOP-{1000 + s.get('id', 1)}"
+                total_refs = referral_map.get(s_id, 0)
+                paid_refs = s.get("airtime_paid_count") or 0
+                unpaid = max(0, total_refs - paid_refs)
+                if unpaid >= 5:
+                    payout_portions = unpaid // 5
+                    pending_payouts.append({
+                        "id": s["id"],
+                        "name": s["name"],
+                        "phone": s["phone"],
+                        "member_id": s_id,
+                        "total_refs": total_refs,
+                        "paid_refs": paid_refs,
+                        "unpaid": unpaid,
+                        "reward_naira": payout_portions * 1000,
+                        "advance_by": payout_portions * 5
+                    })
+
+            st.metric("🎁 Stores Qualified for Airtime Payouts", len(pending_payouts))
+            st.markdown("---")
+
+            if not pending_payouts:
+                st.info("No stores currently have 5+ unrewarded referrals. Everything is up to date!")
+            else:
+                for p in pending_payouts:
+                    with st.container(border=True):
+                        col_p1, col_p2 = st.columns([3, 2])
+                        with col_p1:
+                            st.markdown(f"**{p['name']}** (`{p['member_id']}`)")
+                            st.markdown(f"📞 Phone: `{p['phone']}`")
+                            st.write(f"Total Stalls Referred: **{p['total_refs']}** (Cleared so far: {p['paid_refs']})")
+                            st.success(f"🎉 **Ready for Payout:** ₦{p['reward_naira']:,} Airtime ({p['unpaid']} unpaid referrals in queue)")
+                        with col_p2:
+                            wa_airtime_msg = f"Hello {p['name']}! Thank you for referring new stalls to Vendora. Your ₦{p['reward_naira']:,} Airtime reward has been sent to your phone number ({p['phone']})."
+                            st.link_button("💬 Send Receipt on WA", make_wa_link(p["phone"], wa_airtime_msg), use_container_width=True)
+                            
+                            # Knappen der registrerer udbetalingen og lader tælleren køre videre
+                            if st.button(f"✅ Mark ₦{p['reward_naira']:,} Airtime Sent", key=f"pay_air_{p['id']}", type="primary", use_container_width=True):
+                                new_paid_val = p["paid_refs"] + p["advance_by"]
+                                supabase.table("shops").update({"airtime_paid_count": new_paid_val}).eq("id", p["id"]).execute()
+                                st.success(f"Logged reward for {p['name']}! Counter advanced by {p['advance_by']} referrals.")
+                                st.rerun()
+
+        # --- FANE 2: ABONNEMENTER ---
+        with admin_tabs[2]:
             st.markdown("#### 🚦 Subscription Status & Fee Collection")
             bills = supabase.table("billing_records").select("*").order("id", desc=True).execute().data or []
             
@@ -1026,7 +1093,6 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 all_couriers = supabase.table("couriers").select("*").execute().data or []
                 target_payer_type = st.radio("Bill to:", ["Store", "Courier"], horizontal=True)
                 
-                all_shops_list = supabase.table("shops").select("*").execute().data or []
                 if target_payer_type == "Store" and all_shops_list:
                     shop_names = [f"{s.get('name', 'Shop')} ({s.get('member_id', '')})" for s in all_shops_list]
                     sel_s_idx = st.selectbox("Select Store:", range(len(shop_names)), format_func=lambda x: shop_names[x])
@@ -1109,36 +1175,6 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                 supabase.table("billing_records").delete().eq("id", b["id"]).execute()
                                 st.rerun()
 
-        # --- FANE 2: STORE PARTNER B2B REWARDS ---
-        with admin_tabs[2]:
-            st.markdown("#### 🤝 Store Partner B2B Referrals")
-            st.caption("Standard B2B trade discount: Merchants referring 5 partner stalls earn 1 month free listing.")
-            all_shops_ref = supabase.table("shops").select("*").execute().data or []
-            referral_counts = {}
-            for s in all_shops_ref:
-                ref_by = s.get("referred_by")
-                if ref_by:
-                    referral_counts[ref_by] = referral_counts.get(ref_by, 0) + 1
-                    
-            qualified_stores = []
-            for s in all_shops_ref:
-                s_id = s.get("member_id") or f"SHOP-{1000 + s.get('id', 1)}"
-                cnt = referral_counts.get(s_id, 0)
-                if cnt >= 5:
-                    qualified_stores.append({"name": s.get("name"), "phone": s.get("phone"), "id": s_id, "count": cnt})
-
-            st.write(f"Stalls with 5+ partner referrals: **{len(qualified_stores)}**")
-            for store in qualified_stores:
-                with st.container(border=True):
-                    col_st1, col_st2 = st.columns([3, 2])
-                    with col_st1:
-                        st.markdown(f"**{store['name']}** (`{store['id']}`)")
-                        st.caption(f"📞 `{store['phone']}` • Referred: **{store['count']} stalls**")
-                        st.success("Qualified for 1 Month Free Listing!")
-                    with col_st2:
-                        wa_shop_rew = make_wa_link(store["phone"], f"Hello {store['name']}! Thank you for referring {store['count']} merchants to Vendora. Your stall has been credited with 1 month free listing!")
-                        st.link_button("💬 Send Confirmation", wa_shop_rew, use_container_width=True)
-
         # --- FANE 3: SUPPORT BESKEDER ---
         with admin_tabs[3]:
             st.markdown("#### Support Inbox")
@@ -1194,8 +1230,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
         # --- FANE 5: BUTIKKER ---
         with admin_tabs[5]:
             st.markdown("#### Registered Shops")
-            all_shops_admin = supabase.table("shops").select("*").execute().data or []
-            for s in all_shops_admin:
+            for s in all_shops_list:
                 with st.container(border=True):
                     s_id_val = s.get("member_id") or f"SHOP-{1000 + s.get('id', 1)}"
                     col_s1, col_s2 = st.columns([3, 1])
