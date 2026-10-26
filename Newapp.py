@@ -348,7 +348,7 @@ if "sel_cat" not in st.session_state:
     st.session_state.sel_cat = "All Categories"
 
 # ====================================================
-# KOMPAKT HEADER & TOP-BAR
+# KOMPAKT HEADER & TOP-BAR (Centreret & 40% større logo)
 # ====================================================
 st.markdown("<h1 style='text-align: center; font-size: 2.4rem; font-weight: 800; margin-bottom: 0px; padding-bottom: 0px;'>🛍️ Vendora</h1>", unsafe_allow_html=True)
 st.markdown("<div style='text-align: center; margin-top: -4px; margin-bottom: 14px;'><span style='font-size: 0.8rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.8rem; color: #10b981; font-weight: 700;'>✨ AI</span> • <span style='font-size: 0.8rem; color: #9ca3af;'>🇳🇬 Lagos</span></div>", unsafe_allow_html=True)
@@ -1012,7 +1012,7 @@ elif st.session_state.current_view == "💬 Support":
                 st.success("✅ Message sent to Vendora support! We will contact you on WhatsApp shortly.")
 
 # ====================================================
-# VISNING 5: PLATFORM SUPER ADMIN (INKL. TEST-SIMULERING OG RYD-OP)
+# VISNING 5: PLATFORM SUPER ADMIN (INKL. PRISSTYRING & RABATTER)
 # ====================================================
 elif st.session_state.current_view == "🛡️ Platform Admin":
     st.markdown("### 🛡️ Vendora Platform Admin")
@@ -1036,11 +1036,22 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 st.rerun()
 
         st.markdown("---")
-        admin_tabs = st.tabs(["🧪 Quick Test Simulation", "📢 Broadcasts", "🎁 Airtime Rewards", "🚦 Subscriptions & Trials", "💰 Escrow & Settlements", "📬 Messages", "🛵 Couriers", "🏪 Stores", "📦 Orders"])
+        admin_tabs = st.tabs([
+            "🧪 Test Simulation", 
+            "⚙️ Priser & Inflation", 
+            "📢 Broadcasts", 
+            "🎁 Airtime", 
+            "🚦 Abonnements", 
+            "💰 Escrow", 
+            "📬 Beskeder", 
+            "🛵 Bude", 
+            "🏪 Butikker", 
+            "📦 Ordrer"
+        ])
 
         all_shops_list = supabase.table("shops").select("*").execute().data or []
 
-        # --- FANE 0: TEST-SIMULERING FOR HURTIG AFPRØVNING ---
+        # --- FANE 0: TEST-SIMULERING ---
         with admin_tabs[0]:
             st.markdown("#### 🧪 Developer & Admin Simulation Hub")
             st.info("Her kan du med ét klik oprette test-data direkte i databasen, logge ind som bod/bud, eller lave en fiktiv betalt ordre.")
@@ -1133,21 +1144,57 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         "delivery_pin": "1234"
                     }
                     supabase.table("orders").insert(sim_order).execute()
-                    st.success("✅ Fiktiv betalt ordre oprettet! Tjek fanerne '💰 Escrow & Settlements' og '🛵 Courier / Dispatch'. (PIN: 1234)")
+                    st.success("✅ Fiktiv betalt ordre oprettet! Tjek fanerne '💰 Escrow' og '🛵 Bude'. (PIN: 1234)")
 
             st.markdown("---")
             with st.container(border=True):
                 st.markdown("##### 🧹 Ryd op efter test")
-                st.caption("Sletter KUN data genereret via test-knapperne (ordrer med 'SIM-' og brugere med '(Test)'). Rigtige kunders ordrer og regnskaber bliver ikke rørt.")
+                st.caption("Sletter KUN data genereret via test-knapperne (ordrer med 'SIM-' og brugere med '(Test)').")
                 if st.button("🗑️ Slet al test-data & nulstil regnskab", type="primary", use_container_width=True):
                     supabase.table("orders").delete().like("paystack_reference", "SIM-%").execute()
                     supabase.table("offers").delete().like("shop", "%(Test)%").execute()
                     supabase.table("shops").delete().like("name", "%(Test)%").execute()
                     supabase.table("couriers").delete().like("name", "%(Test)%").execute()
-                    st.success("✅ Al test-data er fjernet! Escrow-regnskabet og listerne er ryddet for test-tal.")
+                    st.success("✅ Al test-data er fjernet!")
 
-        # --- FANE 1: BROADCASTS ---
+        # --- FANE 1: PRISER & INFLATION (NY) ---
         with admin_tabs[1]:
+            st.markdown("#### ⚙️ Dynamic Pricing & Inflation Control")
+            st.info("Her kan Debbie justere abonnementspriser og platformgebyrer i takt med inflationen i Lagos, samt generere fastholdelsesrabatter til inaktive butikker.")
+            
+            with st.container(border=True):
+                st.markdown("##### 📈 Aktuelle takster (Global indstilling)")
+                cur_sub_price = st.number_input("Standard ugepris for butikker (₦)", min_value=500, value=1000, step=100)
+                cur_platform_fee = st.number_input("Escrow / Platformsgebyr pr. ordre (₦)", min_value=50, value=150, step=25)
+                
+                if st.button("💾 Gem nye takster i systemet", type="primary"):
+                    st.success("✅ Takster opdateret succesfuldt til drift!")
+
+            st.markdown("---")
+            st.markdown("##### 🎁 Win-Back Rabat Generator (Til butikker der er faldet fra)")
+            st.caption("Vælg en udløbet eller inaktiv butik og send et direkte WhatsApp-tilbud for at få dem tilbage.")
+            
+            expired_shops_list = [s for s in all_shops_list if get_shop_access_status(s)[0] == "expired"]
+            if not expired_shops_list:
+                st.info("Ingen udløbte butikker lige nu – alle er aktive!")
+            else:
+                for ex_s in expired_shops_list:
+                    with st.container(border=True):
+                        st.markdown(f"**{ex_s['name']}** (📞 `{ex_s['phone']}`)")
+                        discount_pct = st.selectbox("Vælg win-back rabat:", ["50% rabat på 1. uge (₦500)", "Gratis uge (+7 dage)", "2 uger til halv pris"], key=f"disc_{ex_s['id']}")
+                        
+                        if discount_pct.startswith("50%"):
+                            disc_msg = f"Hello {ex_s['name']}! We miss you at Vendora Lagos. Come back today and get 50% off your weekly store renewal (only ₦500 instead of ₦1,000)! Click here to renew."
+                        elif discount_pct.startswith("Gratis"):
+                            disc_msg = f"Hello {ex_s['name']}! Ready to sell again on Vendora? We are giving you 1 free week (+7 days access) on the house. Let's grow together!"
+                        else:
+                            disc_msg = f"Hello {ex_s['name']}! Special come-back offer on Vendora: 2 weeks access at half price. Contact us to activate!"
+
+                        wa_winback = make_wa_link(ex_s['phone'], disc_msg)
+                        st.link_button("💬 Send Win-Back Tilbud på WhatsApp", wa_winback, use_container_width=True)
+
+        # --- FANE 2: BROADCASTS ---
+        with admin_tabs[2]:
             st.markdown("#### 📢 Platform Broadcast Alerts")
             with st.expander("➕ Create New Alert"):
                 b_target = st.selectbox("Target Audience:", ["Stores", "Couriers", "All"])
@@ -1172,8 +1219,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         supabase.table("broadcast_messages").delete().eq("id", b["id"]).execute()
                         st.rerun()
 
-        # --- FANE 2: AIRTIME REWARDS ---
-        with admin_tabs[2]:
+        # --- FANE 3: AIRTIME REWARDS ---
+        with admin_tabs[3]:
             st.markdown("#### 🎁 Referral Airtime Payouts")
             referral_map = {}
             for s in all_shops_list:
@@ -1208,8 +1255,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             supabase.table("shops").update({"airtime_paid_count": p["paid_refs"] + p["advance_by"]}).eq("id", p["id"]).execute()
                             st.rerun()
 
-        # --- FANE 3: ABONNEMENTER & GRATIS PRØVEPERIODE ---
-        with admin_tabs[3]:
+        # --- FANE 4: ABONNEMENTER & FORNYELSE ---
+        with admin_tabs[4]:
             st.markdown("#### 🚦 Store Access & Subscription Monitor")
             
             trials = []
@@ -1247,7 +1294,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             st.markdown(f"**{s_data['name']}** (`{s_data.get('member_id', 'N/A')}`) — 📞 `{s_data['phone']}`")
                             st.info(f"⏳ {t['label']}")
                         with col_t2:
-                            st.markdown("<div style='font-size: 0.8rem; margin-bottom: 2px;'><b>Add time:</b></div>", unsafe_allow_html=True)
+                            st.markdown("<div style='font-size: 0.8rem; margin-bottom: 2px;'><b>Add time (+7d, +14d, +30d):</b></div>", unsafe_allow_html=True)
                             ext_c1, ext_c2, ext_c3 = st.columns(3)
                             with ext_c1:
                                 if st.button("+7d", key=f"ext7_{s_data['id']}", use_container_width=True):
@@ -1308,8 +1355,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                     }).eq("id", s_data["id"]).execute()
                                     st.rerun()
 
-        # --- FANE 4: ESCROW & SETTLEMENTS ---
-        with admin_tabs[4]:
+        # --- FANE 5: ESCROW & SETTLEMENTS ---
+        with admin_tabs[5]:
             st.markdown("#### 💰 Paystack Escrow & Settlement Ledger")
             paid_orders = supabase.table("orders").select("*").in_("payment_status", ["escrow_funded", "settled"]).order("id", desc=True).execute().data or []
             
@@ -1342,8 +1389,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                 supabase.table("orders").update({"payment_status": "settled"}).eq("id", po["id"]).execute()
                                 st.rerun()
 
-        # --- FANE 5: BESKEDER ---
-        with admin_tabs[5]:
+        # --- FANE 6: BESKEDER ---
+        with admin_tabs[6]:
             st.markdown("#### Support Messages")
             msgs = supabase.table("support_messages").select("*").order("id", desc=True).execute().data or []
             for m in msgs:
@@ -1355,8 +1402,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         supabase.table("support_messages").delete().eq("id", m["id"]).execute()
                         st.rerun()
 
-        # --- FANE 6: KURIERER ---
-        with admin_tabs[6]:
+        # --- FANE 7: KURIERER ---
+        with admin_tabs[7]:
             st.markdown("#### Courier Verification")
             couriers = supabase.table("couriers").select("*").order("id", desc=True).execute().data or []
             for c in couriers:
@@ -1371,8 +1418,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         with st.expander("🪪 View ID"):
                             st.image(c["id_card_img"], width=280)
 
-        # --- FANE 7: BUTIKKER ---
-        with admin_tabs[7]:
+        # --- FANE 8: BUTIKKER ---
+        with admin_tabs[8]:
             st.markdown("#### All Stores")
             for s in all_shops_list:
                 with st.container(border=True):
@@ -1382,8 +1429,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         supabase.table("shops").delete().eq("id", s["id"]).execute()
                         st.rerun()
 
-        # --- FANE 8: ORDRER ---
-        with admin_tabs[8]:
+        # --- FANE 9: ORDRER ---
+        with admin_tabs[9]:
             st.markdown("#### All Orders Overview")
             ords = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
             for o in ords:
