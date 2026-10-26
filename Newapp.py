@@ -13,7 +13,6 @@ import random
 import hashlib
 import secrets
 import hmac
-from openai import OpenAI
 
 # Tema-tilstand
 if "dark_mode" not in st.session_state:
@@ -361,7 +360,6 @@ def show_offer_modal(item):
                 else:
                     p_fee = 150
                     r_payout = max(0, int(suggested_delivery) - p_fee)
-                    # GENERER SIKKERHEDS-PIN TIL KUNDEN
                     delivery_pin = str(random.randint(1000, 9999))
                     
                     new_order = {
@@ -396,7 +394,6 @@ def show_offer_modal(item):
     else:
         pay_info = st.session_state[order_key]
         
-        # Tjek om den ER betalt
         check_status = supabase.table("orders").select("payment_status").eq("id", pay_info["order_id"]).execute()
         is_already_funded = check_status.data and check_status.data[0]["payment_status"] == "escrow_funded"
 
@@ -427,7 +424,7 @@ def show_offer_modal(item):
                             "payment_status": "escrow_funded",
                             "paid_at": now_iso
                         }).eq("id", pay_info["order_id"]).execute()
-                        st.rerun() # Reruns to show the PIN box above
+                        st.rerun()
                     else:
                         st.warning("Payment not registered yet. Try again in a moment.")
 
@@ -809,13 +806,11 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                         with cw2:
                             st.link_button("💬 WA Customer", wa_cust, use_container_width=True)
                             
-                        # HVIS IKKE PICKED UP ENDNU
                         if job["status"] == "accepted":
                             if st.button("📦 Mark Picked Up", key=f"pk_{job['id']}", use_container_width=True):
                                 supabase.table("orders").update({"status": "picked_up"}).eq("id", job["id"]).execute()
                                 st.rerun()
                                 
-                        # HVIS PICKED UP, KREV PIN FOR AT LEVERE
                         elif job["status"] == "picked_up":
                             st.info("🚚 On the way to customer. Ask customer for 4-digit PIN upon arrival.")
                             entered_pin = st.text_input("Enter 4-Digit Customer PIN", key=f"pin_input_{job['id']}", max_chars=4)
@@ -896,7 +891,7 @@ elif st.session_state.current_view == "💬 Support":
                 st.success("✅ Message sent to Vendora support! We will contact you on WhatsApp shortly.")
 
 # ====================================================
-# VISNING 5: PLATFORM SUPER ADMIN (INKL. TEST PANEL)
+# VISNING 5: PLATFORM SUPER ADMIN (INKL. TEST-SIMULERING OG RYD-OP)
 # ====================================================
 elif st.session_state.current_view == "🛡️ Platform Admin":
     st.markdown("### 🛡️ Vendora Platform Admin")
@@ -1018,7 +1013,17 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                     }
                     supabase.table("orders").insert(sim_order).execute()
                     st.success("✅ Fiktiv betalt ordre oprettet! Tjek fanerne '💰 Escrow & Settlements' og '🛵 Courier / Dispatch'. (PIN: 1234)")
-                    # st.rerun() er udkommenteret, så du kan se den grønne besked.
+
+            st.markdown("---")
+            with st.container(border=True):
+                st.markdown("##### 🧹 Ryd op efter test")
+                st.caption("Sletter KUN data genereret via test-knapperne (ordrer med 'SIM-' og brugere med '(Test)'). Rigtige kunders ordrer og regnskaber bliver ikke rørt.")
+                if st.button("🗑️ Slet al test-data & nulstil regnskab", type="primary", use_container_width=True):
+                    supabase.table("orders").delete().like("paystack_reference", "SIM-%").execute()
+                    supabase.table("offers").delete().like("shop", "%(Test)%").execute()
+                    supabase.table("shops").delete().like("name", "%(Test)%").execute()
+                    supabase.table("couriers").delete().like("name", "%(Test)%").execute()
+                    st.success("✅ Al test-data er fjernet! Escrow-regnskabet og listerne er ryddet for test-tal.")
 
         # --- FANE 1: BROADCASTS ---
         with admin_tabs[1]:
