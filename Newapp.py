@@ -3,6 +3,8 @@ from PIL import Image, ImageOps
 from supabase import create_client, Client
 from datetime import datetime, timezone, timedelta
 import urllib.parse
+import urllib.request
+import json
 import qrcode
 import io
 import base64
@@ -178,6 +180,18 @@ st.markdown(f"""
         margin-bottom: 8px;
         border: 1px solid {"#1d4ed8" if is_dark else "#bfdbfe"};
     }}
+    .escrow-badge {{
+        display: inline-block;
+        background-color: {"#064e3b" if is_dark else "#dcfce7"};
+        color: {"#34d399" if is_dark else "#166534"} !important;
+        -webkit-text-fill-color: {"#34d399" if is_dark else "#166534"} !important;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        border: 1px solid {"#059669" if is_dark else "#86efac"};
+        margin-bottom: 6px;
+    }}
     .referral-badge {{
         display: inline-block;
         background-color: {"#451a03" if is_dark else "#ffedd5"};
@@ -190,29 +204,6 @@ st.markdown(f"""
         border: 1px solid {"#9a3412" if is_dark else "#fed7aa"};
         margin-bottom: 6px;
     }}
-    .status-light-red {{
-        background-color: {"#450a0a" if is_dark else "#fee2e2"};
-        color: {"#fca5a5" if is_dark else "#b91c1c"} !important;
-        -webkit-text-fill-color: {"#fca5a5" if is_dark else "#b91c1c"} !important;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-weight: bold;
-        border: 1px solid {"#991b1b" if is_dark else "#fecaca"};
-        display: inline-block;
-        margin-bottom: 6px;
-    }}
-    .status-light-green {{
-        background-color: {"#064e3b" if is_dark else "#dcfce7"};
-        color: {"#6ee7b7" if is_dark else "#15803d"} !important;
-        -webkit-text-fill-color: {"#6ee7b7" if is_dark else "#15803d"} !important;
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-weight: bold;
-        border: 1px solid {"#047857" if is_dark else "#bbf7d0"};
-        display: inline-block;
-        margin-bottom: 6px;
-    }}
-
     .disclaimer-box {{
         font-size: 0.8rem;
         background-color: {card_bg};
@@ -236,15 +227,56 @@ def get_supabase() -> Client:
 
 supabase = get_supabase()
 
-# OpenAI klient
-@st.cache_resource
-def get_openai_client():
-    api_key = st.secrets.get("OPENAI_API_KEY", None)
-    if api_key:
-        return OpenAI(api_key=api_key)
-    return None
+# Paystack API Hjælpere
+PAYSTACK_SECRET = st.secrets.get("PAYSTACK_SECRET_KEY", "")
 
-openai_client = get_openai_client()
+def initialize_paystack_payment(email: str, amount_naira: int, order_id: int):
+    """Opretter et betalingslink hos Paystack (beløb konverteres til kobo: ₦1 = 100 kobo)"""
+    if not PAYSTACK_SECRET:
+        return None, "Paystack API key missing in Secrets"
+    
+    url = "https://api.paystack.co/transaction/initialize"
+    headers = {
+        "Authorization": f"Bearer {PAYSTACK_SECRET.strip()}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "email": email,
+        "amount": int(amount_naira * 100),
+        "reference": f"VND-{order_id}-{int(datetime.now().timestamp())}",
+        "callback_url": "https://lagos-commerce-pzru6e8tsftfmt72gbjnhz.streamlit.app/",
+        "metadata": {"order_id": order_id}
+    }
+    
+    try:
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        with urllib.request.urlopen(req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data.get("status"):
+                return data["data"], None
+            return None, data.get("message", "Payment init failed")
+    except Exception as e:
+        return None, str(e)
+
+def verify_paystack_payment(reference: str):
+    """Verificerer om en Paystack-transaktion er betalt"""
+    if not PAYSTACK_SECRET:
+        return False, "Paystack key missing"
+    
+    url = f"https://api.paystack.co/transaction/verify/{reference}"
+    headers = {
+        "Authorization": f"Bearer {PAYSTACK_SECRET.strip()}",
+        "Content-Type": "application/json"
+    }
+    try:
+        req = urllib.request.Request(url, headers=headers, method="GET")
+        with urllib.request.urlopen(req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data.get("status") and data["data"]["status"] == "success":
+                return True, data["data"]
+            return False, data.get("message", "Not paid")
+    except Exception as e:
+        return False, str(e)
 
 # Sikker PIN-kryptering
 def hash_pin(pin: str) -> str:
@@ -265,13 +297,6 @@ def verify_pin(pin: str, stored_val: str) -> bool:
         return hmac.compare_digest(actual_hash, expected_hash)
     except (ValueError, AttributeError):
         return False
-
-def format_pin_for_admin(stored_val: str) -> str:
-    if not stored_val:
-        return "N/A"
-    if ":" in str(stored_val):
-        return "🔒 Encrypted"
-    return str(stored_val)
 
 def make_slug(name: str) -> str:
     clean = re.sub(r'[^a-zA-Z0-9\s-]', '', name).strip().lower()
@@ -318,7 +343,6 @@ def calculate_hours_left(expires_at_str: str) -> int:
         return 48
 
 def get_shop_access_status(shop: dict):
-    # Tjekker abonnements- og prøvestatus
     status = shop.get("subscription_status", "trial")
     trial_until_str = shop.get("trial_ends_at")
     
@@ -349,7 +373,7 @@ def render_broadcast_alerts(target: str):
     except Exception:
         pass
 
-# Session State & URL Routing
+# URL Routing & Session State
 query_params = st.query_params
 active_shop_slug = query_params.get("shop", None)
 
@@ -389,7 +413,7 @@ views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch
 st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
 
 # ====================================================
-# MODAL TIL DETALJER & BESTILLING
+# MODAL TIL DETALJER, BESTILLING & PAYSTACK TEST CHECKOUT
 # ====================================================
 @st.dialog("Product Details & Order")
 def show_offer_modal(item):
@@ -412,37 +436,87 @@ def show_offer_modal(item):
     
     wa_msg = f"Hello {item['shop']}! I saw *{item['product']}* (₦{item['price']:,}) on Vendora. Is it available?"
     wa_url = make_wa_link(item["phone"], wa_msg)
-    st.link_button("💬 Order Directly via WhatsApp", wa_url, use_container_width=True)
+    st.link_button("💬 Order Directly via WhatsApp (Free)", wa_url, use_container_width=True)
     
-    st.markdown("#### 🛵 Or Order with Dispatch Delivery")
-    with st.form(f"modal_order_form_{item['id']}"):
-        cust_name = st.text_input("Your Full Name *", placeholder="e.g. Tunde Bakare")
-        cust_phone = st.text_input("Your Phone (WhatsApp) *", placeholder="080...")
-        cust_area = st.selectbox("Your Neighborhood *", ["Yaba / Sabo", "Ikeja / Allen", "Surulere", "Victoria Island / Lekki", "Other"])
-        cust_addr = st.text_area("Full Address & Nearby Landmark *")
-        
-        # Byd-selv leveringsbeløb
-        suggested_delivery = st.number_input("Your Offered Delivery Fee (₦) *", min_value=1200, value=1500, step=100)
-        st.caption("💡 Recommended: ₦1,500 nearby / ₦2,500+ across town or during traffic.")
-        st.markdown(f"**Estimated Total to Pay:** ₦{item['price'] + suggested_delivery:,}")
-        
-        c_consent = st.checkbox("I agree to terms: Vendora acts solely as a discovery directory (NDPA Consent).", value=True)
-        if st.form_submit_button("🚀 Request Delivery with My Offer", type="primary", use_container_width=True):
-            if not cust_name or not cust_phone or not cust_addr or not c_consent:
-                st.error("Please fill all required delivery details and accept terms.")
-            else:
-                p_fee = 150
-                r_payout = max(0, int(suggested_delivery) - p_fee)
-                new_order = {
-                    "offer_id": item["id"], "product": item["product"], "shop": item["shop"],
-                    "shop_phone": item["phone"], "pickup_location": pickup_loc,
-                    "customer_name": cust_name.strip(), "customer_phone": cust_phone.strip(),
-                    "customer_area": cust_area, "delivery_address": cust_addr.strip(),
-                    "item_price": item["price"], "delivery_fee": int(suggested_delivery),
-                    "rider_payout": r_payout, "platform_fee": p_fee, "status": "pending"
-                }
-                supabase.table("orders").insert(new_order).execute()
-                st.success("✅ Delivery requested! Nearby riders can now view and accept your offer.")
+    st.markdown("#### 🛵 Or Order with Dispatch & Escrow Payment")
+    
+    # Session state for payment flow per dialog
+    order_key = f"active_pay_order_{item['id']}"
+    if order_key not in st.session_state:
+        st.session_state[order_key] = None
+
+    if st.session_state[order_key] is None:
+        with st.form(f"modal_order_form_{item['id']}"):
+            cust_name = st.text_input("Your Full Name *", placeholder="e.g. Tunde Bakare")
+            cust_email = st.text_input("Your Email (For Paystack receipt) *", placeholder="tunde@example.com")
+            cust_phone = st.text_input("Your WhatsApp Phone *", placeholder="080...")
+            cust_area = st.selectbox("Your Neighborhood *", ["Yaba / Sabo", "Ikeja / Allen", "Surulere", "Victoria Island / Lekki", "Other"])
+            cust_addr = st.text_area("Full Address & Nearby Landmark *")
+            
+            suggested_delivery = st.number_input("Your Offered Delivery Fee (₦) *", min_value=1200, value=1500, step=100)
+            total_naira = item['price'] + suggested_delivery
+            st.markdown(f"**Total to Pay (Item + Delivery): ₦{total_naira:,}**")
+            
+            c_consent = st.checkbox("I agree to terms: Vendora acts solely as an intermediary directory (NDPA Consent).", value=True)
+            submit_btn = st.form_submit_button("💳 Proceed to Paystack Escrow Payment", type="primary", use_container_width=True)
+            
+            if submit_btn:
+                if not cust_name or not cust_email or not cust_phone or not cust_addr or not c_consent:
+                    st.error("Please fill all required details, provide an email, and accept terms.")
+                else:
+                    p_fee = 150
+                    r_payout = max(0, int(suggested_delivery) - p_fee)
+                    
+                    new_order = {
+                        "offer_id": item["id"], "product": item["product"], "shop": item["shop"],
+                        "shop_phone": item["phone"], "pickup_location": pickup_loc,
+                        "customer_name": cust_name.strip(), "customer_phone": cust_phone.strip(),
+                        "customer_area": cust_area, "delivery_address": cust_addr.strip(),
+                        "item_price": item["price"], "delivery_fee": int(suggested_delivery),
+                        "rider_payout": r_payout, "platform_fee": p_fee, 
+                        "status": "pending", "payment_status": "unpaid"
+                    }
+                    ins = supabase.table("orders").insert(new_order).execute()
+                    if ins.data:
+                        created_order = ins.data[0]
+                        # Opret Paystack link
+                        p_data, p_err = initialize_paystack_payment(cust_email.strip(), total_naira, created_order["id"])
+                        if p_data:
+                            supabase.table("orders").update({
+                                "paystack_reference": p_data["reference"]
+                            }).eq("id", created_order["id"]).execute()
+                            
+                            st.session_state[order_key] = {
+                                "order_id": created_order["id"],
+                                "auth_url": p_data["authorization_url"],
+                                "reference": p_data["reference"],
+                                "total": total_naira
+                            }
+                            st.rerun()
+                        else:
+                            st.error(f"Paystack initialization error: {p_err}")
+    else:
+        # Vis Paystack checkout boks
+        pay_info = st.session_state[order_key]
+        with st.container(border=True):
+            st.success(f"📦 Order #{pay_info['order_id']} created! Total: **₦{pay_info['total']:,}**")
+            st.markdown("Klik nedenfor for at åbne Paystacks sikre betalingsvindue i test-mode:")
+            st.link_button("💳 Open Paystack Checkout Window", pay_info["auth_url"], use_container_width=True)
+            
+            st.markdown("---")
+            st.caption("Når du har gennemført betalingen i vinduet ovenfor (brug Paystacks testkort), tryk her for at bekræfte:")
+            if st.button("🔄 Verify Payment Status", type="primary", use_container_width=True):
+                is_paid, ver_data = verify_paystack_payment(pay_info["reference"])
+                if is_paid:
+                    now_iso = datetime.now(timezone.utc).isoformat()
+                    supabase.table("orders").update({
+                        "payment_status": "escrow_funded",
+                        "paid_at": now_iso
+                    }).eq("id", pay_info["order_id"]).execute()
+                    st.success("🎉 Betaling bekræftet! Midlerne er nu sikret i Escrow, og budene har modtaget opgaven.")
+                    st.session_state[order_key] = None
+                else:
+                    st.warning("Betalingen er endnu ikke registreret hos Paystack. Prøv igen om et øjeblik, hvis du lige har gennemført den.")
 
 # ====================================================
 # VISNING 1: KUNDEPORTAL
@@ -688,7 +762,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         st.image(generate_qr(direct_shop_url), width=160, caption=f"Scan for {shop['name']}")
 
 # ====================================================
-# VISNING 3: BUDE & KURÉR (MED IN-DRIVE MODBUD)
+# VISNING 3: BUDE & KURÉR (MED IN-DRIVE & ESCROW-STATUS)
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
     if not st.session_state.logged_courier:
@@ -773,13 +847,20 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                 for job in my_jobs:
                     with st.container(border=True):
                         st.markdown(f"**Order #{job['id']} — {job['product']}**")
+                        
+                        p_stat = job.get("payment_status", "unpaid")
+                        if p_stat == "escrow_funded":
+                            st.markdown('<div class="escrow-badge">🛡️ PAID IN ESCROW (Do NOT pay shop with own money)</div>', unsafe_allow_html=True)
+                        else:
+                            st.caption(f"Payment Status: `{p_stat}`")
+
                         st.markdown(f"🏪 **Pickup:** {job['shop']} — 📞 `{job['shop_phone']}`")
                         st.markdown(f"🎯 **Drop-off:** {job['customer_name']} — 📞 `{job['customer_phone']}`")
                         st.markdown(f"📍 **Address:** {job['delivery_address']}")
-                        st.markdown(f"💵 **Collect:** ₦{job['item_price'] + job['delivery_fee']:,} *(Your payout: ₦{job['rider_payout']:,})*")
+                        st.markdown(f"💵 **Your Payout:** **₦{job['rider_payout']:,}** *(Platform fee ₦{job.get('platform_fee', 150):,} deducted)*")
                         
-                        wa_pickup = make_wa_link(job['shop_phone'], f"Hello {job['shop']}, rider {rider['name']} picking up Order #{job['id']}.")
-                        wa_cust = make_wa_link(job['customer_phone'], f"Hello {job['customer_name']}, rider {rider['name']} delivering your {job['product']}.")
+                        wa_pickup = make_wa_link(job['shop_phone'], f"Hello {job['shop']}, rider {rider['name']} arriving to pick up Order #{job['id']} ({job['product']}).")
+                        wa_cust = make_wa_link(job['customer_phone'], f"Hello {job['customer_name']}, verified rider {rider['name']} is on the way with your {job['product']}.")
                         
                         cw1, cw2 = st.columns(2)
                         with cw1:
@@ -799,17 +880,22 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                                 st.rerun()
 
             st.markdown("---")
-            st.markdown("#### ⚡ Open Delivery Requests & Bidding")
+            st.markdown("#### ⚡ Open Delivery Requests & InDrive Bidding")
             open_jobs = supabase.table("orders").select("*").eq("status", "pending").order("id", desc=True).execute().data or []
             if not open_jobs:
-                st.write("No pending delivery jobs available right now.")
+                st.write("No pending delivery jobs right now.")
             else:
                 for ojob in open_jobs:
                     with st.container(border=True):
                         st.markdown(f"**{ojob['product']}** (Item: ₦{ojob['item_price']:,})")
+                        
+                        p_stat = ojob.get("payment_status", "unpaid")
+                        if p_stat == "escrow_funded":
+                            st.markdown('<div class="escrow-badge">🛡️ PAID ONLINE (Escrow Funded)</div>', unsafe_allow_html=True)
+
                         st.markdown(f"📍 **Pickup:** {ojob['shop']} — {ojob['pickup_location']}")
-                        st.markdown(f"🎯 **Drop-off:** {ojob['customer_area']}")
-                        st.markdown(f"💵 **Customer Offer:** **₦{ojob['delivery_fee']:,}** *(You get: ₦{ojob['rider_payout']:,})*")
+                        st.markdown(f"🎯 **Drop-off Area:** {ojob['customer_area']}")
+                        st.markdown(f"💵 **Customer Delivery Offer:** **₦{ojob['delivery_fee']:,}** *(You get: ₦{ojob['rider_payout']:,})*")
                         
                         c_bid1, c_bid2 = st.columns(2)
                         with c_bid1:
@@ -886,7 +972,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 st.rerun()
 
         st.markdown("---")
-        admin_tabs = st.tabs(["📢 Broadcasts", "🎁 Airtime Rewards", "🚦 Subscriptions & Trials", "📬 Messages", "🛵 Couriers", "🏪 Stores", "📦 Orders"])
+        admin_tabs = st.tabs(["📢 Broadcasts", "🎁 Airtime Rewards", "🚦 Subscriptions & Trials", "💰 Escrow & Settlements", "📬 Messages", "🛵 Couriers", "🏪 Stores", "📦 Orders"])
 
         all_shops_list = supabase.table("shops").select("*").execute().data or []
 
@@ -1013,8 +1099,42 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             wa_renew = make_wa_link(s_data['phone'], f"Hello {s_data['name']}! Your free launch period on Vendora has concluded. Would you like to renew for ₦1,000/week to keep receiving orders?")
                             st.link_button("💬 WhatsApp Follow-up", wa_renew, use_container_width=True)
 
-        # --- FANE 3: BESKEDER ---
+        # --- FANE 3: ESCROW & SETTLEMENTS (PENGEFORDELING) ---
         with admin_tabs[3]:
+            st.markdown("#### 💰 Paystack Escrow & Settlement Ledger")
+            paid_orders = supabase.table("orders").select("*").in_("payment_status", ["escrow_funded", "settled"]).order("id", desc=True).execute().data or []
+            
+            tot_platform_cut = sum(o.get("platform_fee", 150) for o in paid_orders)
+            tot_shop_payout = sum(o.get("item_price", 0) for o in paid_orders)
+            tot_rider_payout = sum(o.get("rider_payout", 0) for o in paid_orders)
+
+            e1, e2, e3 = st.columns(3)
+            with e1:
+                st.metric("💼 Debbie's Revenue (₦150 fees)", f"₦{tot_platform_cut:,}")
+            with e2:
+                st.metric("🏪 Store Payables", f"₦{tot_shop_payout:,}")
+            with e3:
+                st.metric("🛵 Rider Payables", f"₦{tot_rider_payout:,}")
+
+            st.markdown("---")
+            if not paid_orders:
+                st.info("No online-paid orders yet.")
+            else:
+                for po in paid_orders:
+                    with st.container(border=True):
+                        st.markdown(f"**Order #{po['id']} — {po['product']}** (`Ref: {po.get('paystack_reference', 'N/A')}`)")
+                        st.caption(f"Status: `{po['status']}` • Escrow: `{po['payment_status']}`")
+                        st.markdown(f"• **Store ({po['shop']}):** ₦{po['item_price']:,} (📞 `{po['shop_phone']}`)")
+                        st.markdown(f"• **Rider ({po.get('courier_name', 'Unassigned')}):** ₦{po.get('rider_payout', 0):,}")
+                        st.markdown(f"• **Debbie's Fee:** ₦{po.get('platform_fee', 150):,}")
+                        
+                        if po["status"] == "delivered" and po["payment_status"] == "escrow_funded":
+                            if st.button(f"💸 Mark Settled (OPay Transferred)", key=f"set_{po['id']}", type="primary"):
+                                supabase.table("orders").update({"payment_status": "settled"}).eq("id", po["id"]).execute()
+                                st.rerun()
+
+        # --- FANE 4: BESKEDER ---
+        with admin_tabs[4]:
             st.markdown("#### Support Messages")
             msgs = supabase.table("support_messages").select("*").order("id", desc=True).execute().data or []
             for m in msgs:
@@ -1026,8 +1146,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         supabase.table("support_messages").delete().eq("id", m["id"]).execute()
                         st.rerun()
 
-        # --- FANE 4: KURIERER ---
-        with admin_tabs[4]:
+        # --- FANE 5: KURIERER ---
+        with admin_tabs[5]:
             st.markdown("#### Courier Verification")
             couriers = supabase.table("couriers").select("*").order("id", desc=True).execute().data or []
             for c in couriers:
@@ -1042,8 +1162,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         with st.expander("🪪 View ID"):
                             st.image(c["id_card_img"], width=280)
 
-        # --- FANE 5: BUTIKKER ---
-        with admin_tabs[5]:
+        # --- FANE 6: BUTIKKER ---
+        with admin_tabs[6]:
             st.markdown("#### All Stores")
             for s in all_shops_list:
                 with st.container(border=True):
@@ -1053,14 +1173,14 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         supabase.table("shops").delete().eq("id", s["id"]).execute()
                         st.rerun()
 
-        # --- FANE 6: ORDRER ---
-        with admin_tabs[6]:
-            st.markdown("#### Delivery Orders")
+        # --- FANE 7: ORDRER ---
+        with admin_tabs[7]:
+            st.markdown("#### All Orders Overview")
             ords = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
             for o in ords:
                 with st.container(border=True):
                     st.markdown(f"**Order #{o['id']}** — {o['product']} (Fee: ₦{o['delivery_fee']:,})")
-                    st.caption(f"From `{o['shop']}` to `{o['customer_name']}` ({o['customer_phone']}) • Status: **{o['status']}**")
+                    st.caption(f"From `{o['shop']}` to `{o['customer_name']}` ({o['customer_phone']}) • Delivery: **{o['status']}** • Pay: **{o.get('payment_status', 'unpaid')}**")
                     if st.button("🗑️ Delete Order", key=f"del_o_{o['id']}"):
                         supabase.table("orders").delete().eq("id", o["id"]).execute()
                         st.rerun()
