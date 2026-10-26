@@ -41,7 +41,7 @@ hover_bg = "#4b5563" if is_dark else "#e5e7eb"
 hover_border = "#6b7280" if is_dark else "#d1d5db"
 
 # CSS
-st.markdown(f"""
+st.html(f"""
 <style>
     .stApp {{
         background-color: {bg_color} !important;
@@ -53,14 +53,18 @@ st.markdown(f"""
     div[data-testid="stRadio"] label p,
     div[data-testid="stRadio"] label span,
     div[data-testid="stCheckbox"] label p,
-    [data-testid="stCaptionContainer"] p,
-    .stTabs [data-baseweb="tab"] p {{
+    [data-testid="stCaptionContainer"] p {{
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
     }}
     
-    /* Gør fanerne (Tabs) tydelige og lyse i mørk tilstand */
-    button[data-baseweb="tab"] p, button[data-baseweb="tab"] span {{
+    /* Gør fanerne (Tabs) og Metrics (Pengedelen) tydelige og lyse i mørk tilstand */
+    button[data-baseweb="tab"] p, 
+    button[data-baseweb="tab"] span,
+    button[data-baseweb="tab"] div,
+    div[data-testid="stMetricLabel"] *,
+    div[data-testid="stMetricValue"] *,
+    div[data-testid="stMetricDelta"] * {{
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
     }}
@@ -163,7 +167,7 @@ st.markdown(f"""
     .disclaimer-box {{ font-size: 0.8rem; background-color: {card_bg}; color: {text_color} !important; -webkit-text-fill-color: {text_color} !important; opacity: 0.85; padding: 12px; border-radius: 8px; border: 1px solid {border_color}; margin-top: 15px; }}
     .pin-box {{ background-color: #fef08a; color: #854d0e; padding: 15px; border-radius: 8px; text-align: center; border: 2px dashed #eab308; margin-top: 10px; margin-bottom: 10px; }}
 </style>
-""", unsafe_allow_html=True)
+""")
 
 # Supabase forbindelse
 @st.cache_resource
@@ -959,7 +963,6 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                         
                         c_bid1, c_bid2 = st.columns(2)
                         with c_bid1:
-                            # Fejlen rettet her (fjernet courier_name opdatering)
                             if st.button("✅ Accept Customer Offer", key=f"acc_{ojob['id']}", type="primary", use_container_width=True):
                                 supabase.table("orders").update({
                                     "status": "accepted", "courier_id": rider["id"]
