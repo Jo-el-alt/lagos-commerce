@@ -15,7 +15,7 @@ import secrets
 import hmac
 from openai import OpenAI
 
-# Mobil opsætning (skal ligge øverst i Streamlit)
+# Mobil opsætning
 st.set_page_config(
     page_title="Vendora 🇳🇬",
     page_icon="🛍️",
@@ -36,45 +36,61 @@ is_dark = st.session_state.dark_mode
 if is_dark:
     st.markdown("""
     <style>
+        :root {
+            color-scheme: dark !important;
+        }
+        /* Ryk indhold op og gør kompakt */
+        .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 2rem !important;
+            max-width: 700px !important;
+        }
+        [data-testid="stHeader"] {
+            background: transparent !important;
+            height: 1.5rem !important;
+        }
+
         /* 1. Hele sidens baggrund & overordnet tekstfarve */
-        .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
+        .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main {
             background-color: #0b0f19 !important;
             color: #f8fafc !important;
         }
-        [data-testid="stHeader"] {
-            background-color: rgba(11, 15, 25, 0.9) !important;
-        }
         
-        /* 2. Tekstoverskrifter, labels og markdown */
-        h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown {
+        /* 2. Tekstoverskrifter, labels, markdown og inline kode-bokse */
+        h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, [data-testid="stWidgetLabel"] p {
             color: #f1f5f9 !important;
         }
         .stCaption, small, [data-testid="stMarkdownContainer"] small {
             color: #94a3b8 !important;
         }
+        code, pre, [data-testid="stMarkdownContainer"] code {
+            background-color: #1e293b !important;
+            color: #38bdf8 !important;
+            border: 1px solid #334155 !important;
+            padding: 2px 6px !important;
+            border-radius: 5px !important;
+            font-weight: 600 !important;
+            font-size: 0.85em !important;
+        }
 
-        /* 3. Kort, Beholdere & Expander (How Vendora Works m.fl.) */
+        /* 3. Kort, Beholdere & Expander */
         div[data-testid="stVerticalBlockBorderWrapper"] > div {
             background-color: #151d30 !important;
             border: 1px solid #29354f !important;
-            border-radius: 12px !important;
+            border-radius: 10px !important;
+            padding: 10px !important;
             color: #f8fafc !important;
         }
         div[data-testid="stExpander"] {
             background-color: #151d30 !important;
             border: 1px solid #29354f !important;
-            border-radius: 12px !important;
+            border-radius: 10px !important;
             overflow: hidden !important;
         }
-        div[data-testid="stExpander"] details {
-            background-color: #151d30 !important;
-            border: none !important;
-        }
+        div[data-testid="stExpander"] details,
         div[data-testid="stExpander"] summary {
             background-color: #151d30 !important;
             color: #f8fafc !important;
-            padding: 10px 14px !important;
-            font-weight: 600 !important;
         }
         div[data-testid="stExpander"] summary p,
         div[data-testid="stExpander"] summary span,
@@ -83,18 +99,17 @@ if is_dark:
             fill: #f8fafc !important;
         }
 
-        /* 4. Alle knapper, Popover-knapper og Link-knapper */
+        /* 4. Almindelige knapper, Popover-knapper og Link-knapper */
         div.stButton > button,
         div[data-testid="stPopover"] button,
-        div[data-testid="stPopover"] > div > button,
-        div.stLinkButton > a,
-        [data-testid="stBaseButton-secondary"],
-        button[kind="secondary"] {
+        div.stLinkButton > a {
             background-color: #243048 !important;
             border: 1px solid #3b4b68 !important;
             border-radius: 8px !important;
             color: #ffffff !important;
             font-weight: 600 !important;
+            min-height: 38px !important;
+            padding: 4px 10px !important;
         }
         div.stButton > button p, 
         div.stButton > button span,
@@ -114,102 +129,151 @@ if is_dark:
             background-color: #3b4b68 !important;
             border-color: #10b981 !important;
         }
+
+        /* Grønne hovedknapper (Primary & Form Submit) */
+        div.stButton > button[kind="primary"],
+        div[data-testid="stFormSubmitButton"] > button,
         button[kind="primary"],
         [data-testid="stBaseButton-primary"] {
             background-color: #10b981 !important;
             border: 1px solid #059669 !important;
             color: #ffffff !important;
         }
-
-        /* Popover åben boks & Dialog-vinduer */
-        [data-testid="stPopoverBody"],
-        div[data-baseweb="popover"] > div,
-        div[role="dialog"] {
-            background-color: #151d30 !important;
-            border: 1px solid #3b4b68 !important;
-            color: #f8fafc !important;
+        div.stButton > button[kind="primary"] p,
+        div.stButton > button[kind="primary"] span,
+        div[data-testid="stFormSubmitButton"] > button p,
+        div[data-testid="stFormSubmitButton"] > button span {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
         }
 
-        /* 5. Inputfelter, dropdowns og tekstbokse */
-        input, textarea, div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="base-input"] {
+        /* 5. Popup-vindue (Modal / Dialog) & Popover-menuer */
+        div[data-testid="stModal"] div[role="dialog"],
+        div[data-testid="stDialog"] div[role="dialog"],
+        div[role="dialog"],
+        div[role="dialog"] > div,
+        [data-baseweb="modal"] > div,
+        [data-testid="stPopoverBody"],
+        div[data-baseweb="popover"] > div,
+        div[data-baseweb="menu"],
+        ul[data-testid="stSelectboxVirtualDropdown"],
+        li[role="option"] {
+            background-color: #151d30 !important;
+            color: #f8fafc !important;
+            border-color: #3b4b68 !important;
+        }
+        div[role="dialog"] h1, div[role="dialog"] h2, div[role="dialog"] h3,
+        div[role="dialog"] h4, div[role="dialog"] p, div[role="dialog"] span,
+        div[role="dialog"] label, div[role="dialog"] small {
+            color: #f8fafc !important;
+        }
+        div[role="dialog"] button[aria-label="Close"] svg {
+            fill: #f8fafc !important;
+        }
+
+        /* 6. Inputfelter, +/- knapper, dropdowns og fil-upload */
+        input, textarea,
+        div[data-baseweb="input"],
+        div[data-baseweb="input"] > div,
+        div[data-baseweb="base-input"],
+        div[data-baseweb="textarea"],
+        div[data-baseweb="select"],
+        div[data-baseweb="select"] > div,
+        button[data-testid="stNumberInputStepDown"],
+        button[data-testid="stNumberInputStepUp"] {
             background-color: #0b0f19 !important;
             color: #ffffff !important;
             border-color: #3b4b68 !important;
+            -webkit-text-fill-color: #ffffff !important;
         }
-        div[data-baseweb="input"] > div {
-            background-color: #0b0f19 !important;
+        button[data-testid="stNumberInputStepDown"] svg,
+        button[data-testid="stNumberInputStepUp"] svg,
+        div[data-baseweb="select"] svg {
+            fill: #ffffff !important;
+            color: #ffffff !important;
         }
         input::placeholder, textarea::placeholder {
             color: #64748b !important;
+            -webkit-text-fill-color: #64748b !important;
+        }
+        [data-testid="stFileUploaderDropzone"],
+        [data-testid="stFileUploader"] section {
+            background-color: #0b0f19 !important;
+            border: 1px dashed #3b4b68 !important;
+            border-radius: 10px !important;
+            color: #f8fafc !important;
+        }
+        [data-testid="stFileUploaderDropzone"] span,
+        [data-testid="stFileUploaderDropzone"] small,
+        [data-testid="stFileUploaderDropzone"] div {
+            color: #94a3b8 !important;
         }
 
-        /* 6. Nøgletal (st.metric kort) */
+        /* 7. Nøgletal (st.metric kort) */
         div[data-testid="stMetric"] {
             background-color: #151d30 !important;
             border: 1px solid #29354f !important;
             border-radius: 10px !important;
-            padding: 10px 14px !important;
+            padding: 8px 12px !important;
         }
         div[data-testid="stMetricLabel"] p {
             color: #94a3b8 !important;
         }
         div[data-testid="stMetricValue"] div {
             color: #38bdf8 !important;
+            font-size: 1.4rem !important;
         }
 
-        /* 7. Faneblade (st.tabs knapper) */
-        div[data-testid="stTabs"] [role="tablist"],
-        div[data-testid="stTabs"] > div {
+        /* 8. Faneblade (st.tabs) */
+        div[data-testid="stTabs"] [role="tablist"] {
             gap: 6px !important;
             background-color: transparent !important;
+            padding: 4px 2px !important;
+            align-items: center !important;
         }
-        div[data-testid="stTabs"] button,
-        div[data-testid="stTabs"] [role="tab"] {
+        div[data-testid="stTabs"] button[role="tab"] {
             background-color: #243048 !important;
             border: 1px solid #3b4b68 !important;
             border-radius: 8px !important;
-            padding: 8px 16px !important;
+            padding: 6px 12px !important;
+            height: auto !important;
+            min-height: 36px !important;
+            line-height: 1.2 !important;
             opacity: 1 !important;
         }
-        div[data-testid="stTabs"] button p,
-        div[data-testid="stTabs"] button span,
-        div[data-testid="stTabs"] button div,
-        div[data-testid="stTabs"] [data-testid="stMarkdownContainer"] p {
+        div[data-testid="stTabs"] button[role="tab"] p,
+        div[data-testid="stTabs"] button[role="tab"] span,
+        div[data-testid="stTabs"] button[role="tab"] div {
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
-            font-weight: 700 !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
         }
-        div[data-testid="stTabs"] button[aria-selected="true"],
-        div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
             background-color: #10b981 !important;
             border-color: #059669 !important;
         }
-        div[data-testid="stTabs"] button:hover,
-        div[data-testid="stTabs"] [role="tab"]:hover {
-            background-color: #3b4b68 !important;
-            border-color: #10b981 !important;
-        }
 
-        /* 8. Specialbokse, produktkort og badges */
+        /* 9. Specialbokse, produktkort og badges */
         .disclaimer-box {
             background-color: #151d30 !important;
             border: 1px solid #29354f !important;
             color: #94a3b8 !important;
             border-radius: 10px !important;
-            padding: 14px !important;
-            font-size: 0.85rem !important;
-            line-height: 1.5 !important;
+            padding: 12px !important;
+            font-size: 0.8rem !important;
+            line-height: 1.4 !important;
         }
         .grid-img-box {
             width: 100%;
-            height: 140px;
+            height: 125px;
             background-color: #0b0f19;
             border-radius: 8px;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .grid-img-box img {
             width: 100%;
@@ -218,7 +282,7 @@ if is_dark:
         }
         .grid-title {
             font-weight: 700;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             margin-bottom: 2px;
             white-space: nowrap;
             overflow: hidden;
@@ -227,115 +291,157 @@ if is_dark:
         .grid-price {
             color: #10b981 !important;
             font-weight: 800;
-            font-size: 1.05rem;
-            margin-bottom: 4px;
+            font-size: 1rem;
+            margin-bottom: 2px;
         }
         .member-badge {
             display: inline-block;
             background-color: #243048;
             color: #38bdf8 !important;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             border: 1px solid #3b4b68;
         }
         .trial-badge, .status-light-green {
             display: inline-block;
             background-color: #064e3b;
             color: #34d399 !important;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            margin-bottom: 6px;
-            margin-left: 6px;
+            margin-bottom: 4px;
+            margin-left: 4px;
         }
         .status-light-red {
             display: inline-block;
             background-color: #7f1d1d;
             color: #fca5a5 !important;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            margin-bottom: 6px;
-            margin-left: 6px;
+            margin-bottom: 4px;
+            margin-left: 4px;
         }
         .referral-badge {
             background-color: #1e293b;
             border: 1px solid #334155;
             color: #f8fafc !important;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border-radius: 8px;
-            font-size: 0.85rem;
-            margin: 6px 0;
+            font-size: 0.82rem;
+            margin: 4px 0;
         }
         .escrow-badge {
             background-color: #064e3b;
             border: 1px solid #10b981;
             color: #ecfdf5 !important;
-            padding: 6px 10px;
+            padding: 5px 8px;
             border-radius: 6px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            margin: 6px 0;
+            margin: 4px 0;
         }
         .pin-box {
             background-color: #fef9c3;
             border: 2px dashed #ca8a04;
             border-radius: 10px;
-            padding: 14px;
+            padding: 12px;
             text-align: center;
-            margin: 10px 0;
+            margin: 8px 0;
+        }
+
+        /* 10. Mobil-optimering: Hold knapper og kort kompakte ved siden af hinanden */
+        @media (max-width: 640px) {
+            .block-container {
+                padding-top: 0.5rem !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            div[data-testid="stHorizontalBlock"] {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                gap: 6px !important;
+            }
+            div[data-testid="column"], div[data-testid="stColumn"] {
+                min-width: 0 !important;
+                flex: 1 1 0% !important;
+            }
+            div.stButton > button, div[data-testid="stPopover"] button {
+                padding: 4px 6px !important;
+                font-size: 0.78rem !important;
+                min-height: 34px !important;
+            }
+            .grid-img-box {
+                height: 100px !important;
+            }
         }
     </style>
     """, unsafe_allow_html=True)
 else:
     st.markdown("""
     <style>
+        :root {
+            color-scheme: light !important;
+        }
+        /* Ryk indhold op og gør kompakt */
+        .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 2rem !important;
+            max-width: 700px !important;
+        }
+        [data-testid="stHeader"] {
+            background: transparent !important;
+            height: 1.5rem !important;
+        }
+
         /* 1. Hele sidens baggrund & tekst (Lyst tema) */
-        .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
+        .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main {
             background-color: #f8fafc !important;
             color: #0f172a !important;
         }
-        [data-testid="stHeader"] {
-            background-color: rgba(248, 250, 252, 0.9) !important;
-        }
 
-        /* 2. Tekstoverskrifter, labels og markdown */
-        h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown {
+        /* 2. Tekstoverskrifter, labels, markdown og inline kode-bokse (fjerner sorte bjælker) */
+        h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, [data-testid="stWidgetLabel"] p {
             color: #0f172a !important;
         }
         .stCaption, small, [data-testid="stMarkdownContainer"] small {
-            color: #64748b !important;
+            color: #475569 !important;
+        }
+        code, pre, [data-testid="stMarkdownContainer"] code {
+            background-color: #e2e8f0 !important;
+            color: #0f172a !important;
+            border: 1px solid #cbd5e1 !important;
+            padding: 2px 6px !important;
+            border-radius: 5px !important;
+            font-weight: 600 !important;
+            font-size: 0.85em !important;
         }
 
-        /* 3. Beholdere, Kort & Expander (How Vendora Works m.fl.) */
+        /* 3. Beholdere, Kort & Expander */
         div[data-testid="stVerticalBlockBorderWrapper"] > div {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
-            border-radius: 12px !important;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+            border-radius: 10px !important;
+            padding: 10px !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
             color: #0f172a !important;
         }
         div[data-testid="stExpander"] {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
-            border-radius: 12px !important;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+            border-radius: 10px !important;
             overflow: hidden !important;
         }
-        div[data-testid="stExpander"] details {
-            background-color: #ffffff !important;
-            border: none !important;
-        }
+        div[data-testid="stExpander"] details,
         div[data-testid="stExpander"] summary {
             background-color: #ffffff !important;
             color: #0f172a !important;
-            padding: 10px 14px !important;
-            font-weight: 600 !important;
         }
         div[data-testid="stExpander"] summary p,
         div[data-testid="stExpander"] summary span,
@@ -344,19 +450,18 @@ else:
             fill: #0f172a !important;
         }
 
-        /* 4. Alle knapper, Popover-knapper og Link-knapper */
+        /* 4. Almindelige knapper, Popover-knapper og Link-knapper */
         div.stButton > button,
         div[data-testid="stPopover"] button,
-        div[data-testid="stPopover"] > div > button,
-        div.stLinkButton > a,
-        [data-testid="stBaseButton-secondary"],
-        button[kind="secondary"] {
+        div.stLinkButton > a {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 8px !important;
             color: #0f172a !important;
             font-weight: 600 !important;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
+            min-height: 38px !important;
+            padding: 4px 10px !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important;
         }
         div.stButton > button p, 
         div.stButton > button span,
@@ -376,116 +481,168 @@ else:
             background-color: #f1f5f9 !important;
             border-color: #10b981 !important;
         }
+
+        /* Grønne hovedknapper (Primary & Form Submit) */
+        div.stButton > button[kind="primary"],
+        div[data-testid="stFormSubmitButton"] > button,
         button[kind="primary"],
         [data-testid="stBaseButton-primary"] {
             background-color: #10b981 !important;
             border: 1px solid #059669 !important;
             color: #ffffff !important;
         }
+        div.stButton > button[kind="primary"] p,
+        div.stButton > button[kind="primary"] span,
+        div[data-testid="stFormSubmitButton"] > button p,
+        div[data-testid="stFormSubmitButton"] > button span,
         button[kind="primary"] p,
-        button[kind="primary"] span,
-        [data-testid="stBaseButton-primary"] p,
-        [data-testid="stBaseButton-primary"] span {
+        button[kind="primary"] span {
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
         }
 
-        /* Popover åben boks & Dialog-vinduer */
+        /* 5. Popup-vindue (Modal / Dialog) & Popover-menuer (fjerner sort baggrund i popup) */
+        div[data-testid="stModal"] div[role="dialog"],
+        div[data-testid="stDialog"] div[role="dialog"],
+        div[role="dialog"],
+        div[role="dialog"] > div,
+        [data-baseweb="modal"] > div,
         [data-testid="stPopoverBody"],
+        div[data-baseweb="popover"],
         div[data-baseweb="popover"] > div,
-        div[role="dialog"] {
-            background-color: #ffffff !important;
-            border: 1px solid #cbd5e1 !important;
-            color: #0f172a !important;
-        }
-
-        /* 5. Inputfelter, dropdowns og tekstbokse */
-        input, textarea, div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="base-input"] {
+        div[data-baseweb="menu"],
+        ul[data-testid="stSelectboxVirtualDropdown"],
+        li[role="option"] {
             background-color: #ffffff !important;
             color: #0f172a !important;
             border-color: #cbd5e1 !important;
         }
-        div[data-baseweb="input"] > div {
+        div[role="dialog"] h1, div[role="dialog"] h2, div[role="dialog"] h3,
+        div[role="dialog"] h4, div[role="dialog"] p, div[role="dialog"] span,
+        div[role="dialog"] label, div[role="dialog"] small {
+            color: #0f172a !important;
+        }
+        div[role="dialog"] button[aria-label="Close"] svg {
+            fill: #0f172a !important;
+            color: #0f172a !important;
+        }
+        li[role="option"]:hover,
+        li[role="option"][aria-selected="true"] {
+            background-color: #f1f5f9 !important;
+            color: #059669 !important;
+        }
+
+        /* 6. Inputfelter, +/- knapper, dropdowns og fil-upload (fjerner sorte bokse) */
+        input, textarea,
+        div[data-baseweb="input"],
+        div[data-baseweb="input"] > div,
+        div[data-baseweb="base-input"],
+        div[data-baseweb="textarea"],
+        div[data-baseweb="select"],
+        div[data-baseweb="select"] > div,
+        button[data-testid="stNumberInputStepDown"],
+        button[data-testid="stNumberInputStepUp"] {
             background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+            -webkit-text-fill-color: #0f172a !important;
+        }
+        button[data-testid="stNumberInputStepDown"] svg,
+        button[data-testid="stNumberInputStepUp"] svg,
+        div[data-baseweb="select"] svg {
+            fill: #0f172a !important;
+            color: #0f172a !important;
         }
         input::placeholder, textarea::placeholder {
             color: #94a3b8 !important;
+            -webkit-text-fill-color: #94a3b8 !important;
+        }
+        [data-testid="stFileUploaderDropzone"],
+        [data-testid="stFileUploader"] section {
+            background-color: #f8fafc !important;
+            border: 1px dashed #94a3b8 !important;
+            border-radius: 10px !important;
+            color: #0f172a !important;
+        }
+        [data-testid="stFileUploaderDropzone"] span,
+        [data-testid="stFileUploaderDropzone"] small,
+        [data-testid="stFileUploaderDropzone"] div,
+        [data-testid="stFileUploaderDropzone"] svg {
+            color: #475569 !important;
+            fill: #475569 !important;
         }
 
-        /* 6. Nøgletal (st.metric) */
+        /* 7. Nøgletal (st.metric) */
         div[data-testid="stMetric"] {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 10px !important;
-            padding: 10px 14px !important;
+            padding: 8px 12px !important;
         }
         div[data-testid="stMetricLabel"] p {
-            color: #64748b !important;
+            color: #475569 !important;
         }
         div[data-testid="stMetricValue"] div {
             color: #0284c7 !important;
+            font-size: 1.4rem !important;
         }
 
-        /* 7. Faneblade (st.tabs) */
-        div[data-testid="stTabs"] [role="tablist"],
-        div[data-testid="stTabs"] > div {
+        /* 8. Faneblade (st.tabs) - fuld højde uden afskæring */
+        div[data-testid="stTabs"] [role="tablist"] {
             gap: 6px !important;
             background-color: transparent !important;
+            padding: 4px 2px !important;
+            align-items: center !important;
         }
-        div[data-testid="stTabs"] button,
-        div[data-testid="stTabs"] [role="tab"] {
-            background-color: #f1f5f9 !important;
+        div[data-testid="stTabs"] button[role="tab"] {
+            background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 8px !important;
-            padding: 8px 16px !important;
+            padding: 6px 12px !important;
+            height: auto !important;
+            min-height: 36px !important;
+            line-height: 1.2 !important;
             opacity: 1 !important;
         }
-        div[data-testid="stTabs"] button p,
-        div[data-testid="stTabs"] button span,
-        div[data-testid="stTabs"] button div,
-        div[data-testid="stTabs"] [data-testid="stMarkdownContainer"] p {
+        div[data-testid="stTabs"] button[role="tab"] p,
+        div[data-testid="stTabs"] button[role="tab"] span,
+        div[data-testid="stTabs"] button[role="tab"] div {
             color: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
-            font-weight: 700 !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
         }
-        div[data-testid="stTabs"] button[aria-selected="true"],
-        div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
             background-color: #10b981 !important;
             border-color: #059669 !important;
         }
-        div[data-testid="stTabs"] button[aria-selected="true"] p,
-        div[data-testid="stTabs"] button[aria-selected="true"] span,
-        div[data-testid="stTabs"] button[aria-selected="true"] div {
+        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] p,
+        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] span,
+        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] div {
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
         }
-        div[data-testid="stTabs"] button:hover,
-        div[data-testid="stTabs"] [role="tab"]:hover {
-            background-color: #e2e8f0 !important;
-            border-color: #10b981 !important;
-        }
 
-        /* 8. Specialbokse, produktkort og badges */
+        /* 9. Specialbokse, produktkort og badges */
         .disclaimer-box {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
             color: #475569 !important;
             border-radius: 10px !important;
-            padding: 14px !important;
-            font-size: 0.85rem !important;
-            line-height: 1.5 !important;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important;
+            padding: 12px !important;
+            font-size: 0.8rem !important;
+            line-height: 1.4 !important;
         }
         .grid-img-box {
             width: 100%;
-            height: 140px;
+            height: 125px;
             background-color: #f1f5f9;
             border-radius: 8px;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .grid-img-box img {
             width: 100%;
@@ -494,7 +651,7 @@ else:
         }
         .grid-title {
             font-weight: 700;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             margin-bottom: 2px;
             white-space: nowrap;
             overflow: hidden;
@@ -503,68 +660,95 @@ else:
         .grid-price {
             color: #059669 !important;
             font-weight: 800;
-            font-size: 1.05rem;
-            margin-bottom: 4px;
+            font-size: 1rem;
+            margin-bottom: 2px;
         }
         .member-badge {
             display: inline-block;
             background-color: #e0f2fe;
             color: #0369a1 !important;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             border: 1px solid #bae6fd;
         }
         .trial-badge, .status-light-green {
             display: inline-block;
             background-color: #dcfce7;
             color: #15803d !important;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            margin-bottom: 6px;
-            margin-left: 6px;
+            margin-bottom: 4px;
+            margin-left: 4px;
         }
         .status-light-red {
             display: inline-block;
             background-color: #fee2e2;
             color: #b91c1c !important;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            margin-bottom: 6px;
-            margin-left: 6px;
+            margin-bottom: 4px;
+            margin-left: 4px;
         }
         .referral-badge {
             background-color: #f1f5f9;
             border: 1px solid #cbd5e1;
             color: #0f172a !important;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border-radius: 8px;
-            font-size: 0.85rem;
-            margin: 6px 0;
+            font-size: 0.82rem;
+            margin: 4px 0;
         }
         .escrow-badge {
             background-color: #dcfce7;
             border: 1px solid #22c55e;
             color: #166534 !important;
-            padding: 6px 10px;
+            padding: 5px 8px;
             border-radius: 6px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            margin: 6px 0;
+            margin: 4px 0;
         }
         .pin-box {
             background-color: #fef9c3;
             border: 2px dashed #ca8a04;
             border-radius: 10px;
-            padding: 14px;
+            padding: 12px;
             text-align: center;
-            margin: 10px 0;
+            margin: 8px 0;
+        }
+
+        /* 10. Mobil-optimering: Hold knapper og kort kompakte ved siden af hinanden */
+        @media (max-width: 640px) {
+            .block-container {
+                padding-top: 0.5rem !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            div[data-testid="stHorizontalBlock"] {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                gap: 6px !important;
+            }
+            div[data-testid="column"], div[data-testid="stColumn"] {
+                min-width: 0 !important;
+                flex: 1 1 0% !important;
+            }
+            div.stButton > button, div[data-testid="stPopover"] button {
+                padding: 4px 6px !important;
+                font-size: 0.78rem !important;
+                min-height: 34px !important;
+            }
+            .grid-img-box {
+                height: 100px !important;
+            }
         }
     </style>
     """, unsafe_allow_html=True)
@@ -756,10 +940,10 @@ if "sel_cat" not in st.session_state:
     st.session_state.sel_cat = "All Categories"
 
 # ====================================================
-# HEADER
+# HEADER (Kompakt og rykket op)
 # ====================================================
-st.markdown("<h1 style='text-align: center; font-size: 2.4rem; font-weight: 800; margin-bottom: 0px; padding-bottom: 0px;'>🛍️ Vendora</h1>", unsafe_allow_html=True)
-st.markdown("<div style='text-align: center; margin-top: -4px; margin-bottom: 14px;'><span style='font-size: 0.8rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.8rem; color: #10b981; font-weight: 700;'>✨ AI</span> • <span style='font-size: 0.8rem; color: #9ca3af;'>🇳🇬 Lagos</span></div>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; font-size: 2rem; font-weight: 800; margin-top: 0px; margin-bottom: 0px; padding-bottom: 0px;'>🛍️ Vendora</h1>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center; margin-top: -2px; margin-bottom: 10px;'><span style='font-size: 0.78rem; color: #64748b;'>by Debbie</span> • <span style='font-size: 0.78rem; color: #10b981; font-weight: 700;'>✨ AI</span> • <span style='font-size: 0.78rem; color: #64748b;'>🇳🇬 Lagos</span></div>", unsafe_allow_html=True)
 
 top_c1, top_c2, top_c3 = st.columns(3)
 
@@ -1000,7 +1184,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
                                 if st.button("👀 View Deal", key=f"view_btn_{deal['id']}", use_container_width=True):
                                     show_offer_modal(deal)
 
-    st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
     with st.expander("ℹ️ How Vendora Works (Customer Guide)"):
         st.markdown("""
         **Welcome to Vendora!** Here is how you shop safely:
