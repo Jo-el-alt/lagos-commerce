@@ -1008,7 +1008,7 @@ else:
         "📦 Orders"
             ])
 
-        all_shops_list = supabase.table("shops").select("*").execute().data or []
+    all_shops_list = supabase.table("shops").select("*").execute().data or []
         db_sub_price, db_escrow_fee = get_platform_settings()
 
         # --- TAB 0: TEST SIMULATION ---
