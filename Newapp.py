@@ -38,7 +38,7 @@ border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
 
-# CSS der tvinger knapperne til 1/3 bredde
+# CSS der tvinger de 3 knapper til præcis 1/3 bredde
 st.markdown(f"""
 <style>
     .stApp {{
@@ -101,7 +101,7 @@ st.markdown(f"""
         border-color: {border_color} !important;
     }}
     
-    /* TVING TIL 1/3 BREDDE PÅ ÉN RÆKKE */
+    /* TVING TOP-KOLONNER TIL 1/3 BREDDE PÅ ALLE SKÆRME */
     div[data-testid="stHorizontalBlock"] {{
         display: flex !important;
         flex-direction: row !important;
@@ -109,12 +109,11 @@ st.markdown(f"""
         align-items: center !important;
         gap: 4px !important;
         width: 100% !important;
-        margin-top: 2px !important;
-        margin-bottom: 4px !important;
     }}
     div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
-        flex: 1 1 33.333% !important;
+        flex: 0 0 33.333% !important;
         max-width: 33.333% !important;
+        width: 33.333% !important;
         min-width: 0 !important;
     }}
     div[data-testid="stHorizontalBlock"] button,
