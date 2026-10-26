@@ -350,8 +350,8 @@ if "sel_cat" not in st.session_state:
 # ====================================================
 # KOMPAKT HEADER & TOP-BAR
 # ====================================================
-st.markdown("<h3 style='text-align: center; font-size: 1.85rem; margin-bottom: 2px;'>🛍️ Vendora</h3>", unsafe_allow_html=True)
-st.markdown("<div style='text-align: center; margin-bottom: 12px;'><span style='font-size: 0.75rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.75rem; color: #10b981; font-weight: 700;'>✨ AI</span> • <span style='font-size: 0.75rem; color: #9ca3af;'>🇳🇬 Lagos</span></div>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; font-size: 2.4rem; font-weight: 800; margin-bottom: 0px; padding-bottom: 0px;'>🛍️ Vendora</h1>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center; margin-top: -4px; margin-bottom: 14px;'><span style='font-size: 0.8rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.8rem; color: #10b981; font-weight: 700;'>✨ AI</span> • <span style='font-size: 0.8rem; color: #9ca3af;'>🇳🇬 Lagos</span></div>", unsafe_allow_html=True)
 
 top_c1, top_c2, top_c3 = st.columns(3)
 
