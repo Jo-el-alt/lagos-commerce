@@ -58,12 +58,14 @@ st.html(f"""
         -webkit-text-fill-color: {text_color} !important;
     }}
     
+    /* Gør alle faner, metrics og admin-overskrifter dynamiske i både lys og mørk tilstand */
     button[data-baseweb="tab"] p, 
     button[data-baseweb="tab"] span,
     button[data-baseweb="tab"] div,
     div[data-testid="stMetricLabel"] *,
     div[data-testid="stMetricValue"] *,
-    div[data-testid="stMetricDelta"] * {{
+    div[data-testid="stMetricDelta"] *,
+    div[data-testid="stTabs"] button p {{
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
     }}
