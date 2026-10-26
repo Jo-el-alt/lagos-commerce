@@ -21,7 +21,7 @@ is_dark = st.session_state.dark_mode
 
 # Mobil opsætning med dynamisk tema
 st.set_page_config(
-    page_title="Sweet Debbie Deals 🇳🇬",
+    page_title="Vendora 🇳🇬",
     page_icon="🛍️",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -36,7 +36,7 @@ border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
 
-# Fuld og korrekt CSS-styling
+# Fuld og stabil CSS-styling
 st.markdown(f"""
 <style>
     /* Global baggrund og tekst */
@@ -46,7 +46,7 @@ st.markdown(f"""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }}
 
-    /* Tekstfarver overalt */
+    /* Tekstfarver */
     .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5,
     label[data-testid="stWidgetLabel"] p,
     div[data-testid="stRadio"] label p,
@@ -58,7 +58,7 @@ st.markdown(f"""
         -webkit-text-fill-color: {text_color} !important;
     }}
 
-    /* Tving input-felter og select-bokse */
+    /* Input-felter og select-bokse */
     div[data-baseweb="input"] input,
     div[data-baseweb="base-input"] textarea,
     div[data-baseweb="select"] span,
@@ -79,7 +79,7 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* Popover knap styling i lukket tilstand */
+    /* Popover knap styling */
     div[data-testid="stPopover"] button, 
     div[data-testid="stPopover"] > div > button {{
         background-color: {card_bg} !important;
@@ -95,7 +95,7 @@ st.markdown(f"""
         border-color: {border_color} !important;
     }}
 
-    /* Åbne popover-menuer og bokse (PopoverBody) */
+    /* Åbne popover-menuer */
     div[data-baseweb="popover"], 
     div[data-baseweb="popover"] > div, 
     div[data-testid="stPopoverBody"] {{
@@ -105,7 +105,7 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* Knapper - fastlåst farve, så de aldrig forsvinder */
+    /* Knapper */
     .stButton button, .stButton button:focus, .stButton button:active {{
         background-color: {btn_bg} !important;
         color: {btn_text} !important;
@@ -213,7 +213,7 @@ st.markdown(f"""
         margin-bottom: 6px;
     }}
 
-    /* Footer & Disclaimer */
+    /* Footer */
     .disclaimer-box {{
         font-size: 0.8rem;
         background-color: {card_bg};
@@ -284,7 +284,7 @@ def format_pin_for_admin(stored_val: str) -> str:
         return "🔒 Encrypted"
     return str(stored_val)
 
-# Øvrige hjælpefunktioner
+# Hjælpefunktioner
 def make_slug(name: str) -> str:
     clean = re.sub(r'[^a-zA-Z0-9\s-]', '', name).strip().lower()
     return re.sub(r'[\s-]+', '-', clean)
@@ -348,11 +348,11 @@ def get_billing_status(valid_until_str: str, is_paid: bool):
 def generate_ai_ad_copy(product_name: str, price_val: int, shop_name: str, market_area: str, tone_style: str) -> str:
     if not openai_client:
         if "Pidgin" in tone_style:
-            return f"🔥 Omo! Sweet deal don land for {market_area}! Quality {product_name} now going for NGN {price_val:,}. Chat me sharp on WhatsApp before stock finish!"
-        return f"✨ Premium quality {product_name} now available at {shop_name} ({market_area}) for only NGN {price_val:,}! Send a WhatsApp message to order."
+            return f"🔥 Omo! Better deal don land for {market_area} on Vendora! Quality {product_name} now going for NGN {price_val:,}. Chat me sharp on WhatsApp before stock finish!"
+        return f"✨ Premium quality {product_name} now available at {shop_name} ({market_area}) on Vendora for only NGN {price_val:,}! Send a WhatsApp message to order."
     
     prompt = (
-        f"You are an expert market copywriter in Lagos, Nigeria for 'Sweet Debbie Deals'.\n"
+        f"You are an expert market copywriter in Lagos, Nigeria for the platform 'Vendora'.\n"
         f"Write a short, high-converting ad description (max 3 sentences).\n"
         f"Product: {product_name}\n"
         f"Price: NGN {price_val:,}\n"
@@ -365,14 +365,14 @@ def generate_ai_ad_copy(product_name: str, price_val: int, shop_name: str, marke
         response = openai_client.chat.completions.create(
             model="gpt-6-luna",
             messages=[
-                {"role": "system", "content": "You write engaging marketplace ad copy for Lagos traders."},
+                {"role": "system", "content": "You write engaging marketplace ad copy for Lagos traders on Vendora."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=150
         )
         return response.choices[0].message.content.strip()
     except Exception:
-        return f"🔥 Better deal on {product_name} at {shop_name} ({market_area}) for NGN {price_val:,}! Chat sharp on WhatsApp before e finish!"
+        return f"🔥 Better deal on {product_name} at {shop_name} ({market_area}) on Vendora for NGN {price_val:,}! Chat sharp on WhatsApp before e finish!"
 
 def render_broadcast_alerts(target: str):
     try:
@@ -399,9 +399,6 @@ if "logged_shop" not in st.session_state:
 if "logged_courier" not in st.session_state:
     st.session_state.logged_courier = None
 
-if "logged_customer" not in st.session_state:
-    st.session_state.logged_customer = None
-
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
@@ -411,9 +408,9 @@ if "sel_area" not in st.session_state:
 if "sel_cat" not in st.session_state:
     st.session_state.sel_cat = "All Categories"
 
-# HEADER MED STABIL TEMA-KNAP
-st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Sweet Debbie Deals</h2>", unsafe_allow_html=True)
-st.caption("🇳🇬 Lagos Local Market • *Powered by AI*")
+# HEADER MED VENDORA BRANDING
+st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Vendora</h2>", unsafe_allow_html=True)
+st.markdown("<span style='font-size: 0.85rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.85rem; color: #9ca3af;'>🇳🇬 Lagos Local Market Directory</span>", unsafe_allow_html=True)
 
 current_label = "☀️ Switch to Day Mode" if st.session_state.dark_mode else "🌙 Night Mode"
 if st.button(current_label, key="theme_toggle_btn"):
@@ -422,8 +419,8 @@ if st.button(current_label, key="theme_toggle_btn"):
 
 st.markdown("---")
 
-# Navigationsmenu (Opdateret fane-navn uden gambling)
-views = ["🛒 Browse Deals", "🎁 Customer Rewards & Cashbacks", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
+# Navigationsmenu (Ren handelsplatform)
+views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
 
 # ====================================================
@@ -448,7 +445,7 @@ def show_offer_modal(item):
         
     st.markdown("---")
     
-    wa_msg = f"Hello {item['shop']}! I saw *{item['product']}* (₦{item['price']:,}) on Sweet Debbie Deals. Is it available?"
+    wa_msg = f"Hello {item['shop']}! I saw *{item['product']}* (₦{item['price']:,}) on Vendora. Is it available?"
     wa_url = make_wa_link(item["phone"], wa_msg)
     st.link_button("💬 Order Directly via WhatsApp", wa_url, use_container_width=True)
     
@@ -460,7 +457,7 @@ def show_offer_modal(item):
         cust_addr = st.text_area("Full Address & Nearby Landmark *")
         st.markdown(f"**Total to Pay (Item + Delivery):** ₦{item['price'] + 1500:,}")
         
-        c_consent = st.checkbox("I agree to terms: Platform acts solely as a discovery intermediary (NDPA Consent).", value=True)
+        c_consent = st.checkbox("I agree to terms: Vendora acts solely as a discovery directory (NDPA Consent).", value=True)
         if st.form_submit_button("🚀 Confirm Dispatch Delivery", type="primary", use_container_width=True):
             if not cust_name or not cust_phone or not cust_addr or not c_consent:
                 st.error("Please fill all required delivery details and accept terms.")
@@ -551,110 +548,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
                                     show_offer_modal(deal)
 
 # ====================================================
-# VISNING 2: KUNDE REWARDS & CASHBACKS (LOVLIG MODEL)
-# ====================================================
-elif st.session_state.current_view == "🎁 Customer Rewards & Cashbacks":
-    st.markdown("### 🎁 Customer Rewards & Cashbacks")
-    st.caption("Invite friends and market traders with your ID and earn guaranteed airtime and cash bonuses!")
-    
-    render_broadcast_alerts("All")
-
-    if not st.session_state.logged_customer:
-        cust_auth = st.radio("Choose action:", ["🔑 Customer Log In", "📝 Register New Customer Profile"], horizontal=True)
-        
-        if cust_auth == "🔑 Customer Log In":
-            with st.container(border=True):
-                c_phone = st.text_input("WhatsApp / Phone Number", placeholder="080...")
-                c_pin = st.text_input("4-Digit PIN", type="password", placeholder="1234")
-                if st.button("Log In to Customer Portal", type="primary", use_container_width=True):
-                    res = supabase.table("customers").select("*").eq("phone", c_phone.strip()).execute()
-                    if res.data and verify_pin(c_pin, res.data[0].get("pin")):
-                        st.session_state.logged_customer = res.data[0]
-                        st.success(f"Welcome back, {res.data[0]['name']}!")
-                        st.rerun()
-                    else:
-                        st.error("Invalid phone number or PIN.")
-        else:
-            with st.container(border=True):
-                c_name = st.text_input("Full Name (Must match official ID) *", placeholder="e.g. Chioma Adebayo")
-                c_phone_new = st.text_input("WhatsApp / Phone Number *", placeholder="080...")
-                c_pin_new = st.text_input("Create 4-Digit Secret PIN *", type="password", max_chars=4, placeholder="1234")
-                c_pin_confirm = st.text_input("Confirm 4-Digit PIN *", type="password", max_chars=4, placeholder="1234")
-                c_referred = st.text_input("Referred by? (Enter friend/stall ID, optional)", placeholder="e.g. CUST-1042 or SHOP-1002")
-                
-                if st.button("🚀 Register Profile & Get Customer ID", type="primary", use_container_width=True):
-                    if not c_name or not c_phone_new or not c_pin_new or not c_pin_confirm:
-                        st.error("Please fill in all required fields.")
-                    elif c_pin_new != c_pin_confirm:
-                        st.error("PIN codes do not match! Please check your input.")
-                    elif len(c_pin_new) != 4:
-                        st.error("PIN must be exactly 4 digits.")
-                    else:
-                        existing = supabase.table("customers").select("id").eq("phone", c_phone_new.strip()).execute()
-                        if existing.data:
-                            st.error("Phone number already registered. Please log in.")
-                        else:
-                            cust_code = generate_member_code("CUST")
-                            new_cust = {
-                                "name": c_name.strip(),
-                                "phone": c_phone_new.strip(),
-                                "pin": hash_pin(c_pin_new),
-                                "member_id": cust_code,
-                                "referred_by": c_referred.strip().upper() if c_referred else None
-                            }
-                            ins = supabase.table("customers").insert(new_cust).execute()
-                            if ins.data:
-                                st.session_state.logged_customer = ins.data[0]
-                                st.success("🎉 Profile created successfully!")
-                                st.rerun()
-    else:
-        cust = st.session_state.logged_customer
-        c_member_id = cust.get("member_id") or f"CUST-{cust.get('id', 1000)}"
-        
-        ref_res = supabase.table("customers").select("id").eq("referred_by", c_member_id).execute()
-        my_referrals = len(ref_res.data or [])
-
-        col_ch1, col_ch2 = st.columns([3, 1])
-        with col_ch1:
-            st.markdown(f"### 👤 {cust['name']}")
-            st.markdown(f'<div class="member-badge">🎟️ Your Customer ID: {c_member_id}</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="referral-badge">🤝 Verified Referrals: <b>{my_referrals} person(s)</b></div>', unsafe_allow_html=True)
-            st.caption(f"📞 {cust['phone']}")
-        with col_ch2:
-            if st.button("🚪 Log Out", use_container_width=True):
-                st.session_state.logged_customer = None
-                st.rerun()
-
-        st.markdown("---")
-        st.markdown("#### 💵 Guaranteed Cashback & Referral Rewards")
-        st.write(
-            "Earn guaranteed rewards for growing our Lagos community! No lottery, no waiting for luck — "
-            "earn fixed rewards once you reach the referral milestones:"
-        )
-        
-        # Milepæls-visning
-        r_col1, r_col2 = st.columns(2)
-        with r_col1:
-            if my_referrals >= 3:
-                st.success("✅ **Milestone 1 Met (3 Referrals):**\n₦500 Free Airtime / Data Earned!")
-            else:
-                st.info(f"⏳ **Milestone 1:** Refer 3 friends for **₦500 Airtime** ({my_referrals}/3 completed)")
-        with r_col2:
-            if my_referrals >= 10:
-                st.success("✅ **Milestone 2 Met (10 Referrals):**\n₦2,500 Cash Bonus Earned!")
-            else:
-                st.info(f"⏳ **Milestone 2:** Refer 10 friends for **₦2,500 Cash Bonus** ({my_referrals}/10 completed)")
-
-        if my_referrals >= 3:
-            claim_msg = f"Hello Debbie Deals Coordinator! My name is {cust['name']} ({c_member_id}). I have verified {my_referrals} referrals and wish to claim my reward!"
-            st.link_button("🎁 Claim Your Reward on WhatsApp", make_wa_link("08000000000", claim_msg), use_container_width=True)
-
-        share_text = f"Check out Sweet Debbie Deals for the best Lagos local market prices! Use my invite ID *{c_member_id}* when you sign up."
-        wa_share_url = f"https://wa.me/?text={urllib.parse.quote(share_text)}"
-        st.link_button("📤 Share Your Invite Link on WhatsApp", wa_share_url, use_container_width=True)
-
-# ====================================================
-# VISNING 3: BUTIKSEJER ADMIN
+# VISNING 2: BUTIKSEJER ADMIN
 # ====================================================
 elif st.session_state.current_view == "🏪 Store Owner Admin":
     if not st.session_state.logged_shop:
@@ -675,7 +569,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                     else:
                         st.error("Incorrect phone number or PIN.")
         else:
-            st.markdown("### 📝 Register New Store or Stall")
+            st.markdown("### 📝 Register New Store or Stall on Vendora")
             with st.container(border=True):
                 new_shop_name = st.text_input("Store or Stall Name *", placeholder="e.g. Mama Funke Provisions")
                 new_phone = st.text_input("WhatsApp Number *", placeholder="08012345678")
@@ -684,8 +578,8 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 new_area = st.selectbox("Market / Area *", ["Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"])
                 new_cat = st.selectbox("Main Category *", ["Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"])
                 
-                referred_code = st.text_input("Referred by another Store or Customer ID? (Optional)", placeholder="e.g. SHOP-1002 or CUST-1042")
-                shop_consent = st.checkbox("I accept Platform Terms: Sweet Debbie Deals acts as discovery intermediary.")
+                referred_code = st.text_input("Partner Referral ID? (Referred by another stall, optional)", placeholder="e.g. SHOP-1002")
+                shop_consent = st.checkbox("I accept Platform Terms: Vendora acts as a discovery intermediary directory.")
                 
                 if st.button("🚀 Complete Registration & Enter", type="primary", use_container_width=True):
                     if not new_shop_name or not new_phone or not new_pin or not new_pin_confirm:
@@ -727,12 +621,12 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         col_hdr1, col_hdr2 = st.columns([3, 1])
         with col_hdr1:
             st.markdown(f"### 🏪 {shop['name']}")
-            st.markdown(f'<div class="member-badge">🎟️ Store ID: {member_id}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="member-badge">🏪 Store ID: {member_id}</div>', unsafe_allow_html=True)
             
             if referred_count >= 5:
-                st.markdown(f'<div class="referral-badge" style="background-color: #e8f5e9; color:#1b5e20;">🎯 Partner Milestone Met: {referred_count}/5 partner stalls referred! (Qualified for 1 Month Free Subscription)</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="referral-badge" style="background-color: #e8f5e9; color:#1b5e20;">🎯 Partner Target Met: {referred_count}/5 stores referred! (Qualified for 1 Month Free Listing)</div>', unsafe_allow_html=True)
             else:
-                st.markdown(f'<div class="referral-badge">🤝 Referred Stores: {referred_count}/5 (Refer {5 - referred_count} more for 1 Month Free Access)</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="referral-badge">🤝 Referred Stalls: {referred_count}/5 (Refer {5 - referred_count} more for 1 Month Free Listing)</div>', unsafe_allow_html=True)
                 
             st.caption(f"📍 {shop['area']} • 📞 {shop['phone']}")
         with col_hdr2:
@@ -789,13 +683,13 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 if not product:
                     st.warning("Please enter product name first!")
                 else:
-                    with st.spinner("GPT-6 Luna is generating your ad..."):
+                    with st.spinner("GPT-6 Luna is generating your ad for Vendora..."):
                         ai_result = generate_ai_ad_copy(product, int(price), shop["name"], shop["area"], tone_style)
                         st.session_state["ai_ad_copy"] = ai_result
 
         default_ad_text = st.session_state.get(
             "ai_ad_copy", 
-            f"🔥 Quality {product} now available at {shop['name']} for only NGN {price:,}! Limited stock today in {shop['area']}."
+            f"🔥 Quality {product} now available at {shop['name']} on Vendora for only NGN {price:,}! Limited stock today in {shop['area']}."
         )
         desc = st.text_area("Ad Description (Review or edit before posting):", value=default_ad_text, height=85)
         
@@ -822,7 +716,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         st.image(generate_qr(direct_shop_url), width=160, caption=f"Scan for {shop['name']}")
 
 # ====================================================
-# VISNING 4: BUDE & KURÉR
+# VISNING 3: BUDE & KURÉR
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
     if not st.session_state.logged_courier:
@@ -857,7 +751,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                 if id_file:
                     st.image(id_file, width=220, caption="Uploaded ID Preview")
                 
-                rider_consent = st.checkbox("I agree to terms: Riders operate as independent agents.")
+                rider_consent = st.checkbox("I agree to terms: Riders operate as independent contractors.")
                 
                 if st.button("🚀 Submit Profile for Verification", type="primary", use_container_width=True):
                     if not r_name or not r_phone_new or not r_pin_new or not r_pin_confirm or not id_file:
@@ -892,7 +786,7 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
         c_hdr1, c_hdr2 = st.columns([3, 1])
         with c_hdr1:
             st.markdown(f"### 🛵 Rider: {rider['name']}")
-            st.markdown(f'<div class="member-badge">🎟️ Rider ID: {r_member_id}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="member-badge">🛵 Rider ID: {r_member_id}</div>', unsafe_allow_html=True)
             st.caption(f"📍 Area: {rider['area']} • 🛵 {rider.get('vehicle', 'Motorcycle')}")
         with c_hdr2:
             if st.button("🚪 Log Out", key="rider_logout", use_container_width=True):
@@ -960,11 +854,11 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                             st.rerun()
 
 # ====================================================
-# VISNING 5: BRUGER-SUPPORT
+# VISNING 4: BRUGER-SUPPORT
 # ====================================================
 elif st.session_state.current_view == "💬 Support":
     st.markdown("### 💬 User Support & Helpdesk")
-    st.caption("Need help, billing inquiry, or forgotten PIN? Send a message to our coordinator team.")
+    st.caption("Need help, stall listing assistance, or account verification? Message our coordinator team.")
     
     default_name = ""
     default_phone = ""
@@ -978,19 +872,15 @@ elif st.session_state.current_view == "💬 Support":
         default_name = st.session_state.logged_courier["name"]
         default_phone = st.session_state.logged_courier["phone"]
         user_category = "Courier / Rider"
-    elif st.session_state.logged_customer:
-        default_name = st.session_state.logged_customer["name"]
-        default_phone = st.session_state.logged_customer["phone"]
-        user_category = "Customer"
         
     with st.container(border=True):
         u_name = st.text_input("Your Name / Business Name *", value=default_name)
         u_phone = st.text_input("WhatsApp / Phone Number *", value=default_phone)
-        u_role = st.selectbox("I am a:", ["Store Owner", "Courier / Rider", "Customer", "Other"], index=["Store Owner", "Courier / Rider", "Customer", "Other"].index(user_category) if user_category in ["Store Owner", "Courier / Rider", "Customer"] else 0)
-        u_subject = st.selectbox("Topic / Subject *", ["Payment & Subscription Inquiry", "Referral Rewards & Cashbacks", "Forgotten PIN", "Account Verification", "Order Issue", "General Suggestion"])
+        u_role = st.selectbox("I am a:", ["Customer / Buyer", "Store Owner", "Courier / Rider", "Other"])
+        u_subject = st.selectbox("Topic / Subject *", ["Stall Listing & Subscription", "Order Issue", "Courier Verification", "Forgotten PIN", "General Inquiry"])
         u_message = st.text_area("Your Message / Question *", placeholder="Describe your inquiry...")
         
-        if st.button("📨 Send Message to Admin", type="primary", use_container_width=True):
+        if st.button("📨 Send Message to Vendora Team", type="primary", use_container_width=True):
             if not u_name or not u_phone or not u_message:
                 st.error("Please fill in your name, phone, and message.")
             else:
@@ -1003,13 +893,13 @@ elif st.session_state.current_view == "💬 Support":
                     "status": "open"
                 }
                 supabase.table("support_messages").insert(msg_data).execute()
-                st.success("✅ Message sent to the admin team! We will contact you on WhatsApp shortly.")
+                st.success("✅ Message sent to Vendora support! We will contact you on WhatsApp shortly.")
 
 # ====================================================
-# VISNING 6: PLATFORM SUPER ADMIN
+# VISNING 5: PLATFORM SUPER ADMIN
 # ====================================================
 elif st.session_state.current_view == "🛡️ Platform Admin":
-    st.markdown("### 🛡️ Platform Super Admin")
+    st.markdown("### 🛡️ Vendora Platform Admin")
     
     if not st.session_state.admin_logged_in:
         admin_pass = st.text_input("Admin PIN", type="password", placeholder="Master key")
@@ -1036,11 +926,6 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
         st.markdown("---")
 
         try:
-            total_cust_count = len(supabase.table("customers").select("id", count="exact").execute().data or [])
-        except Exception:
-            total_cust_count = 0
-            
-        try:
             total_shops_count = len(supabase.table("shops").select("id", count="exact").execute().data or [])
         except Exception:
             total_shops_count = 0
@@ -1050,27 +935,31 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
         except Exception:
             total_couriers_count = 0
 
+        try:
+            total_orders_count = len(supabase.table("orders").select("id", count="exact").execute().data or [])
+        except Exception:
+            total_orders_count = 0
+
         m_col1, m_col2, m_col3 = st.columns(3)
         with m_col1:
-            st.metric("👥 Total Customers", total_cust_count)
+            st.metric("🏪 Active Stores", total_shops_count)
         with m_col2:
-            st.metric("🏪 Total Stores", total_shops_count)
+            st.metric("🛵 Active Couriers", total_couriers_count)
         with m_col3:
-            st.metric("🛵 Total Riders", total_couriers_count)
+            st.metric("📦 Total Orders", total_orders_count)
 
         st.markdown("---")
 
-        # Fane-oversigt (Uden gambling/lotteri)
-        admin_tabs = st.tabs(["📢 Broadcasts", "🎁 Customer Cashback Tracker", "🚦 Subscriptions", "🤝 Store Partner Rewards", "📬 Messages", "🛵 Riders", "🏪 Stores", "👤 Customers", "📦 Orders", "🔥 Offers"])
+        admin_tabs = st.tabs(["📢 Broadcasts", "🚦 Subscriptions", "🤝 Partner B2B Rewards", "📬 Messages", "🛵 Couriers", "🏪 Stores", "📦 Orders", "🔥 Offers"])
 
         # --- FANE 0: BROADCASTS ---
         with admin_tabs[0]:
             st.markdown("#### 📢 Platform Broadcast Messages & Reminders")
             with st.expander("➕ Create New Broadcast Message"):
                 b_target = st.selectbox("Send To Audience:", ["Stores", "Couriers", "All"])
-                b_type = st.selectbox("Notice Type / Badge:", ["🎁 Reward Promotion", "⏳ Referral Reminder", "⚠️ Important Notice", "📢 Platform Update"])
-                b_title = st.text_input("Notice Title *", placeholder="e.g. Free ₦500 Airtime for 3 referrals!")
-                b_body = st.text_area("Notice Message *", placeholder="e.g. Invite 3 friends with your ID and get ₦500 free airtime today!")
+                b_type = st.selectbox("Notice Type / Badge:", ["📢 Platform Update", "⚠️ Important Notice", "🤝 Partner Reminder"])
+                b_title = st.text_input("Notice Title *", placeholder="e.g. Weekend Market Rush!")
+                b_body = st.text_area("Notice Message *", placeholder="e.g. Ensure your active stock is updated for Saturday buyers!")
                 
                 if st.button("🚀 Publish Broadcast Alert", type="primary"):
                     if not b_title or not b_body:
@@ -1112,54 +1001,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                 supabase.table("broadcast_messages").delete().eq("id", b["id"]).execute()
                                 st.rerun()
 
-        # --- FANE 1: CUSTOMER CASHBACK TRACKER ---
+        # --- FANE 1: ABONNEMENTER ---
         with admin_tabs[1]:
-            st.markdown("#### 🎁 Customer Referral & Cashback Tracker")
-            st.caption("Overview of customers qualified for guaranteed milestone payouts (Airtime & Cash).")
-            
-            all_customers = supabase.table("customers").select("*").execute().data or []
-            all_shops_for_ref = supabase.table("shops").select("*").execute().data or []
-            
-            customer_pool = []
-            for c in all_customers:
-                c_id = c.get("member_id") or f"CUST-{c.get('id', 1000)}"
-                cust_refs = len([x for x in all_customers if x.get("referred_by") == c_id])
-                shop_refs = len([x for x in all_shops_for_ref if x.get("referred_by") == c_id])
-                total_refs = cust_refs + shop_refs
-                
-                customer_pool.append({
-                    "name": c["name"],
-                    "phone": c["phone"],
-                    "id": c_id,
-                    "referrals": total_refs
-                })
-            
-            qualified_rewards = [item for item in customer_pool if item["referrals"] >= 3]
-            st.metric("👥 Qualified for Airtime / Cash Rewards (3+ Referrals)", len(qualified_rewards))
-
-            st.markdown("##### Customers Eligible for Payouts")
-            if not qualified_rewards:
-                st.info("No customers have hit 3+ referrals yet.")
-            else:
-                for item in qualified_rewards:
-                    with st.container(border=True):
-                        col_r1, col_r2 = st.columns([3, 2])
-                        with col_r1:
-                            st.markdown(f"**{item['name']}** (`{item['id']}`)")
-                            st.caption(f"📞 Phone: `{item['phone']}`")
-                            if item["referrals"] >= 10:
-                                st.success(f"🏆 Milestone 2 Reached: **{item['referrals']} Referrals** (Eligible for ₦2,500 Cash Bonus)")
-                            else:
-                                st.info(f"🎉 Milestone 1 Reached: **{item['referrals']} Referrals** (Eligible for ₦500 Airtime)")
-                        with col_r2:
-                            payout_wa = make_wa_link(
-                                item["phone"],
-                                f"Hello {item['name']}! You have earned your reward for {item['referrals']} referrals on Sweet Debbie Deals. Please provide your bank/network details to receive payout!"
-                            )
-                            st.link_button("💬 Pay via WhatsApp", payout_wa, use_container_width=True)
-
-        # --- FANE 2: ABONNEMENTER ---
-        with admin_tabs[2]:
             st.markdown("#### 🚦 Subscription Status & Fee Collection")
             bills = supabase.table("billing_records").select("*").order("id", desc=True).execute().data or []
             
@@ -1203,7 +1046,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                     default_amount = 1000 if "Weekly" in period_choice else 3500
                     fee_val = st.number_input("Fee in Naira (₦):", min_value=100, value=default_amount, step=100)
                     
-                fee_title = st.text_input("Fee Description:", value=f"{'Weekly' if 'Weekly' in period_choice else 'Monthly'} Stall Access Fee")
+                fee_title = st.text_input("Fee Description:", value=f"{'Weekly' if 'Weekly' in period_choice else 'Monthly'} Vendora Stall Access")
                 
                 if st.button("📝 Create Subscription Record", type="primary"):
                     if chosen_payer:
@@ -1256,20 +1099,20 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                     st.success(f"Payment marked! Extended by {days_to_add} days.")
                                     st.rerun()
                                     
-                                wa_reminder = f"Hello {b['payer_name']}! Your {period.lower()} subscription for Sweet Debbie Deals ({b.get('member_id')}) is currently due/expired. Please renew with our coordinator."
+                                wa_reminder = f"Hello {b['payer_name']}! Your {period.lower()} access for Vendora ({b.get('member_id')}) is due/expired. Please renew with our coordinator."
                                 st.link_button("💬 WhatsApp Reminder", make_wa_link(b['payer_phone'], wa_reminder), use_container_width=True)
                             else:
-                                wa_receipt = f"Official Receipt: Hello {b['payer_name']}, payment confirmed for {period.lower()} access (₦{b['amount']:,}). Valid until {b.get('valid_until', '')[:10]}."
+                                wa_receipt = f"Official Receipt: Hello {b['payer_name']}, payment confirmed for {period.lower()} Vendora access (₦{b['amount']:,}). Valid until {b.get('valid_until', '')[:10]}."
                                 st.link_button("🧾 WhatsApp Receipt", make_wa_link(b['payer_phone'], wa_receipt), use_container_width=True)
                                 
                             if st.button("🗑️ Delete", key=f"del_b_{b['id']}", type="secondary", use_container_width=True):
                                 supabase.table("billing_records").delete().eq("id", b["id"]).execute()
                                 st.rerun()
 
-        # --- FANE 3: STORE PARTNER REWARDS ---
-        with admin_tabs[3]:
-            st.markdown("#### 🤝 Store Partner Referral Milestones")
-            st.caption("Traders who refer 5+ new stores qualify for 1 Month of Free Platform Access.")
+        # --- FANE 2: STORE PARTNER B2B REWARDS ---
+        with admin_tabs[2]:
+            st.markdown("#### 🤝 Store Partner B2B Referrals")
+            st.caption("Standard B2B trade discount: Merchants referring 5 partner stalls earn 1 month free listing.")
             all_shops_ref = supabase.table("shops").select("*").execute().data or []
             referral_counts = {}
             for s in all_shops_ref:
@@ -1284,20 +1127,20 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 if cnt >= 5:
                     qualified_stores.append({"name": s.get("name"), "phone": s.get("phone"), "id": s_id, "count": cnt})
 
-            st.write(f"Stalls meeting 5+ Partner Referrals: **{len(qualified_stores)}**")
+            st.write(f"Stalls with 5+ partner referrals: **{len(qualified_stores)}**")
             for store in qualified_stores:
                 with st.container(border=True):
                     col_st1, col_st2 = st.columns([3, 2])
                     with col_st1:
                         st.markdown(f"**{store['name']}** (`{store['id']}`)")
                         st.caption(f"📞 `{store['phone']}` • Referred: **{store['count']} stalls**")
-                        st.success("Eligible for 1 Month Free Listing!")
+                        st.success("Qualified for 1 Month Free Listing!")
                     with col_st2:
-                        wa_shop_rew = make_wa_link(store["phone"], f"Hello {store['name']}! Thank you for referring {store['count']} stalls to Sweet Debbie Deals! Your store has been credited with 1 month of free platform listing.")
-                        st.link_button("💬 Send Free Month Notice", wa_shop_rew, use_container_width=True)
+                        wa_shop_rew = make_wa_link(store["phone"], f"Hello {store['name']}! Thank you for referring {store['count']} merchants to Vendora. Your stall has been credited with 1 month free listing!")
+                        st.link_button("💬 Send Confirmation", wa_shop_rew, use_container_width=True)
 
-        # --- FANE 4: SUPPORT BESKEDER ---
-        with admin_tabs[4]:
+        # --- FANE 3: SUPPORT BESKEDER ---
+        with admin_tabs[3]:
             st.markdown("#### Support Inbox")
             msgs = supabase.table("support_messages").select("*").order("id", desc=True).execute().data or []
             if not msgs:
@@ -1310,14 +1153,14 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         st.write(m['message'])
                         st.caption(f"Phone: `{m['sender_phone']}` • Status: **{m['status']}**")
                     with col_m2:
-                        wa_reply = make_wa_link(m['sender_phone'], f"Hello {m['sender_name']}, regarding '{m['subject']}': ")
+                        wa_reply = make_wa_link(m['sender_phone'], f"Hello {m['sender_name']}, regarding your Vendora inquiry on '{m['subject']}': ")
                         st.link_button("💬 Reply WhatsApp", wa_reply, use_container_width=True)
                         if st.button("🗑️ Delete", key=f"del_msg_{m['id']}", type="secondary", use_container_width=True):
                             supabase.table("support_messages").delete().eq("id", m["id"]).execute()
                             st.rerun()
 
-        # --- FANE 5: KURIER VERIFIKATION ---
-        with admin_tabs[5]:
+        # --- FANE 4: KURIER VERIFIKATION ---
+        with admin_tabs[4]:
             st.markdown("#### Couriers Verification")
             all_couriers = supabase.table("couriers").select("*").order("id", desc=True).execute().data or []
             for c in all_couriers:
@@ -1348,8 +1191,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         with st.expander("🪪 View ID"):
                             st.image(c["id_card_img"], width=300)
 
-        # --- FANE 6: BUTIKKER ---
-        with admin_tabs[6]:
+        # --- FANE 5: BUTIKKER ---
+        with admin_tabs[5]:
             st.markdown("#### Registered Shops")
             all_shops_admin = supabase.table("shops").select("*").execute().data or []
             for s in all_shops_admin:
@@ -1366,23 +1209,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             supabase.table("shops").delete().eq("id", s["id"]).execute()
                             st.rerun()
 
-        # --- FANE 7: KUNDER ---
-        with admin_tabs[7]:
-            st.markdown("#### Registered Customers")
-            all_cust_admin = supabase.table("customers").select("*").execute().data or []
-            if not all_cust_admin:
-                st.info("No customers registered yet.")
-            for cu in all_cust_admin:
-                with st.container(border=True):
-                    cu_id = cu.get("member_id") or f"CUST-{cu['id']}"
-                    st.markdown(f"**{cu['name']}** (🎟️ `{cu_id}`)")
-                    st.caption(f"📞 `{cu['phone']}` • PIN: `{format_pin_for_admin(cu.get('pin'))}` • Referred by: `{cu.get('referred_by', 'None')}`")
-                    if st.button("🗑️ Delete Customer", key=f"del_cu_{cu['id']}", type="secondary"):
-                        supabase.table("customers").delete().eq("id", cu["id"]).execute()
-                        st.rerun()
-
-        # --- FANE 8: ORDRER ---
-        with admin_tabs[8]:
+        # --- FANE 6: ORDRER ---
+        with admin_tabs[6]:
             st.markdown("#### All Orders")
             all_orders = supabase.table("orders").select("*").order("id", desc=True).execute().data or []
             for o in all_orders:
@@ -1396,8 +1224,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             supabase.table("orders").delete().eq("id", o["id"]).execute()
                             st.rerun()
 
-        # --- FANE 9: TILBUD ---
-        with admin_tabs[9]:
+        # --- FANE 7: TILBUD ---
+        with admin_tabs[7]:
             st.markdown("#### All Product Deals")
             all_deals = supabase.table("offers").select("*").order("id", desc=True).execute().data or []
             for d in all_deals:
@@ -1411,20 +1239,16 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             st.rerun()
 
 # ====================================================
-# GLOBAL FOOTER: PRIVACY & JURIDISK ANSVARSFRASKRIVELSE (100% LOVLIG)
+# GLOBAL FOOTER: PRIVACY & JURIDISK ANSVARSFRASKRIVELSE
 # ====================================================
 st.markdown("---")
 footer_html = (
     "<div class='disclaimer-box'>"
-    "<strong>Platform Terms, Intermediary Disclaimer & Limitation of Liability:</strong><br>"
-    "Sweet Debbie Deals operates strictly as a digital marketplace directory and discovery platform connecting local merchants, independent dispatch couriers, and buyers in Lagos. "
-    "We do not own, sell, inspect, stock, or manufacture listed goods. All commercial purchase agreements exist exclusively between the buyer and the store owner. "
-    "Couriers are independent third parties. To the fullest extent permitted by Nigerian law, Sweet Debbie Deals disclaims liability for item warranties, transaction disputes, road delays, or delivery losses.<br><br>"
-    "<strong>Performance-Based Rewards & Affiliate Policy:</strong><br>"
-    "Sweet Debbie Deals operates a non-chance, performance-based referral loyalty program. No lottery, betting, or sweepstakes mechanics are used. "
-    "Referral milestones (such as airtime bonuses or subscription discounts) are earned strictly upon verified active peer registrations. "
-    "To prevent fraud, registered account names must correspond to official identity documents upon reward claims. Fake sign-ups or bot registrations will result in immediate disqualification.<br><br>"
-    "<strong>Data Privacy (NDPA / NDPR):</strong> User data is handled solely for transaction fulfillment, fraud mitigation, and account security. Users retain statutory rights to request account rectification or deletion anytime."
+    "<strong>Vendora Platform Terms & Marketplace Intermediary Notice:</strong><br>"
+    "Vendora (by Debbie) is a digital marketplace directory facilitating connections between local merchants, independent dispatch couriers, and consumers across Lagos. "
+    "Vendora does not buy, sell, warehouse, inspect, or manufacture any listed inventory. All purchase transactions exist exclusively between buyer and merchant. "
+    "Dispatch couriers operate strictly as independent contractors. To the fullest extent permissible by Nigerian law, Vendora disclaims liability for merchant claims, item defects, traffic delays, or transaction disputes.<br><br>"
+    "<strong>Data Protection (NDPA / NDPR):</strong> User and merchant information is handled strictly for commerce connectivity, order coordination, and system security. Users may request account rectification or deletion anytime."
     "</div>"
 )
 st.markdown(footer_html, unsafe_allow_html=True)
