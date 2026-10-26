@@ -46,7 +46,6 @@ st.markdown(f"""
         color: {text_color} !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }}
-
     .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5,
     label[data-testid="stWidgetLabel"] p,
     div[data-testid="stRadio"] label p,
@@ -57,7 +56,6 @@ st.markdown(f"""
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
     }}
-
     div[data-baseweb="input"] input,
     div[data-baseweb="base-input"] textarea,
     div[data-baseweb="select"] span,
@@ -66,20 +64,14 @@ st.markdown(f"""
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
     }}
-    
-    div[data-baseweb="input"],
-    div[data-baseweb="base-input"],
-    div[data-baseweb="select"],
-    div[data-testid="stTextInput"] input,
-    div[data-testid="stTextArea"] textarea {{
+    div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"],
+    div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {{
         background-color: {card_bg} !important;
         border-color: {border_color} !important;
         color: {text_color} !important;
         border-radius: 8px !important;
     }}
-
-    div[data-testid="stPopover"] button, 
-    div[data-testid="stPopover"] > div > button {{
+    div[data-testid="stPopover"] button, div[data-testid="stPopover"] > div > button {{
         background-color: {card_bg} !important;
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
@@ -88,16 +80,12 @@ st.markdown(f"""
         font-weight: 600 !important;
         width: 100% !important;
     }}
-
-    div[data-baseweb="popover"], 
-    div[data-baseweb="popover"] > div, 
-    div[data-testid="stPopoverBody"] {{
+    div[data-baseweb="popover"], div[data-baseweb="popover"] > div, div[data-testid="stPopoverBody"] {{
         background-color: {card_bg} !important;
         color: {text_color} !important;
         border: 1px solid {border_color} !important;
         border-radius: 8px !important;
     }}
-
     .stButton button, .stButton button:focus, .stButton button:active {{
         background-color: {btn_bg} !important;
         color: {btn_text} !important;
@@ -112,109 +100,21 @@ st.markdown(f"""
         color: {btn_text} !important;
         border-color: {border_color} !important;
     }}
-    .stButton {{
-        min-height: 45px;
+    .stButton {{ min-height: 45px; }}
+    div[data-testid="stButton"] button {{ width: 100% !important; transition: none !important; }}
+    .grid-img-box {{ width: 100%; height: 125px; overflow: hidden; border-radius: 8px; margin-bottom: 8px; background-color: {"#374151" if is_dark else "#f3f4f6"}; display: flex; align-items: center; justify-content: center; }}
+    .grid-img-box img {{ width: 100%; height: 100%; object-fit: cover; }}
+    .grid-title {{ font-size: 0.95rem; font-weight: 700; line-height: 1.2; margin-bottom: 4px; color: {text_color} !important; -webkit-text-fill-color: {text_color} !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.4em; }}
+    .grid-price {{ font-size: 1.05rem; font-weight: 800; color: {"#4ade80" if is_dark else "#16a34a"}; margin-bottom: 4px; }}
+    .member-badge, .escrow-badge, .referral-badge, .trial-badge {{
+        display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; margin-bottom: 8px;
     }}
-    div[data-testid="stButton"] button {{
-        width: 100% !important;
-        transition: none !important;
-    }}
-
-    .grid-img-box {{
-        width: 100%;
-        height: 125px;
-        overflow: hidden;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        background-color: {"#374151" if is_dark else "#f3f4f6"};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }}
-    .grid-img-box img {{
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }}
-    .grid-title {{
-        font-size: 0.95rem;
-        font-weight: 700;
-        line-height: 1.2;
-        margin-bottom: 4px;
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        height: 2.4em;
-    }}
-    .grid-price {{
-        font-size: 1.05rem;
-        font-weight: 800;
-        color: {"#4ade80" if is_dark else "#16a34a"};
-        margin-bottom: 4px;
-    }}
-
-    .member-badge {{
-        display: inline-block;
-        background-color: {"#064e3b" if is_dark else "#dcfce7"};
-        color: {"#6ee7b7" if is_dark else "#15803d"} !important;
-        -webkit-text-fill-color: {"#6ee7b7" if is_dark else "#15803d"} !important;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-weight: bold;
-        font-size: 0.9rem;
-        margin-bottom: 8px;
-        border: 1px solid {"#047857" if is_dark else "#bbf7d0"};
-    }}
-    .trial-badge {{
-        display: inline-block;
-        background-color: {"#1e3a8a" if is_dark else "#dbeafe"};
-        color: {"#93c5fd" if is_dark else "#1d4ed8"} !important;
-        -webkit-text-fill-color: {"#93c5fd" if is_dark else "#1d4ed8"} !important;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-weight: bold;
-        font-size: 0.85rem;
-        margin-bottom: 8px;
-        border: 1px solid {"#1d4ed8" if is_dark else "#bfdbfe"};
-    }}
-    .escrow-badge {{
-        display: inline-block;
-        background-color: {"#064e3b" if is_dark else "#dcfce7"};
-        color: {"#34d399" if is_dark else "#166534"} !important;
-        -webkit-text-fill-color: {"#34d399" if is_dark else "#166534"} !important;
-        padding: 4px 8px;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        border: 1px solid {"#059669" if is_dark else "#86efac"};
-        margin-bottom: 6px;
-    }}
-    .referral-badge {{
-        display: inline-block;
-        background-color: {"#451a03" if is_dark else "#ffedd5"};
-        color: {"#fdba74" if is_dark else "#c2410c"} !important;
-        -webkit-text-fill-color: {"#fdba74" if is_dark else "#c2410c"} !important;
-        padding: 4px 8px;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        border: 1px solid {"#9a3412" if is_dark else "#fed7aa"};
-        margin-bottom: 6px;
-    }}
-    .disclaimer-box {{
-        font-size: 0.8rem;
-        background-color: {card_bg};
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
-        opacity: 0.85;
-        padding: 12px;
-        border-radius: 8px;
-        border: 1px solid {border_color};
-        margin-top: 25px;
-    }}
+    .member-badge {{ background-color: {"#064e3b" if is_dark else "#dcfce7"}; color: {"#6ee7b7" if is_dark else "#15803d"} !important; -webkit-text-fill-color: {"#6ee7b7" if is_dark else "#15803d"} !important; border: 1px solid {"#047857" if is_dark else "#bbf7d0"}; }}
+    .trial-badge {{ background-color: {"#1e3a8a" if is_dark else "#dbeafe"}; color: {"#93c5fd" if is_dark else "#1d4ed8"} !important; -webkit-text-fill-color: {"#93c5fd" if is_dark else "#1d4ed8"} !important; border: 1px solid {"#1d4ed8" if is_dark else "#bfdbfe"}; }}
+    .escrow-badge {{ background-color: {"#064e3b" if is_dark else "#dcfce7"}; color: {"#34d399" if is_dark else "#166534"} !important; -webkit-text-fill-color: {"#34d399" if is_dark else "#166534"} !important; border: 1px solid {"#059669" if is_dark else "#86efac"}; }}
+    .referral-badge {{ background-color: {"#451a03" if is_dark else "#ffedd5"}; color: {"#fdba74" if is_dark else "#c2410c"} !important; -webkit-text-fill-color: {"#fdba74" if is_dark else "#c2410c"} !important; border: 1px solid {"#9a3412" if is_dark else "#fed7aa"}; }}
+    .disclaimer-box {{ font-size: 0.8rem; background-color: {card_bg}; color: {text_color} !important; -webkit-text-fill-color: {text_color} !important; opacity: 0.85; padding: 12px; border-radius: 8px; border: 1px solid {border_color}; margin-top: 25px; }}
+    .pin-box {{ background-color: #fef08a; color: #854d0e; padding: 15px; border-radius: 8px; text-align: center; border: 2px dashed #eab308; margin-top: 10px; margin-bottom: 10px; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -357,10 +257,8 @@ def get_shop_access_status(shop: dict):
                 return "expired", "🔴 Free Promo Expired", 0
         except Exception:
             return "trial", "🎉 Free Launch Promo", 30
-            
     if status == "active_paid":
         return "active_paid", "🟢 Paid Subscription Active", 30
-        
     return "expired", "🔴 Subscription Required", 0
 
 def render_broadcast_alerts(target: str):
@@ -454,7 +352,7 @@ def show_offer_modal(item):
             total_naira = item['price'] + suggested_delivery
             st.markdown(f"**Total to Pay (Item + Delivery): ₦{total_naira:,}**")
             
-            c_consent = st.checkbox("I agree to terms: Vendora acts solely as an intermediary directory (NDPA Consent).", value=True)
+            c_consent = st.checkbox("I agree to terms: Vendora acts solely as an intermediary directory.", value=True)
             submit_btn = st.form_submit_button("💳 Proceed to Paystack Escrow Payment", type="primary", use_container_width=True)
             
             if submit_btn:
@@ -463,6 +361,8 @@ def show_offer_modal(item):
                 else:
                     p_fee = 150
                     r_payout = max(0, int(suggested_delivery) - p_fee)
+                    # GENERER SIKKERHEDS-PIN TIL KUNDEN
+                    delivery_pin = str(random.randint(1000, 9999))
                     
                     new_order = {
                         "offer_id": item["id"], "product": item["product"], "shop": item["shop"],
@@ -471,7 +371,8 @@ def show_offer_modal(item):
                         "customer_area": cust_area, "delivery_address": cust_addr.strip(),
                         "item_price": item["price"], "delivery_fee": int(suggested_delivery),
                         "rider_payout": r_payout, "platform_fee": p_fee, 
-                        "status": "pending", "payment_status": "unpaid"
+                        "status": "pending", "payment_status": "unpaid",
+                        "delivery_pin": delivery_pin
                     }
                     ins = supabase.table("orders").insert(new_order).execute()
                     if ins.data:
@@ -486,37 +387,64 @@ def show_offer_modal(item):
                                 "order_id": created_order["id"],
                                 "auth_url": p_data["authorization_url"],
                                 "reference": p_data["reference"],
-                                "total": total_naira
+                                "total": total_naira,
+                                "delivery_pin": delivery_pin
                             }
                             st.rerun()
                         else:
                             st.error(f"Paystack initialization error: {p_err}")
     else:
         pay_info = st.session_state[order_key]
-        with st.container(border=True):
-            st.success(f"📦 Order #{pay_info['order_id']} created! Total: **₦{pay_info['total']:,}**")
-            st.markdown("Klik nedenfor for at åbne Paystacks testvindue:")
-            st.link_button("💳 Open Paystack Checkout Window", pay_info["auth_url"], use_container_width=True)
-            
-            st.markdown("---")
-            st.caption("Når du har gennemført testbetalingen, tryk her for at bekræfte:")
-            if st.button("🔄 Verify Payment Status", type="primary", use_container_width=True):
-                is_paid, ver_data = verify_paystack_payment(pay_info["reference"])
-                if is_paid:
-                    now_iso = datetime.now(timezone.utc).isoformat()
-                    supabase.table("orders").update({
-                        "payment_status": "escrow_funded",
-                        "paid_at": now_iso
-                    }).eq("id", pay_info["order_id"]).execute()
-                    st.success("🎉 Betaling bekræftet! Midlerne er nu sikret i Escrow.")
-                    st.session_state[order_key] = None
-                else:
-                    st.warning("Betalingen er endnu ikke registreret. Prøv igen om et øjeblik.")
+        
+        # Tjek om den ER betalt
+        check_status = supabase.table("orders").select("payment_status").eq("id", pay_info["order_id"]).execute()
+        is_already_funded = check_status.data and check_status.data[0]["payment_status"] == "escrow_funded"
+
+        if is_already_funded:
+            st.success("🎉 Payment Confirmed! Your order is secured.")
+            st.markdown(f"""
+            <div class="pin-box">
+                <h3 style="margin:0; color:#854d0e;">YOUR DELIVERY PIN: {pay_info['delivery_pin']}</h3>
+                <p style="margin:0; font-size:0.9rem;">Do NOT share this PIN with the rider until they arrive with your items.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("Close Order"):
+                st.session_state[order_key] = None
+                st.rerun()
+        else:
+            with st.container(border=True):
+                st.success(f"📦 Order #{pay_info['order_id']} created! Total: **₦{pay_info['total']:,}**")
+                st.markdown("Click below to open Paystack secure checkout:")
+                st.link_button("💳 Open Paystack Checkout Window", pay_info["auth_url"], use_container_width=True)
+                
+                st.markdown("---")
+                st.caption("Once you have paid in the window above, verify here:")
+                if st.button("🔄 Verify Payment Status", type="primary", use_container_width=True):
+                    is_paid, ver_data = verify_paystack_payment(pay_info["reference"])
+                    if is_paid:
+                        now_iso = datetime.now(timezone.utc).isoformat()
+                        supabase.table("orders").update({
+                            "payment_status": "escrow_funded",
+                            "paid_at": now_iso
+                        }).eq("id", pay_info["order_id"]).execute()
+                        st.rerun() # Reruns to show the PIN box above
+                    else:
+                        st.warning("Payment not registered yet. Try again in a moment.")
 
 # ====================================================
 # VISNING 1: KUNDEPORTAL
 # ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
+    
+    with st.expander("ℹ️ How Vendora Works (Customer Guide)"):
+        st.markdown("""
+        **Welcome to Vendora!** Here is how you shop safely:
+        1. **Browse & Order:** Find a deal and click 'View Deal'.
+        2. **Safe Escrow Payment:** When you pay online via Paystack, your money is held securely in our Escrow system. The store does not get paid until you receive your items.
+        3. **Delivery PIN:** After payment, you receive a **4-digit PIN**. 
+        4. **Receive Items:** When the dispatch rider arrives, check your items. Only give the rider your 4-digit PIN if everything is correct. The PIN unlocks the payment for the rider and the store.
+        """)
+        
     render_broadcast_alerts("All")
     
     if active_shop_slug:
@@ -591,6 +519,16 @@ if st.session_state.current_view == "🛒 Browse Deals":
 # VISNING 2: BUTIKSEJER ADMIN
 # ====================================================
 elif st.session_state.current_view == "🏪 Store Owner Admin":
+    
+    with st.expander("ℹ️ Store Owner Guide (How to sell)"):
+        st.markdown("""
+        **Welcome Store Owners!**
+        1. **Post Deals:** Upload your daily deals. They expire automatically after 48 hours to keep the market fresh.
+        2. **Escrow Orders:** If you get an order marked as `PAID ONLINE (Escrow Funded)`, **give the item to the rider without asking for cash**. The money is already secured in our platform account.
+        3. **Payouts:** Once the rider delivers the item to the customer (and enters the PIN), your money is automatically credited and sent to your OPay/Bank by the Vendora Admin.
+        4. **Airtime Rewards:** Invite other stalls using your `Store ID`. Every 5 stores you invite earns you ₦1,000 airtime!
+        """)
+        
     if not st.session_state.logged_shop:
         auth_mode = st.radio("Choose action:", ["🔑 Log In to Existing Store", "📝 Register New Store / Stall (30 Days Free)"], horizontal=True)
         
@@ -755,9 +693,19 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         st.image(generate_qr(direct_shop_url), width=160, caption=f"Scan for {shop['name']}")
 
 # ====================================================
-# VISNING 3: BUDE & KURÉR
+# VISNING 3: BUDE & KURÉR (MED PIN-LÅS)
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
+    
+    with st.expander("ℹ️ Courier Guide (How to deliver safely)"):
+        st.markdown("""
+        **Welcome Verified Riders!**
+        1. **Accept Jobs:** Browse 'Open Delivery Requests' and accept the ones that fit your route.
+        2. **Escrow Safety:** If an order says `PAID ONLINE (Escrow Funded)`, **do NOT pay the store with your own money**. The items are already paid for! Just pick them up.
+        3. **Delivery PIN:** When you arrive at the customer, ask them for their **4-digit PIN**. 
+        4. **Get Paid:** Enter the customer's PIN to mark the order as delivered. This guarantees your payout!
+        """)
+
     if not st.session_state.logged_courier:
         courier_auth = st.radio("Rider Action:", ["🔑 Rider Log In", "📝 Register New Rider / Courier"], horizontal=True)
         
@@ -861,16 +809,23 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
                         with cw2:
                             st.link_button("💬 WA Customer", wa_cust, use_container_width=True)
                             
-                        cb1, cb2 = st.columns(2)
-                        with cb1:
-                            if job["status"] == "accepted":
-                                if st.button("📦 Mark Picked Up", key=f"pk_{job['id']}", use_container_width=True):
-                                    supabase.table("orders").update({"status": "picked_up"}).eq("id", job["id"]).execute()
-                                    st.rerun()
-                        with cb2:
-                            if st.button("✅ Mark Delivered", key=f"dl_{job['id']}", type="primary", use_container_width=True):
-                                supabase.table("orders").update({"status": "delivered"}).eq("id", job["id"]).execute()
+                        # HVIS IKKE PICKED UP ENDNU
+                        if job["status"] == "accepted":
+                            if st.button("📦 Mark Picked Up", key=f"pk_{job['id']}", use_container_width=True):
+                                supabase.table("orders").update({"status": "picked_up"}).eq("id", job["id"]).execute()
                                 st.rerun()
+                                
+                        # HVIS PICKED UP, KREV PIN FOR AT LEVERE
+                        elif job["status"] == "picked_up":
+                            st.info("🚚 On the way to customer. Ask customer for 4-digit PIN upon arrival.")
+                            entered_pin = st.text_input("Enter 4-Digit Customer PIN", key=f"pin_input_{job['id']}", max_chars=4)
+                            if st.button("✅ Verify PIN & Mark Delivered", key=f"dl_{job['id']}", type="primary", use_container_width=True):
+                                if entered_pin.strip() == str(job.get("delivery_pin")):
+                                    supabase.table("orders").update({"status": "delivered"}).eq("id", job["id"]).execute()
+                                    st.success("✅ PIN Verified! Order delivered successfully.")
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Incorrect PIN. Please ask the customer again.")
 
             st.markdown("---")
             st.markdown("#### ⚡ Open Delivery Requests & InDrive Bidding")
@@ -978,7 +933,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
             with tcol1:
                 with st.container(border=True):
                     st.markdown("##### 🏪 1-Klik: Test Bod & Vare")
-                    st.caption("Opretter 'Mama Tunde Test Provisions' med 30 dages gratis adgang og lægger straks 1 vare online.")
+                    st.caption("Opretter 'Mama Tunde Test' med 30 dages gratis adgang og lægger straks 1 vare online.")
                     if st.button("⚡ Opret Test-Bod & Vare", use_container_width=True):
                         t_phone = f"080{random.randint(10000000, 99999999)}"
                         t_trial_end = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
@@ -1036,9 +991,8 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
             st.markdown("---")
             with st.container(border=True):
                 st.markdown("##### 💳 1-Klik: Simuler Betalt Escrow-Ordre")
-                st.caption("Genererer straks en fiktiv ordre med status 'Paid Online (Escrow Funded)'. Så kan du se pengene dukke op under 'Escrow & Settlements' og se budet hente den, uden at røre Paystack.")
+                st.caption("Genererer en fiktiv ordre med status 'Paid Online'. Budet skal bruge koden **1234** ved levering.")
                 if st.button("🚀 Simuler Færdigbetalt Ordre (₦6.000)", type="primary", use_container_width=True):
-                    # Find automatisk et ægte offer_id for at undgå database-fejl
                     offer_check = supabase.table("offers").select("id").limit(1).execute()
                     safe_offer_id = offer_check.data[0]["id"] if offer_check.data else None
 
@@ -1059,11 +1013,12 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                         "status": "pending",
                         "payment_status": "escrow_funded",
                         "paystack_reference": f"SIM-{random.randint(10000, 99999)}",
-                        "paid_at": datetime.now(timezone.utc).isoformat()
+                        "paid_at": datetime.now(timezone.utc).isoformat(),
+                        "delivery_pin": "1234"
                     }
                     supabase.table("orders").insert(sim_order).execute()
-                    st.success("✅ Fiktiv betalt ordre oprettet! Tjek fanerne '💰 Escrow & Settlements' og '🛵 Courier / Dispatch'.")
-                    st.rerun()
+                    st.success("✅ Fiktiv betalt ordre oprettet! Tjek fanerne '💰 Escrow & Settlements' og '🛵 Courier / Dispatch'. (PIN: 1234)")
+                    # st.rerun() er udkommenteret, så du kan se den grønne besked.
 
         # --- FANE 1: BROADCASTS ---
         with admin_tabs[1]:
