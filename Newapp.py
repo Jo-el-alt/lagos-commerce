@@ -43,6 +43,12 @@ if is_dark:
             color-scheme: dark !important;
         }
 
+        /* Sørg for at usynlige SVG-rammer aldrig farves som firkanter */
+        svg path[fill="none"],
+        svg rect[fill="none"] {
+            fill: none !important;
+        }
+
         /* Fjern Streamlits top-slør og ryk alt helt op (kompakt mobil-layout) */
         [data-testid="stHeader"], [data-testid="stToolbar"] {
             display: none !important;
@@ -98,7 +104,7 @@ if is_dark:
             font-size: 0.85em !important;
         }
 
-        /* 3. Kort, Beholdere & Expander (How Vendora Works m.fl.) */
+        /* 3. Kort, Beholdere & Expander */
         div[data-testid="stVerticalBlockBorderWrapper"] > div,
         div[data-testid="stForm"] {
             background-color: #151d30 !important;
@@ -131,6 +137,7 @@ if is_dark:
         div.stLinkButton > a,
         [data-testid="stBaseButton-secondary"],
         button[kind="secondary"] {
+            background: #243048 !important;
             background-color: #243048 !important;
             border: 1px solid #3b4b68 !important;
             border-radius: 8px !important;
@@ -144,7 +151,6 @@ if is_dark:
         button[kind="secondary"] * {
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
-            fill: #ffffff !important;
         }
         div.stButton > button:hover,
         div[data-testid="stPopover"] button:hover,
@@ -153,7 +159,7 @@ if is_dark:
             border-color: #10b981 !important;
         }
 
-        /* 5. Modal (Bestillingsvindue) & Popover-menuer (alle lag) */
+        /* 5. Modal (Bestillingsvindue) & Popover/Dropdown-menuer */
         dialog,
         [role="dialog"],
         [role="dialog"] div,
@@ -165,42 +171,49 @@ if is_dark:
         div[data-baseweb="modal"] > div > div div,
         [data-testid="stDialog"] > div > div > div,
         [data-testid="stDialog"] > div > div > div div,
-        div[data-baseweb="popover"],
-        div[data-baseweb="popover"] *,
+        [data-baseweb="popover"],
+        [data-baseweb="popover"] *,
         [data-testid="stPopoverBody"],
         [data-testid="stPopoverBody"] *,
-        div[data-baseweb="menu"],
-        div[data-baseweb="menu"] *,
-        ul[data-testid="stSelectboxVirtualDropdown"],
-        ul[data-testid="stSelectboxVirtualDropdown"] *,
-        li[role="option"],
-        li[role="option"] * {
+        [data-baseweb="menu"],
+        [data-baseweb="menu"] *,
+        [data-baseweb="list"],
+        [data-baseweb="list"] *,
+        [data-testid*="VirtualDropdown"],
+        [data-testid*="VirtualDropdown"] *,
+        [role="listbox"],
+        [role="listbox"] *,
+        [role="option"],
+        [role="option"] * {
             background-color: #151d30 !important;
             color: #f8fafc !important;
             -webkit-text-fill-color: #f8fafc !important;
         }
-        dialog, [role="dialog"], [data-testid="stPopoverBody"] {
+        dialog, [role="dialog"], [data-testid="stPopoverBody"], [role="listbox"], [data-baseweb="menu"] {
             border: 1px solid #3b4b68 !important;
             border-radius: 12px !important;
         }
-        div[data-baseweb="popover"] button,
-        div[data-baseweb="popover"] button * {
+        [data-baseweb="popover"] button,
+        [data-baseweb="popover"] button * {
             background-color: #243048 !important;
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
         }
-        div[data-baseweb="popover"] button {
+        [data-baseweb="popover"] button {
             border: 1px solid #3b4b68 !important;
             border-radius: 8px !important;
         }
-        li[role="option"]:hover,
-        li[role="option"]:hover * {
+        [role="option"]:hover,
+        [role="option"]:hover *,
+        [role="option"][aria-selected="true"],
+        [role="option"][aria-selected="true"] * {
             background-color: #243048 !important;
         }
 
-        /* 6. Inputfelter, Selectbox, NumberInput og FileUploader */
+        /* 6. Inputfelter, Password-øje, Selectbox, Checkbox, Radio og FileUploader */
         input, textarea,
         div[data-baseweb="input"],
+        div[data-baseweb="input"] > div,
         div[data-baseweb="base-input"],
         div[data-baseweb="textarea"] {
             background-color: #0b0f19 !important;
@@ -208,24 +221,30 @@ if is_dark:
             -webkit-text-fill-color: #ffffff !important;
             border-color: #3b4b68 !important;
         }
-        div[data-testid="stSelectbox"] div,
-        div[data-testid="stSelectbox"] span,
-        div[data-testid="stSelectbox"] svg,
-        div[data-testid="stSelectbox"] path,
+        div[data-baseweb="input"] button,
+        div[data-baseweb="base-input"] button,
+        div[data-testid="stTextInput"] button {
+            background: #0b0f19 !important;
+            background-color: #0b0f19 !important;
+            color: #94a3b8 !important;
+            border: none !important;
+        }
+        div[data-baseweb="input"] button svg path:not([fill="none"]) {
+            fill: #94a3b8 !important;
+        }
         div[data-baseweb="select"],
-        div[data-baseweb="select"] * {
+        div[data-baseweb="select"] > div,
+        div[data-baseweb="select"] > div > div {
             background-color: #0b0f19 !important;
             color: #ffffff !important;
+            border-color: #3b4b68 !important;
+        }
+        div[data-baseweb="select"] svg {
+            color: #ffffff !important;
+            fill: currentColor !important;
+        }
+        div[data-baseweb="select"] svg path:not([fill="none"]) {
             fill: #ffffff !important;
-            -webkit-text-fill-color: #ffffff !important;
-        }
-        div[data-testid="stSelectbox"] label,
-        div[data-testid="stSelectbox"] label * {
-            background-color: transparent !important;
-        }
-        div[data-baseweb="select"] > div {
-            border: 1px solid #3b4b68 !important;
-            border-radius: 8px !important;
         }
         div[data-testid="stNumberInput"] button,
         button[data-testid="stNumberInputStepDown"],
@@ -234,39 +253,48 @@ if is_dark:
             color: #ffffff !important;
             border-color: #3b4b68 !important;
         }
-        div[data-testid="stNumberInput"] button svg {
+        div[data-testid="stNumberInput"] button svg path:not([fill="none"]) {
             fill: #ffffff !important;
         }
         input::placeholder, textarea::placeholder {
             color: #64748b !important;
             -webkit-text-fill-color: #64748b !important;
         }
-        [data-testid="stFileUploader"] section,
-        [data-testid="stFileUploaderDropzone"],
-        [data-testid="stFileUploaderDropzone"] * {
+
+        /* Checkbox & Radio i mørkt tema */
+        label[data-baseweb="checkbox"] > span:first-child,
+        label[data-baseweb="radio"] > div:first-child {
             background-color: #0b0f19 !important;
-            color: #94a3b8 !important;
-            -webkit-text-fill-color: #94a3b8 !important;
+            border: 2px solid #64748b !important;
         }
-        [data-testid="stFileUploader"] section,
-        [data-testid="stFileUploaderDropzone"] {
-            border: 1px dashed #3b4b68 !important;
-            border-radius: 10px !important;
-        }
-        [data-testid="stFileUploader"] button,
-        [data-testid="stFileUploader"] button *,
-        [data-testid="stFileUploaderDropzone"] button,
-        [data-testid="stFileUploaderDropzone"] button * {
-            background-color: #243048 !important;
-            color: #ffffff !important;
-            -webkit-text-fill-color: #ffffff !important;
+        label[data-baseweb="checkbox"]:has(input:checked) > span:first-child,
+        label[data-baseweb="radio"]:has(input:checked) > div:first-child {
+            background-color: #10b981 !important;
+            border-color: #059669 !important;
         }
 
-        /* Grønne Primary & Form Submit knapper (højeste prioritet) */
+        /* File Uploader */
+        [data-testid="stFileUploader"] section,
+        [data-testid="stFileUploaderDropzone"] {
+            background-color: #0b0f19 !important;
+            border: 1px dashed #3b4b68 !important;
+            border-radius: 10px !important;
+            color: #94a3b8 !important;
+        }
+        [data-testid="stFileUploader"] button,
+        [data-testid="stFileUploaderDropzone"] button {
+            background: #243048 !important;
+            background-color: #243048 !important;
+            color: #ffffff !important;
+            border: 1px solid #3b4b68 !important;
+        }
+
+        /* Grønne Primary & Form Submit knapper */
         div.stButton > button[kind="primary"],
         div[data-testid="stFormSubmitButton"] > button,
         [data-testid="stBaseButton-primary"],
         button[kind="primary"] {
+            background: #10b981 !important;
             background-color: #10b981 !important;
             border: 1px solid #059669 !important;
             color: #ffffff !important;
@@ -298,9 +326,10 @@ if is_dark:
         /* 8. Faneblade (st.tabs knapper) */
         div[data-testid="stTabs"] [role="tablist"] {
             gap: 6px !important;
-            background-color: transparent !important;
+            background: transparent !important;
         }
         div[data-testid="stTabs"] button[role="tab"] {
+            background: #243048 !important;
             background-color: #243048 !important;
             border: 1px solid #3b4b68 !important;
             border-radius: 8px !important;
@@ -313,6 +342,7 @@ if is_dark:
             font-weight: 700 !important;
         }
         div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+            background: #10b981 !important;
             background-color: #10b981 !important;
             border-color: #059669 !important;
         }
@@ -422,11 +452,17 @@ if is_dark:
 else:
     st.markdown("""
     <style>
-        :root, body, .stApp, [data-baseweb="popover"], [data-baseweb="modal"], [data-testid="stDialog"] {
+        :root, body, .stApp, [data-baseweb="popover"], [data-baseweb="modal"], [data-baseweb="menu"], [data-testid="stDialog"] {
             --background-color: #ffffff !important;
             --secondary-background-color: #f8fafc !important;
             --text-color: #0f172a !important;
             color-scheme: light !important;
+        }
+
+        /* VIGTIGT: Forhindrer at usynlige 24x24 SVG-rammer farves som sorte firkanter */
+        svg path[fill="none"],
+        svg rect[fill="none"] {
+            fill: none !important;
         }
 
         /* Fjern Streamlits top-slør og ryk alt helt op (kompakt mobil-layout) */
@@ -510,6 +546,8 @@ else:
         div[data-testid="stExpander"] summary span,
         div[data-testid="stExpander"] summary svg {
             color: #0f172a !important;
+        }
+        div[data-testid="stExpander"] summary svg path:not([fill="none"]) {
             fill: #0f172a !important;
         }
 
@@ -519,7 +557,9 @@ else:
         div.stLinkButton > a,
         [data-testid="stBaseButton-secondary"],
         button[kind="secondary"] {
+            background: #ffffff !important;
             background-color: #ffffff !important;
+            background-image: none !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 8px !important;
             color: #0f172a !important;
@@ -533,6 +573,9 @@ else:
         button[kind="secondary"] * {
             color: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
+        }
+        div[data-testid="stPopover"] button svg path:not([fill="none"]),
+        [data-testid="stBaseButton-secondary"] svg path:not([fill="none"]) {
             fill: #0f172a !important;
         }
         div.stButton > button:hover,
@@ -540,11 +583,12 @@ else:
         div.stLinkButton > a:hover,
         [data-testid="stBaseButton-secondary"]:hover,
         button[kind="secondary"]:hover {
+            background: #f1f5f9 !important;
             background-color: #f1f5f9 !important;
             border-color: #10b981 !important;
         }
 
-        /* 5. Modal (Selve butiks-annoncen der popper op) & Popover/Dropdown-menuer (ALLE indvendige lag) */
+        /* 5. Modal (Bestillingsvindue) & ALLE Dropdown/Popover-lister (inkl. ul[data-baseweb="menu"] & role="listbox") */
         dialog,
         [role="dialog"],
         [role="dialog"] div,
@@ -565,7 +609,6 @@ else:
         [aria-modal="true"] header,
         div[data-baseweb="modal"] > div > div,
         div[data-baseweb="modal"] > div > div div,
-        div[data-baseweb="modal"] > div > div section,
         [data-testid="stDialog"] > div > div > div,
         [data-testid="stDialog"] > div > div > div div,
         [data-testid="stModal"] > div > div,
@@ -574,12 +617,9 @@ else:
             color: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
         }
-        [role="dialog"] svg,
-        [role="dialog"] path,
-        [aria-modal="true"] svg,
-        [aria-modal="true"] path {
+        [role="dialog"] svg path:not([fill="none"]),
+        [aria-modal="true"] svg path:not([fill="none"]) {
             fill: #0f172a !important;
-            color: #0f172a !important;
         }
         dialog, [role="dialog"], [aria-modal="true"] {
             border: 1px solid #cbd5e1 !important;
@@ -587,49 +627,59 @@ else:
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
         }
 
-        /* Alle menuer der popper frem (st.popover & st.selectbox dropdown-lister) */
-        div[data-baseweb="popover"],
-        div[data-baseweb="popover"] *,
+        /* Udfoldede dropdown-menuer (st.selectbox) & Popover-menuer */
+        [data-baseweb="popover"],
+        [data-baseweb="popover"] *,
         [data-testid="stPopoverBody"],
         [data-testid="stPopoverBody"] *,
-        div[data-baseweb="menu"],
-        div[data-baseweb="menu"] *,
-        ul[data-testid="stSelectboxVirtualDropdown"],
-        ul[data-testid="stSelectboxVirtualDropdown"] *,
-        li[role="option"],
-        li[role="option"] * {
+        [data-baseweb="menu"],
+        [data-baseweb="menu"] *,
+        [data-baseweb="list"],
+        [data-baseweb="list"] *,
+        [data-testid*="VirtualDropdown"],
+        [data-testid*="VirtualDropdown"] *,
+        [data-testid*="Selectbox"],
+        [role="listbox"],
+        [role="listbox"] *,
+        [role="option"],
+        [role="option"] * {
+            background: #ffffff !important;
             background-color: #ffffff !important;
             color: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
         }
         [data-testid="stPopoverBody"],
-        ul[data-testid="stSelectboxVirtualDropdown"],
-        div[data-baseweb="menu"] {
+        [role="listbox"],
+        [data-baseweb="menu"],
+        [data-testid*="VirtualDropdown"] {
             border: 1px solid #cbd5e1 !important;
             border-radius: 10px !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
         }
-        div[data-baseweb="popover"] button {
+        [data-baseweb="popover"] button {
             border: 1px solid #cbd5e1 !important;
             border-radius: 8px !important;
             margin-bottom: 4px !important;
         }
-        div[data-baseweb="popover"] button:hover,
-        div[data-baseweb="popover"] button:hover *,
-        li[role="option"]:hover,
-        li[role="option"]:hover *,
-        li[role="option"][aria-selected="true"],
-        li[role="option"][aria-selected="true"] * {
+        [data-baseweb="popover"] button:hover,
+        [data-baseweb="popover"] button:hover *,
+        [role="option"]:hover,
+        [role="option"]:hover *,
+        [role="option"][aria-selected="true"],
+        [role="option"][aria-selected="true"] * {
+            background: #f1f5f9 !important;
             background-color: #f1f5f9 !important;
             border-color: #10b981 !important;
         }
 
-        /* 6. Inputfelter, Selectbox (inkl. pil-knap i højre side), NumberInput og FileUploader */
+        /* 6. Inputfelter, Password-øje-knap, Selectbox (uden sort firkant), Checkbox/Radio og FileUploader */
         input, textarea,
         div[data-baseweb="input"],
         div[data-baseweb="input"] > div,
         div[data-baseweb="base-input"],
+        div[data-baseweb="base-input"] > div,
         div[data-baseweb="textarea"] {
+            background: #ffffff !important;
             background-color: #ffffff !important;
             color: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
@@ -640,38 +690,60 @@ else:
             border-radius: 8px !important;
         }
 
-        /* Selectbox & højre pil-boks tvunget 100% hvid med mørk pil */
-        div[data-testid="stSelectbox"] div,
-        div[data-testid="stSelectbox"] span,
-        div[data-testid="stSelectbox"] button,
-        div[data-testid="stSelectbox"] svg,
-        div[data-testid="stSelectbox"] path,
+        /* Password vis/skjul øje-knap i højre side af PIN-felter */
+        div[data-baseweb="input"] button,
+        div[data-baseweb="base-input"] button,
+        div[data-testid="stTextInput"] button {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            background-image: none !important;
+            color: #475569 !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        div[data-baseweb="input"] button svg,
+        div[data-testid="stTextInput"] button svg {
+            background: transparent !important;
+            color: #475569 !important;
+        }
+        div[data-baseweb="input"] button svg path:not([fill="none"]),
+        div[data-testid="stTextInput"] button svg path:not([fill="none"]) {
+            fill: #475569 !important;
+        }
+
+        /* Selectbox (hvid boks med tydelig pil uden sort firkant) */
+        div[data-testid="stSelectbox"] > div,
         div[data-baseweb="select"],
-        div[data-baseweb="select"] * {
+        div[data-baseweb="select"] > div,
+        div[data-baseweb="select"] > div > div,
+        div[data-baseweb="select"] span {
+            background: #ffffff !important;
             background-color: #ffffff !important;
             color: #0f172a !important;
-            fill: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
-        }
-        div[data-testid="stSelectbox"] label,
-        div[data-testid="stSelectbox"] label * {
-            background-color: transparent !important;
         }
         div[data-baseweb="select"] > div {
             border: 1px solid #94a3b8 !important;
             border-radius: 8px !important;
+        }
+        div[data-baseweb="select"] svg {
+            background: transparent !important;
+            color: #0f172a !important;
+        }
+        div[data-baseweb="select"] svg path:not([fill="none"]) {
+            fill: #0f172a !important;
         }
 
         /* NumberInput +/- knapper */
         div[data-testid="stNumberInput"] button,
         button[data-testid="stNumberInputStepDown"],
         button[data-testid="stNumberInputStepUp"] {
+            background: #f1f5f9 !important;
             background-color: #f1f5f9 !important;
             color: #0f172a !important;
             border-color: #cbd5e1 !important;
         }
-        div[data-testid="stNumberInput"] button svg,
-        div[data-testid="stNumberInput"] button path {
+        div[data-testid="stNumberInput"] button svg path:not([fill="none"]) {
             fill: #0f172a !important;
         }
         input::placeholder, textarea::placeholder {
@@ -679,14 +751,41 @@ else:
             -webkit-text-fill-color: #94a3b8 !important;
         }
 
-        /* File Uploader (Photo upload boks OG selve upload-knappen indeni) */
+        /* Checkbox (fluebens-boks) & Radio-knapper i lyst tema */
+        div[data-testid="stCheckbox"] label,
+        div[data-testid="stCheckbox"] span,
+        div[data-testid="stCheckbox"] p,
+        label[data-baseweb="checkbox"],
+        label[data-baseweb="radio"] {
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+        }
+        label[data-baseweb="checkbox"] > span:first-child,
+        label[data-baseweb="radio"] > div:first-child {
+            background-color: #ffffff !important;
+            border: 2px solid #475569 !important;
+            border-radius: 4px !important;
+        }
+        label[data-baseweb="radio"] > div:first-child {
+            border-radius: 50% !important;
+        }
+        label[data-baseweb="checkbox"]:has(input:checked) > span:first-child,
+        label[data-baseweb="checkbox"] input:checked + span,
+        label[data-baseweb="radio"]:has(input:checked) > div:first-child {
+            background-color: #10b981 !important;
+            border-color: #059669 !important;
+        }
+
+        /* File Uploader (Photo upload boks & knap) */
         [data-testid="stFileUploader"] section,
         [data-testid="stFileUploaderDropzone"],
-        [data-testid="stFileUploaderDropzone"] * {
+        [data-testid="stFileUploaderDropzone"] div,
+        [data-testid="stFileUploaderDropzone"] span,
+        [data-testid="stFileUploaderDropzone"] small {
+            background: #f8fafc !important;
             background-color: #f8fafc !important;
             color: #475569 !important;
             -webkit-text-fill-color: #475569 !important;
-            fill: #475569 !important;
         }
         [data-testid="stFileUploader"] section,
         [data-testid="stFileUploaderDropzone"] {
@@ -694,27 +793,28 @@ else:
             border-radius: 10px !important;
         }
         [data-testid="stFileUploader"] button,
-        [data-testid="stFileUploader"] button *,
-        [data-testid="stFileUploaderDropzone"] button,
-        [data-testid="stFileUploaderDropzone"] button * {
+        [data-testid="stFileUploaderDropzone"] button {
+            background: #ffffff !important;
             background-color: #ffffff !important;
+            background-image: none !important;
             color: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
-            font-weight: 600 !important;
-        }
-        [data-testid="stFileUploader"] button,
-        [data-testid="stFileUploaderDropzone"] button {
             border: 1px solid #94a3b8 !important;
             border-radius: 8px !important;
-            padding: 6px 14px !important;
+            font-weight: 600 !important;
+        }
+        [data-testid="stFileUploader"] svg path:not([fill="none"]) {
+            fill: #475569 !important;
         }
 
-        /* Grønne Primary & Form Submit knapper (ligger efter modal-regler så de altid er grønne) */
+        /* Grønne Primary & Form Submit knapper */
         div.stButton > button[kind="primary"],
         div[data-testid="stFormSubmitButton"] > button,
         [data-testid="stBaseButton-primary"],
         button[kind="primary"] {
+            background: #10b981 !important;
             background-color: #10b981 !important;
+            background-image: none !important;
             border: 1px solid #059669 !important;
             color: #ffffff !important;
         }
@@ -722,6 +822,7 @@ else:
         div[data-testid="stFormSubmitButton"] > button *,
         [data-testid="stBaseButton-primary"] *,
         button[kind="primary"] * {
+            background: transparent !important;
             background-color: transparent !important;
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
@@ -746,28 +847,40 @@ else:
             font-size: 1.4rem !important;
         }
 
-        /* 8. Faneblade (st.tabs inkl. pil-knapper i siden) */
+        /* 8. Faneblade (st.tabs - fjerner den sorte skygge/scroll-klump i siderne) */
+        div[data-testid="stTabs"],
+        div[data-testid="stTabs"] > div,
         div[data-testid="stTabs"] [role="tablist"] {
             gap: 6px !important;
-            background-color: transparent !important;
+            background: transparent !important;
+            background-image: none !important;
+        }
+        div[data-testid="stTabs"] ::before,
+        div[data-testid="stTabs"] ::after {
+            background: none !important;
+            background-image: none !important;
+            display: none !important;
         }
         div[data-testid="stTabs"] button,
         div[data-testid="stTabs"] button[role="tab"] {
+            background: #ffffff !important;
             background-color: #ffffff !important;
+            background-image: none !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 8px !important;
             padding: 6px 12px !important;
             opacity: 1 !important;
         }
-        div[data-testid="stTabs"] button *,
-        div[data-testid="stTabs"] svg,
-        div[data-testid="stTabs"] path {
+        div[data-testid="stTabs"] button * {
             color: #0f172a !important;
-            fill: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
             font-weight: 700 !important;
         }
+        div[data-testid="stTabs"] svg path:not([fill="none"]) {
+            fill: #0f172a !important;
+        }
         div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+            background: #10b981 !important;
             background-color: #10b981 !important;
             border-color: #059669 !important;
         }
