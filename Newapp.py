@@ -113,7 +113,7 @@ st.markdown(f"""
     .trial-badge {{ background-color: {"#1e3a8a" if is_dark else "#dbeafe"}; color: {"#93c5fd" if is_dark else "#1d4ed8"} !important; -webkit-text-fill-color: {"#93c5fd" if is_dark else "#1d4ed8"} !important; border: 1px solid {"#1d4ed8" if is_dark else "#bfdbfe"}; }}
     .escrow-badge {{ background-color: {"#064e3b" if is_dark else "#dcfce7"}; color: {"#34d399" if is_dark else "#166534"} !important; -webkit-text-fill-color: {"#34d399" if is_dark else "#166534"} !important; border: 1px solid {"#059669" if is_dark else "#86efac"}; }}
     .referral-badge {{ background-color: {"#451a03" if is_dark else "#ffedd5"}; color: {"#fdba74" if is_dark else "#c2410c"} !important; -webkit-text-fill-color: {"#fdba74" if is_dark else "#c2410c"} !important; border: 1px solid {"#9a3412" if is_dark else "#fed7aa"}; }}
-    .disclaimer-box {{ font-size: 0.8rem; background-color: {card_bg}; color: {text_color} !important; -webkit-text-fill-color: {text_color} !important; opacity: 0.85; padding: 12px; border-radius: 8px; border: 1px solid {border_color}; margin-top: 25px; }}
+    .disclaimer-box {{ font-size: 0.8rem; background-color: {card_bg}; color: {text_color} !important; -webkit-text-fill-color: {text_color} !important; opacity: 0.85; padding: 12px; border-radius: 8px; border: 1px solid {border_color}; margin-top: 15px; }}
     .pin-box {{ background-color: #fef08a; color: #854d0e; padding: 15px; border-radius: 8px; text-align: center; border: 2px dashed #eab308; margin-top: 10px; margin-bottom: 10px; }}
 </style>
 """, unsafe_allow_html=True)
@@ -347,7 +347,7 @@ if st.session_state.current_view != "🛒 Browse Deals":
 st.markdown("---")
 
 # ====================================================
-# MODAL TIL DETALJER, BESTILLING & PAYSTACK TEST CHECKOUT
+# MODAL TIL DETALJER, BESTILLING & PAYSTACK CHECKOUT
 # ====================================================
 @st.dialog("Product Details & Order")
 def show_offer_modal(item):
@@ -468,19 +468,10 @@ def show_offer_modal(item):
                         st.warning("Payment not registered yet. Try again in a moment.")
 
 # ====================================================
-# VISNING 1: KUNDEPORTAL (LIGGER HELT I TOPPEN)
+# VISNING 1: KUNDEPORTAL (FILTRE OG DEALS I TOPPEN)
 # ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
     
-    with st.expander("ℹ️ How Vendora Works (Customer Guide)"):
-        st.markdown("""
-        **Welcome to Vendora!** Here is how you shop safely:
-        1. **Browse & Order:** Find a deal and click 'View Deal'.
-        2. **Safe Escrow Payment:** When you pay online via Paystack, your money is held securely in our Escrow system. The store does not get paid until you receive your items.
-        3. **Delivery PIN:** After payment, you receive a **4-digit PIN**. 
-        4. **Receive Items:** When the dispatch rider arrives, check your items. Only give the rider your 4-digit PIN if everything is correct. The PIN unlocks the payment for the rider and the store.
-        """)
-        
     render_broadcast_alerts("All")
     
     if active_shop_slug:
@@ -495,6 +486,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
         res = supabase.table("offers").select("*").eq("shop", shop_name).gt("expires_at", now_iso).order("id", desc=True).execute()
         offers = res.data or []
     else:
+        # Område- og Kategorifiltre ligger nu helt i toppen
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(f"<div style='font-size: 0.85rem; font-weight: bold; color: {text_color}; margin-bottom: 4px;'>Market / Area</div>", unsafe_allow_html=True)
@@ -550,6 +542,17 @@ if st.session_state.current_view == "🛒 Browse Deals":
                             else:
                                 if st.button("👀 View Deal", key=f"view_btn_{deal['id']}", use_container_width=True):
                                     show_offer_modal(deal)
+
+    # How Vendora Works er nu placeret i bunden lige før Platform Terms
+    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+    with st.expander("ℹ️ How Vendora Works (Customer Guide)"):
+        st.markdown("""
+        **Welcome to Vendora!** Here is how you shop safely:
+        1. **Browse & Order:** Find a deal and click 'View Deal'.
+        2. **Safe Escrow Payment:** When you pay online via Paystack, your money is held securely in our Escrow system. The store does not get paid until you receive your items.
+        3. **Delivery PIN:** After payment, you receive a **4-digit PIN**. 
+        4. **Receive Items:** When the dispatch rider arrives, check your items. Only give the rider your 4-digit PIN if everything is correct. The PIN unlocks the payment for the rider and the store.
+        """)
 
 # ====================================================
 # VISNING 2: BUTIKSEJER ADMIN & OPRETTELSE
