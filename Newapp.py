@@ -38,7 +38,7 @@ border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
 
-# CSS der tvinger knapperne til at blive små og ligge på én linje på mobil
+# CSS der tvinger knapperne til 1/3 bredde
 st.markdown(f"""
 <style>
     .stApp {{
@@ -101,28 +101,28 @@ st.markdown(f"""
         border-color: {border_color} !important;
     }}
     
-    /* VANDRET OG SAMMENTRYKKET TOOLBAR & FILTRE PÅ MOBIL */
+    /* TVING TIL 1/3 BREDDE PÅ ÉN RÆKKE */
     div[data-testid="stHorizontalBlock"] {{
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
-        gap: 6px !important;
+        gap: 4px !important;
         width: 100% !important;
-        margin-top: 4px !important;
-        margin-bottom: 6px !important;
+        margin-top: 2px !important;
+        margin-bottom: 4px !important;
     }}
     div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
+        flex: 1 1 33.333% !important;
+        max-width: 33.333% !important;
         min-width: 0 !important;
-        flex: 1 1 0 !important;
-        width: 1% !important;
     }}
     div[data-testid="stHorizontalBlock"] button,
     div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] button {{
-        padding: 4px 6px !important;
-        font-size: 0.78rem !important;
-        min-height: 34px !important;
-        height: 34px !important;
+        padding: 2px 4px !important;
+        font-size: 0.72rem !important;
+        min-height: 32px !important;
+        height: 32px !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
@@ -320,13 +320,13 @@ if "sel_cat" not in st.session_state:
     st.session_state.sel_cat = "All Categories"
 
 # ====================================================
-# KOMPAKT HEADER & TOP-BAR MED RULLEMENUER
+# KOMPAKT HEADER & TOP-BAR MED 1/3 BREDDE KNAPPER
 # ====================================================
 st.markdown("<h3 style='margin-bottom: 0;'>🛍️ Vendora</h3>", unsafe_allow_html=True)
-st.markdown("<span style='font-size: 0.8rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.8rem; color: #10b981; font-weight: 700;'>✨ AI Marketplace</span> • <span style='font-size: 0.8rem; color: #9ca3af;'>🇳🇬 Lagos</span>", unsafe_allow_html=True)
+st.markdown("<span style='font-size: 0.75rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.75rem; color: #10b981; font-weight: 700;'>✨ AI</span> • <span style='font-size: 0.75rem; color: #9ca3af;'>🇳🇬 Lagos</span>", unsafe_allow_html=True)
 
-# 3 knapper låst fast på én række
-top_c1, top_c2, top_c3 = st.columns([1, 1.2, 1.2])
+# 3 knapper side om side (hver fylder præcis 1/3)
+top_c1, top_c2, top_c3 = st.columns(3)
 
 with top_c1:
     theme_btn_label = "☀️ Day" if st.session_state.dark_mode else "🌙 Night"
@@ -509,7 +509,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
         res = supabase.table("offers").select("*").eq("shop", shop_name).gt("expires_at", now_iso).order("id", desc=True).execute()
         offers = res.data or []
     else:
-        # Område og Kategori side om side i én række
+        # Område og Kategori side om side
         c1, c2 = st.columns(2)
         with c1:
             with st.popover(f"📍 {st.session_state.sel_area}", use_container_width=True):
