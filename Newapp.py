@@ -25,111 +25,111 @@ is_dark = st.session_state.dark_mode
         # ====================================================
         # FULD-SIDE MØRKT / LYST TEMA CSS (STREAMLIT GLOBAL)
         # ====================================================
-        if is_dark:
-            st.markdown("""
-            <style>
-                /* 1. Hele sidens baggrund & overordnet tekstfarve */
-                .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
-                    background-color: #0b0f19 !important;
-                    color: #f8fafc !important;
-                }
-                [data-testid="stHeader"] {
-                    background-color: rgba(11, 15, 25, 0.9) !important;
-                }
+if is_dark:
+                st.markdown("""
+                <style>
+                    /* 1. Hele sidens baggrund & overordnet tekstfarve */
+                .    stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
+                        background-color: #0b0f19 !important;
+                        color: #f8fafc !important;
+                    }
+                    [data-testid="stHeader"] {
+                        background-color: rgba(11, 15, 25, 0.9) !important;
+                    }
                 
-                /* 2. Tekstoverskrifter, labels og markdown */
-                h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown {
-                    color: #f1f5f9 !important;
-                }
-                .stCaption, small, [data-testid="stMarkdownContainer"] small {
-                    color: #94a3b8 !important;
-                }
+                    /* 2. Tekstoverskrifter, labels og markdown */
+                    h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown {
+                        color: #f1f5f9 !important;
+                    }
+                .    stCaption, small, [data-testid="stMarkdownContainer"] small {
+                        color: #94a3b8 !important;
+                    }
 
-                /* 3. Streamlit Kort & Beholdere (st.container(border=True)) */
-                div[data-testid="stVerticalBlockBorderWrapper"] > div {
-                    background-color: #151d30 !important;
-                    border: 1px solid #29354f !important;
-                    border-radius: 12px !important;
-                    color: #f8fafc !important;
-                }
+                    /* 3. Streamlit Kort & Beholdere (st.container(border=True)) */
+                    div[data-testid="stVerticalBlockBorderWrapper"] > div {
+                        background-color: #151d30 !important;
+                        border: 1px solid #29354f !important;
+                        border-radius: 12px !important;
+                        color: #f8fafc !important;
+                    }
 
-                /* 4. Inputfelter, dropdowns og tekstbokse */
-                input, textarea, div[data-baseweb="input"], div[data-baseweb="select"] {
-                    background-color: #0b0f19 !important;
-                    color: #ffffff !important;
-                    border-color: #3b4b68 !important;
-                }
-                div[data-baseweb="input"] > div {
-                    background-color: #0b0f19 !important;
-                }
-                input::placeholder {
-                    color: #64748b !important;
-                }
+                    /* 4. Inputfelter, dropdowns og tekstbokse */
+                    input, textarea, div[data-baseweb="input"], div[data-baseweb="select"] {
+                        background-color: #0b0f19 !important;
+                        color: #ffffff !important;
+                        border-color: #3b4b68 !important;
+                    }
+                    div[data-baseweb="input"] > div {
+                        background-color: #0b0f19 !important;
+                    }
+                    input::placeholder {
+                        color: #64748b !important;
+                    }
 
-                /* 5. Nøgletal (st.metric kort) */
-                div[data-testid="stMetric"] {
-                    background-color: #151d30 !important;
-                    border: 1px solid #29354f !important;
-                    border-radius: 10px !important;
-                    padding: 10px 14px !important;
-                }
-                div[data-testid="stMetricLabel"] p {
-                    color: #94a3b8 !important;
-                }
-                div[data-testid="stMetricValue"] div {
-                    color: #38bdf8 !important;
-                }
+                    /* 5. Nøgletal (st.metric kort) */
+                    div[data-testid="stMetric"] {
+                        background-color: #151d30 !important;
+                        border: 1px solid #29354f !important;
+                        border-radius: 10px !important;
+                        padding: 10px 14px !important;
+                    }
+                    div[data-testid="stMetricLabel"] p {
+                        color: #94a3b8 !important;
+                    }
+                    div[data-testid="stMetricValue"] div {
+                        color: #38bdf8 !important;
+                    }
 
-                /* 6. Faneblade (st.tabs knapper) */
-                div[data-testid="stTabs"] [role="tablist"],
-                div[data-testid="stTabs"] > div {
-                    gap: 6px !important;
-                    background-color: transparent !important;
-                }
-                div[data-testid="stTabs"] button,
-                div[data-testid="stTabs"] [role="tab"] {
-                    background-color: #243048 !important;
-                    border: 1px solid #3b4b68 !important;
-                    border-radius: 8px !important;
-                    padding: 8px 16px !important;
-                    opacity: 1 !important;
-                }
-                div[data-testid="stTabs"] button p,
-                div[data-testid="stTabs"] button span,
-                div[data-testid="stTabs"] button div,
-                div[data-testid="stTabs"] [data-testid="stMarkdownContainer"] p {
-                    color: #ffffff !important;
-                    -webkit-text-fill-color: #ffffff !important;
-                    font-weight: 700 !important;
-                }
-                div[data-testid="stTabs"] button[aria-selected="true"],
-                div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
-                    background-color: #10b981 !important;
-                    border-color: #059669 !important;
-                }
-                div[data-testid="stTabs"] button[aria-selected="true"] p,
-                div[data-testid="stTabs"] button[aria-selected="true"] span,
-                div[data-testid="stTabs"] button[aria-selected="true"] div {
-                    color: #ffffff !important;
-                    -webkit-text-fill-color: #ffffff !important;
-                }
-                div[data-testid="stTabs"] button:hover,
-                div[data-testid="stTabs"] [role="tab"]:hover {
-                    background-color: #3b4b68 !important;
-                    border-color: #10b981 !important;
-                }
+                    /* 6. Faneblade (st.tabs knapper) */
+                    div[data-testid="stTabs"] [role="tablist"],
+                    div[data-testid="stTabs"] > div {
+                        gap: 6px !important;
+                        background-color: transparent !important;
+                    }
+                    div[data-testid="stTabs"] button,
+                    div[data-testid="stTabs"] [role="tab"] {
+                        background-color: #243048 !important;
+                        border: 1px solid #3b4b68 !important;
+                        border-radius: 8px !important;
+                        padding: 8px 16px !important;
+                        opacity: 1 !important;
+                    }
+                    div[data-testid="stTabs"] button p,
+                    div[data-testid="stTabs"] button span,
+                    div[data-testid="stTabs"] button div,
+                    div[data-testid="stTabs"] [data-testid="stMarkdownContainer"] p {
+                        color: #ffffff !important;
+                        -webkit-text-fill-color: #ffffff !important;
+                        font-weight: 700 !important;
+                    }
+                    div[data-testid="stTabs"] button[aria-selected="true"],
+                    div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+                        background-color: #10b981 !important;
+                        border-color: #059669 !important;
+                    }
+                    div[data-testid="stTabs"] button[aria-selected="true"] p,
+                    div[data-testid="stTabs"] button[aria-selected="true"] span,
+                    div[data-testid="stTabs"] button[aria-selected="true"] div {
+                        color: #ffffff !important;
+                    -    webkit-text-fill-color: #ffffff !important;
+                    }
+                    div[data-testid="stTabs"] button:hover,
+                    div[data-testid="stTabs"] [role="tab"]:hover {
+                        background-color: #3b4b68 !important;
+                         border-color: #10b981 !important;
+                    }
 
-                /* 7. Disclaimer boks i bunden */
-                .disclaimer-box {
-                    background-color: #151d30 !important;
-                    border: 1px solid #29354f !important;
-                    color: #94a3b8 !important;
-                    border-radius: 10px;
-                    padding: 14px;
-                }
-            </style>
-            """, unsafe_allow_html=True)
-        else:
+                    /* 7. Disclaimer boks i bunden */
+                    .disclaimer-box {
+                        background-color: #151d30 !important;
+                        border: 1px solid #29354f !important;
+                        color: #94a3b8 !important;
+                        border-radius: 10px;
+                        padding: 14px;
+                    }
+                </style>
+                """, unsafe_allow_html=True)
+else:
             st.markdown("""
             <style>
                 /* 1. Hele sidens baggrund & tekst (Lyst tema) */
