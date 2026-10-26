@@ -586,10 +586,10 @@ elif st.session_state.current_view == "🎁 Customer Prizes & Referrals":
                             new_cust = {
                                 "name": c_name.strip(),
                                 "phone": c_phone_new.strip(),
-                                "pin": c_pin_new.strip(),
+                                "pin_hash": hash_customer_pin(c_pin_new.strip()),
                                 "member_id": cust_code,
                                 "referred_by": c_referred.strip().upper() if c_referred else None
-                            }
+                                }
                             ins = supabase.table("customers").insert(new_cust).execute()
                             if ins.data:
                                 st.session_state.logged_customer = ins.data[0]
