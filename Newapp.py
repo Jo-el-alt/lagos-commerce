@@ -68,144 +68,75 @@ st.html(f"""
         -webkit-text-fill-color: {text_color} !important;
     }}
     
-    /* VENDORA ADMIN TAB BAR STYLING */
-    div[data-baseweb="tab-list"] {{
-        background-color: {"#1f2937" if is_dark else "#f1f5f9"} !important;
-        border: 1px solid {"#374151" if is_dark else "#cbd5e1"} !important;
-        border-radius: 8px !important;
-        padding: 6px !important;
-        gap: 6px !important;
-        display: flex !important;
-        flex-wrap: wrap !important;
-    }}
-    div[data-baseweb="tab-list"] button, button[data-baseweb="tab"] {{
-        background-color: {"#374151" if is_dark else "#ffffff"} !important;
-        color: {"#f9fafb" if is_dark else "#0f172a"} !important;
-        -webkit-text-fill-color: {"#f9fafb" if is_dark else "#0f172a"} !important;
-        border: 1px solid {"#4b5563" if is_dark else "#cbd5e1"} !important;
-        border-radius: 6px !important;
-        padding: 6px 14px !important;
-        font-weight: 700 !important;
-        font-size: 0.85rem !important;
-        opacity: 1 !important;
-        transition: all 0.15s ease-in-out !important;
-    }}
-    div[data-baseweb="tab-list"] button *, button[data-baseweb="tab"] * {{
-        color: inherit !important;
-        -webkit-text-fill-color: inherit !important;
-        opacity: 1 !important;
-    }}
-    div[data-baseweb="tab-list"] button[aria-selected="true"], button[data-baseweb="tab"][aria-selected="true"] {{
-        background-color: {"#059669" if is_dark else "#047857"} !important;
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-        border-color: #047857 !important;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
-    }}
-    div[data-baseweb="tab-list"] button:hover, button[data-baseweb="tab"]:hover {{
-        background-color: {"#4b5563" if is_dark else "#e2e8f0"} !important;
-        color: {"#34d399" if is_dark else "#065f46"} !important;
-        -webkit-text-fill-color: {"#34d399" if is_dark else "#065f46"} !important;
-        border-color: #10b981 !important;
-    }}
+    # Tving høj kontrast på admin fanelinjen i både lys og mørk tilstand
+        tab_bg = "#374151" if is_dark else "#e2e8f0"
+        tab_border = "#4b5563" if is_dark else "#94a3b8"
+        tab_text = "#ffffff" if is_dark else "#0f172a"
 
-    code, span[data-testid="stMarkdownContainer"] code {{
-        background-color: {"#374151" if is_dark else "#f1f5f9"} !important;
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
-        border: 1px solid {border_color} !important;
-        border-radius: 4px !important;
-        padding: 2px 6px !important;
-        font-family: monospace !important;
-    }}
-    
-    div[data-baseweb="input"] input,
-    div[data-baseweb="base-input"] textarea,
-    div[data-baseweb="select"] span,
-    input[type="text"], input[type="password"], textarea, div[data-baseweb="select"] > div {{
-        background-color: {card_bg} !important;
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
-    }}
-    div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="select"],
-    div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {{
-        background-color: {card_bg} !important;
-        border-color: {border_color} !important;
-        color: {text_color} !important;
-        border-radius: 8px !important;
-    }}
-    div[data-baseweb="popover"], div[data-baseweb="popover"] > div, div[data-testid="stPopoverBody"] {{
-        background-color: {card_bg} !important;
-        color: {text_color} !important;
-        border: 1px solid {border_color} !important;
-        border-radius: 8px !important;
-    }}
+        st.markdown(f"""
+        <style>
+            /* 1. Målret fanebaren */
+            div[data-testid="stTabs"] [role="tablist"],
+            div[data-testid="stTabs"] > div {{
+                gap: 6px !important;
+                background-color: transparent !important;
+            }}
 
-    .stButton > button,
-    div[data-testid="stPopover"] > button,
-    div[data-testid="stPopover"] > div > button {{
-        background-color: {btn_bg} !important;
-        color: {btn_text} !important;
-        -webkit-text-fill-color: {btn_text} !important;
-        border: 1px solid {border_color} !important;
-        font-weight: 600 !important;
-        width: 100% !important;
-        min-height: 25px !important;
-        height: 25px !important;
-        max-height: 25px !important;
-        padding: 0px 4px !important;
-        font-size: 0.70rem !important;
-        line-height: 23px !important;
-        border-radius: 5px !important;
-        box-shadow: none !important;
-        outline: none !important;
-    }}
+            /* 2. Selve knapperne: Får en tydelig boks og kant */
+            div[data-testid="stTabs"] button,
+            div[data-testid="stTabs"] [role="tab"] {{
+                background-color: {tab_bg} !important;
+                border: 1px solid {tab_border} !important;
+                border-radius: 6px !important;
+                padding: 6px 14px !important;
+                opacity: 1 !important;
+            }}
 
-    .stButton > button:hover,
-    div[data-testid="stPopover"] > button:hover,
-    div[data-testid="stPopover"] > div > button:hover {{
-        background-color: {hover_bg} !important;
-        border-color: {hover_border} !important;
-    }}
+            /* 3. Tving tekst og ikoner til synlig farve */
+            div[data-testid="stTabs"] button p,
+            div[data-testid="stTabs"] button span,
+            div[data-testid="stTabs"] button div,
+            div[data-testid="stTabs"] [data-testid="stMarkdownContainer"] p {{
+                color: {tab_text} !important;
+                -webkit-text-fill-color: {tab_text} !important;
+                font-weight: 700 !important;
+                opacity: 1 !important;
+            }}
 
-    div[data-testid="stButton"],
-    div[data-testid="stPopover"] {{
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
+            /* 4. Aktiv valgt fane (flot grøn med hvid tekst) */
+            div[data-testid="stTabs"] button[aria-selected="true"],
+            div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
+                background-color: #10b981 !important;
+                border-color: #059669 !important;
+            }}
+            div[data-testid="stTabs"] button[aria-selected="true"] p,
+            div[data-testid="stTabs"] button[aria-selected="true"] span,
+            div[data-testid="stTabs"] button[aria-selected="true"] div {{
+                color: #ffffff !important;
+                -webkit-text-fill-color: #ffffff !important;
+            }}
 
-    div[data-testid="stHorizontalBlock"] {{
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-        gap: 4px !important;
-        width: 100% !important;
-    }}
+            /* 5. Hover tilstand */
+            div[data-testid="stTabs"] button:hover,
+            div[data-testid="stTabs"] [role="tab"]:hover {{
+                background-color: {"#4b5563" if is_dark else "#cbd5e1"} !important;
+                border-color: #10b981 !important;
+            }}
+        </style>
+        """, unsafe_allow_html=True)
 
-    div[data-testid="stHorizontalBlock"] > div,
-    div[data-testid="stColumn"],
-    div[data-testid="column"] {{
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-        width: 0 !important;
-    }}
-
-    .grid-img-box {{ width: 100%; height: 125px; overflow: hidden; border-radius: 8px; margin-bottom: 8px; background-color: {card_bg}; display: flex; align-items: center; justify-content: center; }}
-    .grid-img-box img {{ width: 100%; height: 100%; object-fit: cover; }}
-    .grid-title {{ font-size: 0.95rem; font-weight: 700; line-height: 1.2; margin-bottom: 4px; color: {text_color} !important; -webkit-text-fill-color: {text_color} !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.4em; }}
-    .grid-price {{ font-size: 1.05rem; font-weight: 800; color: {"#4ade80" if is_dark else "#16a34a"}; margin-bottom: 4px; }}
-    .member-badge, .escrow-badge, .referral-badge, .trial-badge {{
-        display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; margin-bottom: 8px;
-    }}
-    .member-badge {{ background-color: {"#064e3b" if is_dark else "#dcfce7"}; color: {"#6ee7b7" if is_dark else "#15803d"} !important; -webkit-text-fill-color: {"#6ee7b7" if is_dark else "#15803d"} !important; border: 1px solid {"#047857" if is_dark else "#bbf7d0"}; }}
-    .trial-badge {{ background-color: {"#1e3a8a" if is_dark else "#dbeafe"}; color: {"#93c5fd" if is_dark else "#1d4ed8"} !important; -webkit-text-fill-color: {"#93c5fd" if is_dark else "#1d4ed8"} !important; border: 1px solid {"#1d4ed8" if is_dark else "#bfdbfe"}; }}
-    .escrow-badge {{ background-color: {"#064e3b" if is_dark else "#dcfce7"}; color: {"#34d399" if is_dark else "#166534"} !important; -webkit-text-fill-color: {"#34d399" if is_dark else "#166534"} !important; border: 1px solid {"#059669" if is_dark else "#86efac"}; }}
-    .referral-badge {{ background-color: {"#451a03" if is_dark else "#ffedd5"}; color: {"#fdba74" if is_dark else "#c2410c"} !important; -webkit-text-fill-color: {"#fdba74" if is_dark else "#c2410c"} !important; border: 1px solid {"#9a3412" if is_dark else "#fed7aa"}; }}
-    .disclaimer-box {{ font-size: 0.8rem; background-color: {card_bg}; color: {text_color} !important; -webkit-text-fill-color: {text_color} !important; opacity: 0.85; padding: 12px; border-radius: 8px; border: 1px solid {border_color}; margin-top: 15px; }}
-    .pin-box {{ background-color: #fef08a; color: #854d0e; padding: 15px; border-radius: 8px; text-align: center; border: 2px dashed #eab308; margin-top: 10px; margin-bottom: 10px; }}
-</style>
-""")
+        admin_tabs = st.tabs([
+            "🧪 Test Sim", 
+            "⚙️ Pricing & Inflation", 
+            "📢 Broadcasts", 
+            "🎁 Airtime", 
+            "🚦 Subscriptions", 
+            "💰 Escrow", 
+            "📬 Messages", 
+            "🛵 Couriers", 
+            "🏪 Stores", 
+            "📦 Orders"
+        ])
 
 # Supabase forbindelse
 @st.cache_resource
