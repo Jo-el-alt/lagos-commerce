@@ -30,7 +30,7 @@ st.set_page_config(
     menu_items=None
 )
 
-# Farver (uændret så nattilstand altid virker)
+# Farver
 bg_color = "#111827" if is_dark else "#ffffff"
 text_color = "#f9fafb" if is_dark else "#111827"
 card_bg = "#1f2937" if is_dark else "#f9fafb"
@@ -58,6 +58,18 @@ st.markdown(f"""
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
     }}
+    
+    /* Rettelse til code/backtick-felter i mørk tilstand */
+    code, span[data-testid="stMarkdownContainer"] code {{
+        background-color: {"#374151" if is_dark else "#f3f4f6"} !important;
+        color: {text_color} !important;
+        -webkit-text-fill-color: {text_color} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 4px !important;
+        padding: 2px 6px !important;
+        font-family: monospace !important;
+    }}
+    
     div[data-baseweb="input"] input,
     div[data-baseweb="base-input"] textarea,
     div[data-baseweb="select"] span,
@@ -80,7 +92,7 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* Målret BÅDE stButton og stPopover (Day/Night, Log In og Register) */
+    /* Kompakte knapper i toppen */
     .stButton > button,
     div[data-testid="stPopover"] > button,
     div[data-testid="stPopover"] > div > button {{
@@ -108,14 +120,12 @@ st.markdown(f"""
         border-color: {hover_border} !important;
     }}
 
-    /* Fjern Streamlits wrapper-margins */
     div[data-testid="stButton"],
     div[data-testid="stPopover"] {{
         margin: 0 !important;
         padding: 0 !important;
     }}
 
-    /* Tving kolonnerne til at blive inde på skærmen ved siden af hinanden på mobil */
     div[data-testid="stHorizontalBlock"] {{
         display: flex !important;
         flex-direction: row !important;
@@ -325,12 +335,11 @@ if "sel_cat" not in st.session_state:
     st.session_state.sel_cat = "All Categories"
 
 # ====================================================
-# KOMPAKT HEADER & TOP-BAR MED 1/3 BREDDE KNAPPER
+# KOMPAKT HEADER & TOP-BAR
 # ====================================================
 st.markdown("<h3 style='margin-bottom: 0;'>🛍️ Vendora</h3>", unsafe_allow_html=True)
 st.markdown("<span style='font-size: 0.75rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.75rem; color: #10b981; font-weight: 700;'>✨ AI</span> • <span style='font-size: 0.75rem; color: #9ca3af;'>🇳🇬 Lagos</span>", unsafe_allow_html=True)
 
-# 3 knapper side om side (hver fylder præcis 1/3)
 top_c1, top_c2, top_c3 = st.columns(3)
 
 with top_c1:
@@ -369,8 +378,10 @@ with top_c3:
             st.session_state.rider_tab_choice = "register"
             st.rerun()
 
+# Returknap til forsiden fra andre sektioner
 if st.session_state.current_view != "🛒 Browse Deals":
-    if st.button("⬅️ Back to Browse Deals", use_container_width=True):
+    st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+    if st.button("⬅️ Back to Browse Deals", key="back_to_deals_btn", use_container_width=True):
         st.session_state.current_view = "🛒 Browse Deals"
         st.rerun()
 
@@ -496,7 +507,7 @@ def show_offer_modal(item):
                         st.warning("Payment not registered yet. Try again in a moment.")
 
 # ====================================================
-# VISNING 1: KUNDEPORTAL (FILTRE OG DEALS I TOPPEN)
+# VISNING 1: KUNDEPORTAL
 # ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
     
@@ -514,7 +525,6 @@ if st.session_state.current_view == "🛒 Browse Deals":
         res = supabase.table("offers").select("*").eq("shop", shop_name).gt("expires_at", now_iso).order("id", desc=True).execute()
         offers = res.data or []
     else:
-        # Område og Kategori side om side
         c1, c2 = st.columns(2)
         with c1:
             with st.popover(f"📍 {st.session_state.sel_area}", use_container_width=True):
