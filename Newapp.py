@@ -38,7 +38,7 @@ border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
 
-# CSS
+# CSS der tvinger knapperne til at blive små og ligge på én linje på mobil
 st.markdown(f"""
 <style>
     .stApp {{
@@ -76,7 +76,7 @@ st.markdown(f"""
         color: {text_color} !important;
         -webkit-text-fill-color: {text_color} !important;
         border: 1px solid {border_color} !important;
-        border-radius: 8px !important;
+        border-radius: 6px !important;
         font-weight: 600 !important;
         width: 100% !important;
     }}
@@ -100,10 +100,8 @@ st.markdown(f"""
         color: {btn_text} !important;
         border-color: {border_color} !important;
     }}
-    .stButton {{ min-height: 32px; }}
-    div[data-testid="stButton"] button {{ width: 100% !important; transition: none !important; }}
-
-    /* TVING ALLE VANDRETTE RÆKKER TIL AT BLIVE PÅ ÉN LINJE PÅ MOBIL */
+    
+    /* VANDRET OG SAMMENTRYKKET TOOLBAR & FILTRE PÅ MOBIL */
     div[data-testid="stHorizontalBlock"] {{
         display: flex !important;
         flex-direction: row !important;
@@ -117,7 +115,7 @@ st.markdown(f"""
     div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
         min-width: 0 !important;
         flex: 1 1 0 !important;
-        width: auto !important;
+        width: 1% !important;
     }}
     div[data-testid="stHorizontalBlock"] button,
     div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] button {{
@@ -126,6 +124,8 @@ st.markdown(f"""
         min-height: 34px !important;
         height: 34px !important;
         white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }}
 
     .grid-img-box {{ width: 100%; height: 125px; overflow: hidden; border-radius: 8px; margin-bottom: 8px; background-color: {"#374151" if is_dark else "#f3f4f6"}; display: flex; align-items: center; justify-content: center; }}
