@@ -100,8 +100,30 @@ st.markdown(f"""
         color: {btn_text} !important;
         border-color: {border_color} !important;
     }}
-    .stButton {{ min-height: 40px; }}
+    .stButton {{ min-height: 36px; }}
     div[data-testid="stButton"] button {{ width: 100% !important; transition: none !important; }}
+
+    /* Kompakt vandret mobil-toolbar */
+    div[data-testid="stHorizontalBlock"]:has(button[key="theme_toggle_btn"]) {{
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+        margin-top: 6px !important;
+        margin-bottom: 10px !important;
+    }}
+    div[data-testid="stHorizontalBlock"]:has(button[key="theme_toggle_btn"]) > div {{
+        min-width: 0 !important;
+        flex: 1 1 0 !important;
+    }}
+    div[data-testid="stHorizontalBlock"]:has(button[key="theme_toggle_btn"]) button {{
+        padding: 4px 6px !important;
+        font-size: 0.8rem !important;
+        min-height: 36px !important;
+        height: 36px !important;
+        white-space: nowrap !important;
+    }}
+
     .grid-img-box {{ width: 100%; height: 125px; overflow: hidden; border-radius: 8px; margin-bottom: 8px; background-color: {"#374151" if is_dark else "#f3f4f6"}; display: flex; align-items: center; justify-content: center; }}
     .grid-img-box img {{ width: 100%; height: 100%; object-fit: cover; }}
     .grid-title {{ font-size: 0.95rem; font-weight: 700; line-height: 1.2; margin-bottom: 4px; color: {text_color} !important; -webkit-text-fill-color: {text_color} !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.4em; }}
@@ -296,11 +318,11 @@ if "sel_cat" not in st.session_state:
 # ====================================================
 # KOMPAKT HEADER & TOP-BAR MED RULLEMENUER
 # ====================================================
-st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Vendora</h2>", unsafe_allow_html=True)
-st.markdown("<span style='font-size: 0.85rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.85rem; color: #10b981; font-weight: 700;'>✨ AI-Powered Marketplace</span> • <span style='font-size: 0.85rem; color: #9ca3af;'>🇳🇬 Lagos Local Market Directory</span>", unsafe_allow_html=True)
+st.markdown("<h3 style='margin-bottom: 0;'>🛍️ Vendora</h3>", unsafe_allow_html=True)
+st.markdown("<span style='font-size: 0.8rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.8rem; color: #10b981; font-weight: 700;'>✨ AI Marketplace</span> • <span style='font-size: 0.8rem; color: #9ca3af;'>🇳🇬 Lagos</span>", unsafe_allow_html=True)
 
-# Kompakt værktøjslinje i toppen
-top_c1, top_c2, top_c3 = st.columns([1.2, 1, 1])
+# 3 kompakte knapper side om side (forbliver på én række på mobilen)
+top_c1, top_c2, top_c3 = st.columns([1, 1.2, 1.2])
 
 with top_c1:
     theme_btn_label = "☀️ Day" if st.session_state.dark_mode else "🌙 Night"
@@ -310,16 +332,16 @@ with top_c1:
 
 with top_c2:
     with st.popover("🔑 Log In", use_container_width=True):
-        st.markdown("**Select Login Portal:**")
-        if st.button("🏪 Store Owner Login", key="top_login_store", use_container_width=True):
+        st.markdown("**Select Portal:**")
+        if st.button("🏪 Store Owner", key="top_login_store", use_container_width=True):
             st.session_state.current_view = "🏪 Store Owner Admin"
             st.session_state.auth_tab_choice = "login"
             st.rerun()
-        if st.button("🛵 Courier / Rider Login", key="top_login_rider", use_container_width=True):
+        if st.button("🛵 Courier / Rider", key="top_login_rider", use_container_width=True):
             st.session_state.current_view = "🛵 Courier / Dispatch"
             st.session_state.rider_tab_choice = "login"
             st.rerun()
-        if st.button("🛡️ Platform Admin", key="top_login_admin", use_container_width=True):
+        if st.button("🛡️ Admin", key="top_login_admin", use_container_width=True):
             st.session_state.current_view = "🛡️ Platform Admin"
             st.rerun()
         if st.button("💬 Support", key="top_login_sup", use_container_width=True):
@@ -328,23 +350,20 @@ with top_c2:
 
 with top_c3:
     with st.popover("📝 Register", use_container_width=True):
-        st.markdown("**Create New Account:**")
-        if st.button("🏪 Register Store (30d Free)", key="top_reg_store", use_container_width=True):
+        st.markdown("**New Account:**")
+        if st.button("🏪 Store (30d Free)", key="top_reg_store", use_container_width=True):
             st.session_state.current_view = "🏪 Store Owner Admin"
             st.session_state.auth_tab_choice = "register"
             st.rerun()
-        if st.button("🛵 Register Rider / Courier", key="top_reg_rider", use_container_width=True):
+        if st.button("🛵 Courier / Rider", key="top_reg_rider", use_container_width=True):
             st.session_state.current_view = "🛵 Courier / Dispatch"
             st.session_state.rider_tab_choice = "register"
             st.rerun()
 
-# Knap til at vende tilbage til deals, hvis man er logget ind i andre faner
 if st.session_state.current_view != "🛒 Browse Deals":
     if st.button("⬅️ Back to Browse Deals", use_container_width=True):
         st.session_state.current_view = "🛒 Browse Deals"
         st.rerun()
-
-st.markdown("---")
 
 # ====================================================
 # MODAL TIL DETALJER, BESTILLING & PAYSTACK CHECKOUT
@@ -486,10 +505,10 @@ if st.session_state.current_view == "🛒 Browse Deals":
         res = supabase.table("offers").select("*").eq("shop", shop_name).gt("expires_at", now_iso).order("id", desc=True).execute()
         offers = res.data or []
     else:
-        # Område- og Kategorifiltre ligger nu helt i toppen
+        # Område- og Kategorifiltre ligger helt i toppen
         c1, c2 = st.columns(2)
         with c1:
-            st.markdown(f"<div style='font-size: 0.85rem; font-weight: bold; color: {text_color}; margin-bottom: 4px;'>Market / Area</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size: 0.8rem; font-weight: bold; color: {text_color}; margin-bottom: 2px;'>Market / Area</div>", unsafe_allow_html=True)
             with st.popover(f"📍 {st.session_state.sel_area}", use_container_width=True):
                 areas = ["All Areas", "Yaba Market", "Ikeja (Computer Village)", "Surulere", "Balogun Market", "Lekki"]
                 for a in areas:
@@ -497,7 +516,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
                         st.session_state.sel_area = a
                         st.rerun()
         with c2:
-            st.markdown(f"<div style='font-size: 0.85rem; font-weight: bold; color: {text_color}; margin-bottom: 4px;'>Category</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size: 0.8rem; font-weight: bold; color: {text_color}; margin-bottom: 2px;'>Category</div>", unsafe_allow_html=True)
             with st.popover(f"📂 {st.session_state.sel_cat}", use_container_width=True):
                 cats = ["All Categories", "Groceries & Food", "Electronics", "Fashion & Clothing", "Home & Living"]
                 for c in cats:
@@ -505,7 +524,6 @@ if st.session_state.current_view == "🛒 Browse Deals":
                         st.session_state.sel_cat = c
                         st.rerun()
 
-        st.markdown("---")
         now_iso = datetime.now(timezone.utc).isoformat()
         query = supabase.table("offers").select("*").gt("expires_at", now_iso).order("id", desc=True)
         if st.session_state.sel_area != "All Areas":
@@ -543,8 +561,8 @@ if st.session_state.current_view == "🛒 Browse Deals":
                                 if st.button("👀 View Deal", key=f"view_btn_{deal['id']}", use_container_width=True):
                                     show_offer_modal(deal)
 
-    # How Vendora Works er nu placeret i bunden lige før Platform Terms
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+    # Fold-ud guide i bunden
+    st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
     with st.expander("ℹ️ How Vendora Works (Customer Guide)"):
         st.markdown("""
         **Welcome to Vendora!** Here is how you shop safely:
