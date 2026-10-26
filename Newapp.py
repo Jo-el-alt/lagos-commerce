@@ -9,6 +9,9 @@ import base64
 import re
 import random
 from openai import OpenAI
+import hashlib
+import secret
+import hmac
 
 # Tema-tilstand (skal sættes FØR set_page_config for at styre Streamlits indbyggede tema)
 if "dark_mode" not in st.session_state:
