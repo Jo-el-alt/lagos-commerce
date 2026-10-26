@@ -45,17 +45,20 @@ if is_dark:
             color: #94a3b8 !important;
         }
 
-        /* 3. Streamlit Kort & Beholdere (st.container(border=True)) */
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {
+        /* 3. Kort, Beholdere & Expander (How Vendora Works) */
+        div[data-testid="stVerticalBlockBorderWrapper"] > div,
+        div[data-testid="stExpander"],
+        div[data-testid="stExpander"] details {
             background-color: #151d30 !important;
             border: 1px solid #29354f !important;
             border-radius: 12px !important;
             color: #f8fafc !important;
         }
 
-        /* 4. Almindelige knapper og Popover-knapper (Mørkt tema) */
+        /* 4. Alle knapper OG Popover-knapper (uden > så alle fanges) */
         div.stButton > button,
-        div[data-testid="stPopover"] > button {
+        div[data-testid="stPopover"] button,
+        button[kind="secondary"] {
             background-color: #243048 !important;
             border: 1px solid #3b4b68 !important;
             border-radius: 8px !important;
@@ -64,13 +67,13 @@ if is_dark:
         }
         div.stButton > button p, 
         div.stButton > button span,
-        div[data-testid="stPopover"] > button p,
-        div[data-testid="stPopover"] > button span {
+        div[data-testid="stPopover"] button p,
+        div[data-testid="stPopover"] button span {
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
         }
         div.stButton > button:hover,
-        div[data-testid="stPopover"] > button:hover {
+        div[data-testid="stPopover"] button:hover {
             background-color: #3b4b68 !important;
             border-color: #10b981 !important;
         }
@@ -134,6 +137,15 @@ if is_dark:
             background-color: #3b4b68 !important;
             border-color: #10b981 !important;
         }
+
+        /* 8. Gårsdagens Disclaimer boks */
+        .disclaimer-box {
+            background-color: #151d30 !important;
+            border: 1px solid #29354f !important;
+            color: #94a3b8 !important;
+            border-radius: 10px;
+            padding: 14px;
+        }
     </style>
     """, unsafe_allow_html=True)
 else:
@@ -156,8 +168,10 @@ else:
             color: #64748b !important;
         }
 
-        /* 3. Beholdere / Kort (st.container(border=True)) */
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {
+        /* 3. Beholdere, Kort & Expander (How Vendora Works) */
+        div[data-testid="stVerticalBlockBorderWrapper"] > div,
+        div[data-testid="stExpander"],
+        div[data-testid="stExpander"] details {
             background-color: #ffffff !important;
             border: 1px solid #e2e8f0 !important;
             border-radius: 12px !important;
@@ -165,9 +179,10 @@ else:
             color: #0f172a !important;
         }
 
-        /* 4. Almindelige knapper og Popover-knapper (Lyst tema) */
+        /* 4. Alle knapper OG Popover-knapper (uden > så alle fanges) */
         div.stButton > button,
-        div[data-testid="stPopover"] > button {
+        div[data-testid="stPopover"] button,
+        button[kind="secondary"] {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 8px !important;
@@ -176,13 +191,13 @@ else:
         }
         div.stButton > button p, 
         div.stButton > button span,
-        div[data-testid="stPopover"] > button p,
-        div[data-testid="stPopover"] > button span {
+        div[data-testid="stPopover"] button p,
+        div[data-testid="stPopover"] button span {
             color: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
         }
         div.stButton > button:hover,
-        div[data-testid="stPopover"] > button:hover {
+        div[data-testid="stPopover"] button:hover {
             background-color: #f1f5f9 !important;
             border-color: #10b981 !important;
         }
@@ -252,9 +267,17 @@ else:
             background-color: #e2e8f0 !important;
             border-color: #10b981 !important;
         }
+
+        /* 8. Gårsdagens Disclaimer boks */
+        .disclaimer-box {
+            background-color: #f1f5f9 !important;
+            border: 1px solid #e2e8f0 !important;
+            color: #475569 !important;
+            border-radius: 10px;
+            padding: 14px;
+        }
     </style>
     """, unsafe_allow_html=True)
-
 # Mobil opsætning
 st.set_page_config(
     page_title="Vendora 🇳🇬",
@@ -917,7 +940,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
     
-    with st.expander("ℹ️ Courier Guide (How to deliver safely)"):
+    with st.("ℹ️ Courier Guide (How to deliver safely)"):
         st.markdown("""
         **Welcome Verified Riders!**
         1. **Accept Jobs:** Browse 'Open Delivery Requests' and accept the ones that fit your route.
@@ -1309,7 +1332,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
         # --- TAB 2: BROADCASTS ---
         with admin_tabs[2]:
             st.markdown("#### 📢 Platform Broadcast Alerts")
-            with st.expander("➕ Create New Alert"):
+            with st.("➕ Create New Alert"):
                 b_target = st.selectbox("Target Audience:", ["Stores", "Couriers", "All"])
                 b_type = st.selectbox("Badge:", ["🎁 Airtime Promotion", "📢 Platform Update", "⚠️ Notice"])
                 b_title = st.text_input("Title *")
