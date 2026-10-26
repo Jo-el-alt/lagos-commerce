@@ -50,25 +50,7 @@ btn_text = "#ffffff" if is_dark else "#111827"
 hover_bg = "#4b5563" if is_dark else "#e2e8f0"
 hover_border = "#6b7280" if is_dark else "#cbd5e1"
 
-# Dynamisk CSS med den nye, skarpe fane-styling
-st.html(f"""
-<style>
-    .stApp {{
-        background-color: {bg_color} !important;
-        color: {text_color} !important;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }}
-    .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5,
-    label[data-testid="stWidgetLabel"] p,
-    div[data-testid="stRadio"] label p,
-    div[data-testid="stRadio"] label span,
-    div[data-testid="stCheckbox"] label p,
-    [data-testid="stCaptionContainer"] p {{
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
-    }}
-    
-    # Tving høj kontrast på admin fanelinjen i både lys og mørk tilstand
+# Tving høj kontrast på admin fanelinjen i både lys og mørk tilstand
         tab_bg = "#374151" if is_dark else "#e2e8f0"
         tab_border = "#4b5563" if is_dark else "#94a3b8"
         tab_text = "#ffffff" if is_dark else "#0f172a"
