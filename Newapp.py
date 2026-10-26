@@ -36,45 +36,71 @@ is_dark = st.session_state.dark_mode
 if is_dark:
     st.markdown("""
     <style>
-        :root {
+        :root, body, .stApp {
+            --background-color: #0b0f19 !important;
+            --secondary-background-color: #151d30 !important;
+            --text-color: #f8fafc !important;
             color-scheme: dark !important;
         }
-        /* Ryk indhold op og gør kompakt */
-        .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 2rem !important;
-            max-width: 700px !important;
+
+        /* Fjern Streamlits top-slør og ryk alt helt op (kompakt mobil-layout) */
+        [data-testid="stHeader"], [data-testid="stToolbar"] {
+            display: none !important;
         }
-        [data-testid="stHeader"] {
-            background: transparent !important;
-            height: 1.5rem !important;
+        .block-container {
+            padding-top: 0.8rem !important;
+            padding-bottom: 2rem !important;
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+            max-width: 720px !important;
+        }
+
+        /* Hold kolonner og top-knapper ved siden af hinanden på mobil */
+        @media (max-width: 640px) {
+            div[data-testid="stHorizontalBlock"] {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                gap: 6px !important;
+            }
+            div[data-testid="stColumn"], div[data-testid="column"] {
+                min-width: 0 !important;
+                flex: 1 1 0% !important;
+                width: auto !important;
+            }
+            div.stButton > button,
+            div[data-testid="stPopover"] button {
+                padding: 6px 8px !important;
+                font-size: 0.82rem !important;
+                min-height: 36px !important;
+            }
         }
 
         /* 1. Hele sidens baggrund & overordnet tekstfarve */
-        .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main {
+        .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
             background-color: #0b0f19 !important;
             color: #f8fafc !important;
         }
         
-        /* 2. Tekstoverskrifter, labels, markdown og inline kode-bokse */
-        h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, [data-testid="stWidgetLabel"] p {
+        /* 2. Tekstoverskrifter, labels, markdown og kode-tags */
+        h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown {
             color: #f1f5f9 !important;
         }
         .stCaption, small, [data-testid="stMarkdownContainer"] small {
             color: #94a3b8 !important;
         }
-        code, pre, [data-testid="stMarkdownContainer"] code {
+        code, [data-testid="stMarkdownContainer"] code {
             background-color: #1e293b !important;
             color: #38bdf8 !important;
-            border: 1px solid #334155 !important;
             padding: 2px 6px !important;
             border-radius: 5px !important;
-            font-weight: 600 !important;
+            border: 1px solid #334155 !important;
             font-size: 0.85em !important;
         }
 
-        /* 3. Kort, Beholdere & Expander */
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {
+        /* 3. Kort, Beholdere & Expander (How Vendora Works m.fl.) */
+        div[data-testid="stVerticalBlockBorderWrapper"] > div,
+        div[data-testid="stForm"] {
             background-color: #151d30 !important;
             border: 1px solid #29354f !important;
             border-radius: 10px !important;
@@ -102,23 +128,20 @@ if is_dark:
         /* 4. Almindelige knapper, Popover-knapper og Link-knapper */
         div.stButton > button,
         div[data-testid="stPopover"] button,
-        div.stLinkButton > a {
+        div.stLinkButton > a,
+        [data-testid="stBaseButton-secondary"],
+        button[kind="secondary"] {
             background-color: #243048 !important;
             border: 1px solid #3b4b68 !important;
             border-radius: 8px !important;
             color: #ffffff !important;
             font-weight: 600 !important;
-            min-height: 38px !important;
-            padding: 4px 10px !important;
         }
-        div.stButton > button p, 
-        div.stButton > button span,
-        div[data-testid="stPopover"] button p,
-        div[data-testid="stPopover"] button span,
-        div[data-testid="stPopover"] button div,
-        div[data-testid="stPopover"] button svg,
-        div.stLinkButton > a p,
-        div.stLinkButton > a span {
+        div.stButton > button *, 
+        div[data-testid="stPopover"] button *,
+        div.stLinkButton > a *,
+        [data-testid="stBaseButton-secondary"] *,
+        button[kind="secondary"] * {
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
             fill: #ffffff !important;
@@ -130,83 +153,131 @@ if is_dark:
             border-color: #10b981 !important;
         }
 
-        /* Grønne hovedknapper (Primary & Form Submit) */
-        div.stButton > button[kind="primary"],
-        div[data-testid="stFormSubmitButton"] > button,
-        button[kind="primary"],
-        [data-testid="stBaseButton-primary"] {
-            background-color: #10b981 !important;
-            border: 1px solid #059669 !important;
-            color: #ffffff !important;
-        }
-        div.stButton > button[kind="primary"] p,
-        div.stButton > button[kind="primary"] span,
-        div[data-testid="stFormSubmitButton"] > button p,
-        div[data-testid="stFormSubmitButton"] > button span {
-            color: #ffffff !important;
-            -webkit-text-fill-color: #ffffff !important;
-        }
-
-        /* 5. Popup-vindue (Modal / Dialog) & Popover-menuer */
-        div[data-testid="stModal"] div[role="dialog"],
-        div[data-testid="stDialog"] div[role="dialog"],
-        div[role="dialog"],
-        div[role="dialog"] > div,
-        [data-baseweb="modal"] > div,
+        /* 5. Modal (Bestillingsvindue) & Popover-menuer (alle lag) */
+        dialog,
+        [role="dialog"],
+        [role="dialog"] div,
+        [role="dialog"] section,
+        [role="dialog"] header,
+        [aria-modal="true"],
+        [aria-modal="true"] div,
+        div[data-baseweb="modal"] > div > div,
+        div[data-baseweb="modal"] > div > div div,
+        [data-testid="stDialog"] > div > div > div,
+        [data-testid="stDialog"] > div > div > div div,
+        div[data-baseweb="popover"],
+        div[data-baseweb="popover"] *,
         [data-testid="stPopoverBody"],
-        div[data-baseweb="popover"] > div,
+        [data-testid="stPopoverBody"] *,
         div[data-baseweb="menu"],
+        div[data-baseweb="menu"] *,
         ul[data-testid="stSelectboxVirtualDropdown"],
-        li[role="option"] {
+        ul[data-testid="stSelectboxVirtualDropdown"] *,
+        li[role="option"],
+        li[role="option"] * {
             background-color: #151d30 !important;
             color: #f8fafc !important;
-            border-color: #3b4b68 !important;
+            -webkit-text-fill-color: #f8fafc !important;
         }
-        div[role="dialog"] h1, div[role="dialog"] h2, div[role="dialog"] h3,
-        div[role="dialog"] h4, div[role="dialog"] p, div[role="dialog"] span,
-        div[role="dialog"] label, div[role="dialog"] small {
-            color: #f8fafc !important;
+        dialog, [role="dialog"], [data-testid="stPopoverBody"] {
+            border: 1px solid #3b4b68 !important;
+            border-radius: 12px !important;
         }
-        div[role="dialog"] button[aria-label="Close"] svg {
-            fill: #f8fafc !important;
-        }
-
-        /* 6. Inputfelter, +/- knapper, dropdowns og fil-upload */
-        input, textarea,
-        div[data-baseweb="input"],
-        div[data-baseweb="input"] > div,
-        div[data-baseweb="base-input"],
-        div[data-baseweb="textarea"],
-        div[data-baseweb="select"],
-        div[data-baseweb="select"] > div,
-        button[data-testid="stNumberInputStepDown"],
-        button[data-testid="stNumberInputStepUp"] {
-            background-color: #0b0f19 !important;
+        div[data-baseweb="popover"] button,
+        div[data-baseweb="popover"] button * {
+            background-color: #243048 !important;
             color: #ffffff !important;
-            border-color: #3b4b68 !important;
             -webkit-text-fill-color: #ffffff !important;
         }
-        button[data-testid="stNumberInputStepDown"] svg,
-        button[data-testid="stNumberInputStepUp"] svg,
-        div[data-baseweb="select"] svg {
-            fill: #ffffff !important;
+        div[data-baseweb="popover"] button {
+            border: 1px solid #3b4b68 !important;
+            border-radius: 8px !important;
+        }
+        li[role="option"]:hover,
+        li[role="option"]:hover * {
+            background-color: #243048 !important;
+        }
+
+        /* 6. Inputfelter, Selectbox, NumberInput og FileUploader */
+        input, textarea,
+        div[data-baseweb="input"],
+        div[data-baseweb="base-input"],
+        div[data-baseweb="textarea"] {
+            background-color: #0b0f19 !important;
             color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+            border-color: #3b4b68 !important;
+        }
+        div[data-testid="stSelectbox"] div,
+        div[data-testid="stSelectbox"] span,
+        div[data-testid="stSelectbox"] svg,
+        div[data-testid="stSelectbox"] path,
+        div[data-baseweb="select"],
+        div[data-baseweb="select"] * {
+            background-color: #0b0f19 !important;
+            color: #ffffff !important;
+            fill: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+        div[data-testid="stSelectbox"] label,
+        div[data-testid="stSelectbox"] label * {
+            background-color: transparent !important;
+        }
+        div[data-baseweb="select"] > div {
+            border: 1px solid #3b4b68 !important;
+            border-radius: 8px !important;
+        }
+        div[data-testid="stNumberInput"] button,
+        button[data-testid="stNumberInputStepDown"],
+        button[data-testid="stNumberInputStepUp"] {
+            background-color: #243048 !important;
+            color: #ffffff !important;
+            border-color: #3b4b68 !important;
+        }
+        div[data-testid="stNumberInput"] button svg {
+            fill: #ffffff !important;
         }
         input::placeholder, textarea::placeholder {
             color: #64748b !important;
             -webkit-text-fill-color: #64748b !important;
         }
+        [data-testid="stFileUploader"] section,
         [data-testid="stFileUploaderDropzone"],
-        [data-testid="stFileUploader"] section {
+        [data-testid="stFileUploaderDropzone"] * {
             background-color: #0b0f19 !important;
+            color: #94a3b8 !important;
+            -webkit-text-fill-color: #94a3b8 !important;
+        }
+        [data-testid="stFileUploader"] section,
+        [data-testid="stFileUploaderDropzone"] {
             border: 1px dashed #3b4b68 !important;
             border-radius: 10px !important;
-            color: #f8fafc !important;
         }
-        [data-testid="stFileUploaderDropzone"] span,
-        [data-testid="stFileUploaderDropzone"] small,
-        [data-testid="stFileUploaderDropzone"] div {
-            color: #94a3b8 !important;
+        [data-testid="stFileUploader"] button,
+        [data-testid="stFileUploader"] button *,
+        [data-testid="stFileUploaderDropzone"] button,
+        [data-testid="stFileUploaderDropzone"] button * {
+            background-color: #243048 !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+
+        /* Grønne Primary & Form Submit knapper (højeste prioritet) */
+        div.stButton > button[kind="primary"],
+        div[data-testid="stFormSubmitButton"] > button,
+        [data-testid="stBaseButton-primary"],
+        button[kind="primary"] {
+            background-color: #10b981 !important;
+            border: 1px solid #059669 !important;
+            color: #ffffff !important;
+        }
+        div.stButton > button[kind="primary"] *,
+        div[data-testid="stFormSubmitButton"] > button *,
+        [data-testid="stBaseButton-primary"] *,
+        button[kind="primary"] * {
+            background-color: transparent !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
         }
 
         /* 7. Nøgletal (st.metric kort) */
@@ -214,7 +285,7 @@ if is_dark:
             background-color: #151d30 !important;
             border: 1px solid #29354f !important;
             border-radius: 10px !important;
-            padding: 8px 12px !important;
+            padding: 8px 10px !important;
         }
         div[data-testid="stMetricLabel"] p {
             color: #94a3b8 !important;
@@ -224,37 +295,29 @@ if is_dark:
             font-size: 1.4rem !important;
         }
 
-        /* 8. Faneblade (st.tabs) */
+        /* 8. Faneblade (st.tabs knapper) */
         div[data-testid="stTabs"] [role="tablist"] {
             gap: 6px !important;
             background-color: transparent !important;
-            padding: 4px 2px !important;
-            align-items: center !important;
         }
         div[data-testid="stTabs"] button[role="tab"] {
             background-color: #243048 !important;
             border: 1px solid #3b4b68 !important;
             border-radius: 8px !important;
             padding: 6px 12px !important;
-            height: auto !important;
-            min-height: 36px !important;
-            line-height: 1.2 !important;
             opacity: 1 !important;
         }
-        div[data-testid="stTabs"] button[role="tab"] p,
-        div[data-testid="stTabs"] button[role="tab"] span,
-        div[data-testid="stTabs"] button[role="tab"] div {
+        div[data-testid="stTabs"] button[role="tab"] * {
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
-            font-weight: 600 !important;
-            font-size: 0.85rem !important;
+            font-weight: 700 !important;
         }
         div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
             background-color: #10b981 !important;
             border-color: #059669 !important;
         }
 
-        /* 9. Specialbokse, produktkort og badges */
+        /* 9. Specialbokse, kompakte produktkort og badges */
         .disclaimer-box {
             background-color: #151d30 !important;
             border: 1px solid #29354f !important;
@@ -266,7 +329,7 @@ if is_dark:
         }
         .grid-img-box {
             width: 100%;
-            height: 125px;
+            height: 115px;
             background-color: #0b0f19;
             border-radius: 8px;
             overflow: hidden;
@@ -331,10 +394,10 @@ if is_dark:
             background-color: #1e293b;
             border: 1px solid #334155;
             color: #f8fafc !important;
-            padding: 6px 10px;
+            padding: 8px 10px;
             border-radius: 8px;
             font-size: 0.82rem;
-            margin: 4px 0;
+            margin: 6px 0;
         }
         .escrow-badge {
             background-color: #064e3b;
@@ -347,84 +410,84 @@ if is_dark:
             margin: 4px 0;
         }
         .pin-box {
-            background-color: #fef9c3;
-            border: 2px dashed #ca8a04;
+            background-color: #fef9c3 !important;
+            border: 2px dashed #ca8a04 !important;
             border-radius: 10px;
             padding: 12px;
             text-align: center;
             margin: 8px 0;
-        }
-
-        /* 10. Mobil-optimering: Hold knapper og kort kompakte ved siden af hinanden */
-        @media (max-width: 640px) {
-            .block-container {
-                padding-top: 0.5rem !important;
-                padding-left: 0.5rem !important;
-                padding-right: 0.5rem !important;
-            }
-            div[data-testid="stHorizontalBlock"] {
-                display: flex !important;
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
-                gap: 6px !important;
-            }
-            div[data-testid="column"], div[data-testid="stColumn"] {
-                min-width: 0 !important;
-                flex: 1 1 0% !important;
-            }
-            div.stButton > button, div[data-testid="stPopover"] button {
-                padding: 4px 6px !important;
-                font-size: 0.78rem !important;
-                min-height: 34px !important;
-            }
-            .grid-img-box {
-                height: 100px !important;
-            }
         }
     </style>
     """, unsafe_allow_html=True)
 else:
     st.markdown("""
     <style>
-        :root {
+        :root, body, .stApp, [data-baseweb="popover"], [data-baseweb="modal"], [data-testid="stDialog"] {
+            --background-color: #ffffff !important;
+            --secondary-background-color: #f8fafc !important;
+            --text-color: #0f172a !important;
             color-scheme: light !important;
         }
-        /* Ryk indhold op og gør kompakt */
-        .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 2rem !important;
-            max-width: 700px !important;
+
+        /* Fjern Streamlits top-slør og ryk alt helt op (kompakt mobil-layout) */
+        [data-testid="stHeader"], [data-testid="stToolbar"] {
+            display: none !important;
         }
-        [data-testid="stHeader"] {
-            background: transparent !important;
-            height: 1.5rem !important;
+        .block-container {
+            padding-top: 0.8rem !important;
+            padding-bottom: 2rem !important;
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+            max-width: 720px !important;
+        }
+
+        /* Hold kolonner og top-knapper ved siden af hinanden på mobil */
+        @media (max-width: 640px) {
+            div[data-testid="stHorizontalBlock"] {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                gap: 6px !important;
+            }
+            div[data-testid="stColumn"], div[data-testid="column"] {
+                min-width: 0 !important;
+                flex: 1 1 0% !important;
+                width: auto !important;
+            }
+            div.stButton > button,
+            div[data-testid="stPopover"] button {
+                padding: 6px 8px !important;
+                font-size: 0.82rem !important;
+                min-height: 36px !important;
+            }
         }
 
         /* 1. Hele sidens baggrund & tekst (Lyst tema) */
-        .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main {
+        .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
             background-color: #f8fafc !important;
             color: #0f172a !important;
         }
 
-        /* 2. Tekstoverskrifter, labels, markdown og inline kode-bokse (fjerner sorte bjælker) */
-        h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, [data-testid="stWidgetLabel"] p {
+        /* 2. Tekstoverskrifter, labels, markdown og kode-tags */
+        h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown {
             color: #0f172a !important;
         }
         .stCaption, small, [data-testid="stMarkdownContainer"] small {
             color: #475569 !important;
         }
-        code, pre, [data-testid="stMarkdownContainer"] code {
+        code, [data-testid="stMarkdownContainer"] code {
             background-color: #e2e8f0 !important;
             color: #0f172a !important;
-            border: 1px solid #cbd5e1 !important;
             padding: 2px 6px !important;
             border-radius: 5px !important;
-            font-weight: 600 !important;
+            border: 1px solid #cbd5e1 !important;
             font-size: 0.85em !important;
+            font-weight: 600 !important;
         }
 
-        /* 3. Beholdere, Kort & Expander */
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {
+        /* 3. Beholdere, Kort, Formularer & Expander */
+        div[data-testid="stVerticalBlockBorderWrapper"] > div,
+        div[data-testid="stForm"] {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 10px !important;
@@ -450,126 +513,222 @@ else:
             fill: #0f172a !important;
         }
 
-        /* 4. Almindelige knapper, Popover-knapper og Link-knapper */
+        /* 4. Almindelige knapper, Popover-knapper, Upload-knap og Link-knapper */
         div.stButton > button,
         div[data-testid="stPopover"] button,
-        div.stLinkButton > a {
+        div.stLinkButton > a,
+        [data-testid="stBaseButton-secondary"],
+        button[kind="secondary"] {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 8px !important;
             color: #0f172a !important;
             font-weight: 600 !important;
-            min-height: 38px !important;
-            padding: 4px 10px !important;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important;
         }
-        div.stButton > button p, 
-        div.stButton > button span,
-        div[data-testid="stPopover"] button p,
-        div[data-testid="stPopover"] button span,
-        div[data-testid="stPopover"] button div,
-        div[data-testid="stPopover"] button svg,
-        div.stLinkButton > a p,
-        div.stLinkButton > a span {
+        div.stButton > button *, 
+        div[data-testid="stPopover"] button *,
+        div.stLinkButton > a *,
+        [data-testid="stBaseButton-secondary"] *,
+        button[kind="secondary"] * {
             color: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
             fill: #0f172a !important;
         }
         div.stButton > button:hover,
         div[data-testid="stPopover"] button:hover,
-        div.stLinkButton > a:hover {
+        div.stLinkButton > a:hover,
+        [data-testid="stBaseButton-secondary"]:hover,
+        button[kind="secondary"]:hover {
             background-color: #f1f5f9 !important;
             border-color: #10b981 !important;
         }
 
-        /* Grønne hovedknapper (Primary & Form Submit) */
-        div.stButton > button[kind="primary"],
-        div[data-testid="stFormSubmitButton"] > button,
-        button[kind="primary"],
-        [data-testid="stBaseButton-primary"] {
-            background-color: #10b981 !important;
-            border: 1px solid #059669 !important;
-            color: #ffffff !important;
-        }
-        div.stButton > button[kind="primary"] p,
-        div.stButton > button[kind="primary"] span,
-        div[data-testid="stFormSubmitButton"] > button p,
-        div[data-testid="stFormSubmitButton"] > button span,
-        button[kind="primary"] p,
-        button[kind="primary"] span {
-            color: #ffffff !important;
-            -webkit-text-fill-color: #ffffff !important;
-        }
-
-        /* 5. Popup-vindue (Modal / Dialog) & Popover-menuer (fjerner sort baggrund i popup) */
-        div[data-testid="stModal"] div[role="dialog"],
-        div[data-testid="stDialog"] div[role="dialog"],
-        div[role="dialog"],
-        div[role="dialog"] > div,
-        [data-baseweb="modal"] > div,
-        [data-testid="stPopoverBody"],
-        div[data-baseweb="popover"],
-        div[data-baseweb="popover"] > div,
-        div[data-baseweb="menu"],
-        ul[data-testid="stSelectboxVirtualDropdown"],
-        li[role="option"] {
+        /* 5. Modal (Selve butiks-annoncen der popper op) & Popover/Dropdown-menuer (ALLE indvendige lag) */
+        dialog,
+        [role="dialog"],
+        [role="dialog"] div,
+        [role="dialog"] section,
+        [role="dialog"] header,
+        [role="dialog"] form,
+        [role="dialog"] p,
+        [role="dialog"] span,
+        [role="dialog"] label,
+        [role="dialog"] small,
+        [role="dialog"] h1,
+        [role="dialog"] h2,
+        [role="dialog"] h3,
+        [role="dialog"] h4,
+        [aria-modal="true"],
+        [aria-modal="true"] div,
+        [aria-modal="true"] section,
+        [aria-modal="true"] header,
+        div[data-baseweb="modal"] > div > div,
+        div[data-baseweb="modal"] > div > div div,
+        div[data-baseweb="modal"] > div > div section,
+        [data-testid="stDialog"] > div > div > div,
+        [data-testid="stDialog"] > div > div > div div,
+        [data-testid="stModal"] > div > div,
+        [data-testid="stModal"] > div > div div {
             background-color: #ffffff !important;
             color: #0f172a !important;
-            border-color: #cbd5e1 !important;
+            -webkit-text-fill-color: #0f172a !important;
         }
-        div[role="dialog"] h1, div[role="dialog"] h2, div[role="dialog"] h3,
-        div[role="dialog"] h4, div[role="dialog"] p, div[role="dialog"] span,
-        div[role="dialog"] label, div[role="dialog"] small {
-            color: #0f172a !important;
-        }
-        div[role="dialog"] button[aria-label="Close"] svg {
+        [role="dialog"] svg,
+        [role="dialog"] path,
+        [aria-modal="true"] svg,
+        [aria-modal="true"] path {
             fill: #0f172a !important;
             color: #0f172a !important;
         }
-        li[role="option"]:hover,
-        li[role="option"][aria-selected="true"] {
-            background-color: #f1f5f9 !important;
-            color: #059669 !important;
+        dialog, [role="dialog"], [aria-modal="true"] {
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
         }
 
-        /* 6. Inputfelter, +/- knapper, dropdowns og fil-upload (fjerner sorte bokse) */
+        /* Alle menuer der popper frem (st.popover & st.selectbox dropdown-lister) */
+        div[data-baseweb="popover"],
+        div[data-baseweb="popover"] *,
+        [data-testid="stPopoverBody"],
+        [data-testid="stPopoverBody"] *,
+        div[data-baseweb="menu"],
+        div[data-baseweb="menu"] *,
+        ul[data-testid="stSelectboxVirtualDropdown"],
+        ul[data-testid="stSelectboxVirtualDropdown"] *,
+        li[role="option"],
+        li[role="option"] * {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+        }
+        [data-testid="stPopoverBody"],
+        ul[data-testid="stSelectboxVirtualDropdown"],
+        div[data-baseweb="menu"] {
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+        }
+        div[data-baseweb="popover"] button {
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 8px !important;
+            margin-bottom: 4px !important;
+        }
+        div[data-baseweb="popover"] button:hover,
+        div[data-baseweb="popover"] button:hover *,
+        li[role="option"]:hover,
+        li[role="option"]:hover *,
+        li[role="option"][aria-selected="true"],
+        li[role="option"][aria-selected="true"] * {
+            background-color: #f1f5f9 !important;
+            border-color: #10b981 !important;
+        }
+
+        /* 6. Inputfelter, Selectbox (inkl. pil-knap i højre side), NumberInput og FileUploader */
         input, textarea,
         div[data-baseweb="input"],
         div[data-baseweb="input"] > div,
         div[data-baseweb="base-input"],
-        div[data-baseweb="textarea"],
-        div[data-baseweb="select"],
-        div[data-baseweb="select"] > div,
-        button[data-testid="stNumberInputStepDown"],
-        button[data-testid="stNumberInputStepUp"] {
+        div[data-baseweb="textarea"] {
             background-color: #ffffff !important;
             color: #0f172a !important;
-            border-color: #cbd5e1 !important;
             -webkit-text-fill-color: #0f172a !important;
         }
-        button[data-testid="stNumberInputStepDown"] svg,
-        button[data-testid="stNumberInputStepUp"] svg,
-        div[data-baseweb="select"] svg {
-            fill: #0f172a !important;
+        div[data-baseweb="input"],
+        div[data-baseweb="textarea"] {
+            border: 1px solid #94a3b8 !important;
+            border-radius: 8px !important;
+        }
+
+        /* Selectbox & højre pil-boks tvunget 100% hvid med mørk pil */
+        div[data-testid="stSelectbox"] div,
+        div[data-testid="stSelectbox"] span,
+        div[data-testid="stSelectbox"] button,
+        div[data-testid="stSelectbox"] svg,
+        div[data-testid="stSelectbox"] path,
+        div[data-baseweb="select"],
+        div[data-baseweb="select"] * {
+            background-color: #ffffff !important;
             color: #0f172a !important;
+            fill: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+        }
+        div[data-testid="stSelectbox"] label,
+        div[data-testid="stSelectbox"] label * {
+            background-color: transparent !important;
+        }
+        div[data-baseweb="select"] > div {
+            border: 1px solid #94a3b8 !important;
+            border-radius: 8px !important;
+        }
+
+        /* NumberInput +/- knapper */
+        div[data-testid="stNumberInput"] button,
+        button[data-testid="stNumberInputStepDown"],
+        button[data-testid="stNumberInputStepUp"] {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+        div[data-testid="stNumberInput"] button svg,
+        div[data-testid="stNumberInput"] button path {
+            fill: #0f172a !important;
         }
         input::placeholder, textarea::placeholder {
             color: #94a3b8 !important;
             -webkit-text-fill-color: #94a3b8 !important;
         }
+
+        /* File Uploader (Photo upload boks OG selve upload-knappen indeni) */
+        [data-testid="stFileUploader"] section,
         [data-testid="stFileUploaderDropzone"],
-        [data-testid="stFileUploader"] section {
+        [data-testid="stFileUploaderDropzone"] * {
             background-color: #f8fafc !important;
+            color: #475569 !important;
+            -webkit-text-fill-color: #475569 !important;
+            fill: #475569 !important;
+        }
+        [data-testid="stFileUploader"] section,
+        [data-testid="stFileUploaderDropzone"] {
             border: 1px dashed #94a3b8 !important;
             border-radius: 10px !important;
-            color: #0f172a !important;
         }
-        [data-testid="stFileUploaderDropzone"] span,
-        [data-testid="stFileUploaderDropzone"] small,
-        [data-testid="stFileUploaderDropzone"] div,
-        [data-testid="stFileUploaderDropzone"] svg {
-            color: #475569 !important;
-            fill: #475569 !important;
+        [data-testid="stFileUploader"] button,
+        [data-testid="stFileUploader"] button *,
+        [data-testid="stFileUploaderDropzone"] button,
+        [data-testid="stFileUploaderDropzone"] button * {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            font-weight: 600 !important;
+        }
+        [data-testid="stFileUploader"] button,
+        [data-testid="stFileUploaderDropzone"] button {
+            border: 1px solid #94a3b8 !important;
+            border-radius: 8px !important;
+            padding: 6px 14px !important;
+        }
+
+        /* Grønne Primary & Form Submit knapper (ligger efter modal-regler så de altid er grønne) */
+        div.stButton > button[kind="primary"],
+        div[data-testid="stFormSubmitButton"] > button,
+        [data-testid="stBaseButton-primary"],
+        button[kind="primary"] {
+            background-color: #10b981 !important;
+            border: 1px solid #059669 !important;
+            color: #ffffff !important;
+        }
+        div.stButton > button[kind="primary"] *,
+        div[data-testid="stFormSubmitButton"] > button *,
+        [data-testid="stBaseButton-primary"] *,
+        button[kind="primary"] * {
+            background-color: transparent !important;
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+        [role="dialog"] div.stLinkButton > a {
+            border: 1px solid #94a3b8 !important;
+            border-radius: 8px !important;
         }
 
         /* 7. Nøgletal (st.metric) */
@@ -577,53 +736,47 @@ else:
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 10px !important;
-            padding: 8px 12px !important;
+            padding: 8px 10px !important;
         }
         div[data-testid="stMetricLabel"] p {
-            color: #475569 !important;
+            color: #64748b !important;
         }
         div[data-testid="stMetricValue"] div {
             color: #0284c7 !important;
             font-size: 1.4rem !important;
         }
 
-        /* 8. Faneblade (st.tabs) - fuld højde uden afskæring */
+        /* 8. Faneblade (st.tabs inkl. pil-knapper i siden) */
         div[data-testid="stTabs"] [role="tablist"] {
             gap: 6px !important;
             background-color: transparent !important;
-            padding: 4px 2px !important;
-            align-items: center !important;
         }
+        div[data-testid="stTabs"] button,
         div[data-testid="stTabs"] button[role="tab"] {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 8px !important;
             padding: 6px 12px !important;
-            height: auto !important;
-            min-height: 36px !important;
-            line-height: 1.2 !important;
             opacity: 1 !important;
         }
-        div[data-testid="stTabs"] button[role="tab"] p,
-        div[data-testid="stTabs"] button[role="tab"] span,
-        div[data-testid="stTabs"] button[role="tab"] div {
+        div[data-testid="stTabs"] button *,
+        div[data-testid="stTabs"] svg,
+        div[data-testid="stTabs"] path {
             color: #0f172a !important;
+            fill: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
-            font-weight: 600 !important;
-            font-size: 0.85rem !important;
+            font-weight: 700 !important;
         }
         div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
             background-color: #10b981 !important;
             border-color: #059669 !important;
         }
-        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] p,
-        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] span,
-        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] div {
+        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] * {
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
         }
 
-        /* 9. Specialbokse, produktkort og badges */
+        /* 9. Specialbokse, kompakte produktkort og badges */
         .disclaimer-box {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
@@ -635,7 +788,7 @@ else:
         }
         .grid-img-box {
             width: 100%;
-            height: 125px;
+            height: 115px;
             background-color: #f1f5f9;
             border-radius: 8px;
             overflow: hidden;
@@ -700,10 +853,10 @@ else:
             background-color: #f1f5f9;
             border: 1px solid #cbd5e1;
             color: #0f172a !important;
-            padding: 6px 10px;
+            padding: 8px 10px;
             border-radius: 8px;
             font-size: 0.82rem;
-            margin: 4px 0;
+            margin: 6px 0;
         }
         .escrow-badge {
             background-color: #dcfce7;
@@ -716,39 +869,12 @@ else:
             margin: 4px 0;
         }
         .pin-box {
-            background-color: #fef9c3;
-            border: 2px dashed #ca8a04;
+            background-color: #fef9c3 !important;
+            border: 2px dashed #ca8a04 !important;
             border-radius: 10px;
             padding: 12px;
             text-align: center;
             margin: 8px 0;
-        }
-
-        /* 10. Mobil-optimering: Hold knapper og kort kompakte ved siden af hinanden */
-        @media (max-width: 640px) {
-            .block-container {
-                padding-top: 0.5rem !important;
-                padding-left: 0.5rem !important;
-                padding-right: 0.5rem !important;
-            }
-            div[data-testid="stHorizontalBlock"] {
-                display: flex !important;
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
-                gap: 6px !important;
-            }
-            div[data-testid="column"], div[data-testid="stColumn"] {
-                min-width: 0 !important;
-                flex: 1 1 0% !important;
-            }
-            div.stButton > button, div[data-testid="stPopover"] button {
-                padding: 4px 6px !important;
-                font-size: 0.78rem !important;
-                min-height: 34px !important;
-            }
-            .grid-img-box {
-                height: 100px !important;
-            }
         }
     </style>
     """, unsafe_allow_html=True)
@@ -940,10 +1066,10 @@ if "sel_cat" not in st.session_state:
     st.session_state.sel_cat = "All Categories"
 
 # ====================================================
-# HEADER (Kompakt og rykket op)
+# HEADER (KOMPAKT)
 # ====================================================
 st.markdown("<h1 style='text-align: center; font-size: 2rem; font-weight: 800; margin-top: 0px; margin-bottom: 0px; padding-bottom: 0px;'>🛍️ Vendora</h1>", unsafe_allow_html=True)
-st.markdown("<div style='text-align: center; margin-top: -2px; margin-bottom: 10px;'><span style='font-size: 0.78rem; color: #64748b;'>by Debbie</span> • <span style='font-size: 0.78rem; color: #10b981; font-weight: 700;'>✨ AI</span> • <span style='font-size: 0.78rem; color: #64748b;'>🇳🇬 Lagos</span></div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center; margin-top: -4px; margin-bottom: 10px;'><span style='font-size: 0.78rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.78rem; color: #10b981; font-weight: 700;'>✨ AI</span> • <span style='font-size: 0.78rem; color: #9ca3af;'>🇳🇬 Lagos</span></div>", unsafe_allow_html=True)
 
 top_c1, top_c2, top_c3 = st.columns(3)
 
@@ -1873,11 +1999,11 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
             sm1, sm2, sm3 = st.columns(3)
             with sm1:
-                st.metric("🎉 Active Free Trials", len(trials))
+                st.metric("🎉 Active Trials", len(trials))
             with sm2:
-                st.metric("🟢 Paid Subscriptions", len(paid_active))
+                st.metric("🟢 Paid Subs", len(paid_active))
             with sm3:
-                st.metric("🔴 Expired / Needs Renewal", len(expired_shops))
+                st.metric("🔴 Expired", len(expired_shops))
 
             st.markdown("---")
             st.markdown("##### 🏪 Stores on Active Subscription or Promo")
@@ -1964,11 +2090,11 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
             e1, e2, e3 = st.columns(3)
             with e1:
-                st.metric(f"💼 Debbie's Revenue (₦{db_escrow_fee} fees)", f"₦{tot_platform_cut:,}")
+                st.metric(f"💼 Debbie's Fee", f"₦{tot_platform_cut:,}")
             with e2:
-                st.metric("🏪 Store Payables", f"₦{tot_shop_payout:,}")
+                st.metric("🏪 Store Pay", f"₦{tot_shop_payout:,}")
             with e3:
-                st.metric("🛵 Rider Payables", f"₦{tot_rider_payout:,}")
+                st.metric("🛵 Rider Pay", f"₦{tot_rider_payout:,}")
 
             st.markdown("---")
             if not paid_orders:
