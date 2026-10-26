@@ -1038,8 +1038,12 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 st.markdown("##### 💳 1-Klik: Simuler Betalt Escrow-Ordre")
                 st.caption("Genererer straks en fiktiv ordre med status 'Paid Online (Escrow Funded)'. Så kan du se pengene dukke op under 'Escrow & Settlements' og se budet hente den, uden at røre Paystack.")
                 if st.button("🚀 Simuler Færdigbetalt Ordre (₦6.000)", type="primary", use_container_width=True):
+                    # Find automatisk et ægte offer_id for at undgå database-fejl
+                    offer_check = supabase.table("offers").select("id").limit(1).execute()
+                    safe_offer_id = offer_check.data[0]["id"] if offer_check.data else None
+
                     sim_order = {
-                        "offer_id": 1,
+                        "offer_id": safe_offer_id,
                         "product": "5L Kings Cooking Oil (Test)",
                         "shop": "Mama Tunde Provisions (Test)",
                         "shop_phone": "08012345678",
