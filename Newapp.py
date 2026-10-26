@@ -13,6 +13,7 @@ import random
 import hashlib
 import secrets
 import hmac
+from openai import OpenAI
 
 # Tema-tilstand
 if "dark_mode" not in st.session_state:
@@ -99,7 +100,7 @@ st.markdown(f"""
         color: {btn_text} !important;
         border-color: {border_color} !important;
     }}
-    .stButton {{ min-height: 45px; }}
+    .stButton {{ min-height: 40px; }}
     div[data-testid="stButton"] button {{ width: 100% !important; transition: none !important; }}
     .grid-img-box {{ width: 100%; height: 125px; overflow: hidden; border-radius: 8px; margin-bottom: 8px; background-color: {"#374151" if is_dark else "#f3f4f6"}; display: flex; align-items: center; justify-content: center; }}
     .grid-img-box img {{ width: 100%; height: 100%; object-fit: cover; }}
@@ -126,7 +127,6 @@ def get_supabase() -> Client:
 
 supabase = get_supabase()
 
-# Paystack API Hjælpere
 PAYSTACK_SECRET = st.secrets.get("PAYSTACK_SECRET_KEY", "")
 
 def initialize_paystack_payment(email: str, amount_naira: int, order_id: int):
@@ -268,7 +268,7 @@ def render_broadcast_alerts(target: str):
     except Exception:
         pass
 
-# Routing
+# Routing parametre
 query_params = st.query_params
 active_shop_slug = query_params.get("shop", None)
 
@@ -293,19 +293,58 @@ if "sel_area" not in st.session_state:
 if "sel_cat" not in st.session_state:
     st.session_state.sel_cat = "All Categories"
 
-# HEADER
+# ====================================================
+# KOMPAKT HEADER & TOP-BAR MED RULLEMENUER
+# ====================================================
 st.markdown("<h2 style='margin-bottom: 0;'>🛍️ Vendora</h2>", unsafe_allow_html=True)
-st.markdown("<span style='font-size: 0.85rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.85rem; color: #9ca3af;'>🇳🇬 Lagos Local Market Directory</span>", unsafe_allow_html=True)
+st.markdown("<span style='font-size: 0.85rem; color: #9ca3af;'>by Debbie</span> • <span style='font-size: 0.85rem; color: #10b981; font-weight: 700;'>✨ AI-Powered Marketplace</span> • <span style='font-size: 0.85rem; color: #9ca3af;'>🇳🇬 Lagos Local Market Directory</span>", unsafe_allow_html=True)
 
-current_label = "☀️ Switch to Day Mode" if st.session_state.dark_mode else "🌙 Night Mode"
-if st.button(current_label, key="theme_toggle_btn"):
-    st.session_state.dark_mode = not st.session_state.dark_mode
-    st.rerun()
+# Kompakt værktøjslinje i toppen
+top_c1, top_c2, top_c3 = st.columns([1.2, 1, 1])
+
+with top_c1:
+    theme_btn_label = "☀️ Day" if st.session_state.dark_mode else "🌙 Night"
+    if st.button(theme_btn_label, key="theme_toggle_btn", use_container_width=True):
+        st.session_state.dark_mode = not st.session_state.dark_mode
+        st.rerun()
+
+with top_c2:
+    with st.popover("🔑 Log In", use_container_width=True):
+        st.markdown("**Select Login Portal:**")
+        if st.button("🏪 Store Owner Login", key="top_login_store", use_container_width=True):
+            st.session_state.current_view = "🏪 Store Owner Admin"
+            st.session_state.auth_tab_choice = "login"
+            st.rerun()
+        if st.button("🛵 Courier / Rider Login", key="top_login_rider", use_container_width=True):
+            st.session_state.current_view = "🛵 Courier / Dispatch"
+            st.session_state.rider_tab_choice = "login"
+            st.rerun()
+        if st.button("🛡️ Platform Admin", key="top_login_admin", use_container_width=True):
+            st.session_state.current_view = "🛡️ Platform Admin"
+            st.rerun()
+        if st.button("💬 Support", key="top_login_sup", use_container_width=True):
+            st.session_state.current_view = "💬 Support"
+            st.rerun()
+
+with top_c3:
+    with st.popover("📝 Register", use_container_width=True):
+        st.markdown("**Create New Account:**")
+        if st.button("🏪 Register Store (30d Free)", key="top_reg_store", use_container_width=True):
+            st.session_state.current_view = "🏪 Store Owner Admin"
+            st.session_state.auth_tab_choice = "register"
+            st.rerun()
+        if st.button("🛵 Register Rider / Courier", key="top_reg_rider", use_container_width=True):
+            st.session_state.current_view = "🛵 Courier / Dispatch"
+            st.session_state.rider_tab_choice = "register"
+            st.rerun()
+
+# Knap til at vende tilbage til deals, hvis man er logget ind i andre faner
+if st.session_state.current_view != "🛒 Browse Deals":
+    if st.button("⬅️ Back to Browse Deals", use_container_width=True):
+        st.session_state.current_view = "🛒 Browse Deals"
+        st.rerun()
 
 st.markdown("---")
-
-views = ["🛒 Browse Deals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
-st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
 
 # ====================================================
 # MODAL TIL DETALJER, BESTILLING & PAYSTACK TEST CHECKOUT
@@ -429,7 +468,7 @@ def show_offer_modal(item):
                         st.warning("Payment not registered yet. Try again in a moment.")
 
 # ====================================================
-# VISNING 1: KUNDEPORTAL
+# VISNING 1: KUNDEPORTAL (LIGGER HELT I TOPPEN)
 # ====================================================
 if st.session_state.current_view == "🛒 Browse Deals":
     
@@ -513,7 +552,7 @@ if st.session_state.current_view == "🛒 Browse Deals":
                                     show_offer_modal(deal)
 
 # ====================================================
-# VISNING 2: BUTIKSEJER ADMIN
+# VISNING 2: BUTIKSEJER ADMIN & OPRETTELSE
 # ====================================================
 elif st.session_state.current_view == "🏪 Store Owner Admin":
     
@@ -527,7 +566,8 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         """)
         
     if not st.session_state.logged_shop:
-        auth_mode = st.radio("Choose action:", ["🔑 Log In to Existing Store", "📝 Register New Store / Stall (30 Days Free)"], horizontal=True)
+        default_auth_idx = 1 if st.session_state.get("auth_tab_choice") == "register" else 0
+        auth_mode = st.radio("Choose action:", ["🔑 Log In to Existing Store", "📝 Register New Store / Stall (30 Days Free)"], index=default_auth_idx, horizontal=True)
         
         if auth_mode == "🔑 Log In to Existing Store":
             st.markdown("### Store Owner Login")
@@ -662,11 +702,40 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         st.markdown("#### Post a New 48-Hour Deal")
         is_mobile = st.checkbox("This is a mobile stall", value=True)
         location_note = st.text_input("Today's Location / Address *", value="At our stall / market spot")
-        product = st.text_input("Product Name *", placeholder="e.g. 5L Power Oil, Nike Air, Original 20W Charger")
+        product = st.text_input("Product Name *", placeholder="e.g. 5L Kings Cooking Oil, Nike Air, Original 20W Charger")
         price = st.number_input("Deal Price in Naira (₦) *", min_value=50, value=1000, step=50)
         uploaded_file = st.file_uploader("Photo (Optional)", type=["jpg", "jpeg", "png", "webp"])
         
-        default_ad_text = f"🔥 Quality {product} now available at {shop['name']} on Vendora for only NGN {price:,}! Limited stock today in {shop['area']}."
+        # AI Copywriter
+        if "ai_ad_text" not in st.session_state:
+            st.session_state.ai_ad_text = ""
+
+        c_ai1, c_ai2 = st.columns([3, 1])
+        with c_ai1:
+            ai_keywords = st.text_input("Highlights for AI (optional)", placeholder="e.g. fresh stock, direct from distributor")
+        with c_ai2:
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+            if st.button("✨ Write with AI", use_container_width=True):
+                openai_api_key = st.secrets.get("OPENAI_API_KEY", "")
+                if not openai_api_key:
+                    st.error("OpenAI API key missing in Secrets.")
+                elif not product:
+                    st.warning("Enter product name first.")
+                else:
+                    try:
+                        client = OpenAI(api_key=openai_api_key)
+                        prompt = f"Write a short, punchy Nigerian sales caption (max 2 sentences) for a market deal on Vendora Lagos. Store: {shop['name']}, Market/Area: {shop['area']}, Product: {product}, Price: NGN {price:,}. Highlights: {ai_keywords}."
+                        resp = client.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=[{"role": "user", "content": prompt}],
+                            max_tokens=80
+                        )
+                        st.session_state.ai_ad_text = resp.choices[0].message.content.strip()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"AI error: {e}")
+
+        default_ad_text = st.session_state.ai_ad_text or f"🔥 Quality {product} now available at {shop['name']} on Vendora for only NGN {price:,}! Limited stock today in {shop['area']}."
         desc = st.text_area("Ad Description:", value=default_ad_text, height=85)
         
         if st.button("🚀 Publish Deal Now", type="primary", use_container_width=True):
@@ -681,6 +750,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                     "img_src": final_img, "status": "active"
                 }
                 supabase.table("offers").insert(new_data).execute()
+                st.session_state.ai_ad_text = ""
                 st.session_state.go_to_deals = True
                 st.rerun()
 
@@ -704,7 +774,8 @@ elif st.session_state.current_view == "🛵 Courier / Dispatch":
         """)
 
     if not st.session_state.logged_courier:
-        courier_auth = st.radio("Rider Action:", ["🔑 Rider Log In", "📝 Register New Rider / Courier"], horizontal=True)
+        default_rider_idx = 1 if st.session_state.get("rider_tab_choice") == "register" else 0
+        courier_auth = st.radio("Rider Action:", ["🔑 Rider Log In", "📝 Register New Rider / Courier"], index=default_rider_idx, horizontal=True)
         
         if courier_auth == "🔑 Rider Log In":
             st.markdown("### 🛵 Dispatch Rider Login")
@@ -1239,7 +1310,7 @@ st.markdown("---")
 footer_html = (
     "<div class='disclaimer-box'>"
     "<strong>Vendora Platform Terms & Marketplace Intermediary Notice:</strong><br>"
-    "Vendora (by Debbie) is a digital marketplace directory connecting merchants, dispatch couriers, and consumers in Lagos. "
+    "Vendora (by Debbie) is an AI-powered digital marketplace directory connecting merchants, dispatch couriers, and consumers in Lagos. "
     "Vendora does not buy, sell, warehouse, inspect, or manufacture listed goods. All transactions exist exclusively between buyer and merchant. "
     "Couriers operate as independent contractors under Nigerian commercial regulations."
     "</div>"
