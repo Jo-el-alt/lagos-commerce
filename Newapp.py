@@ -30,39 +30,6 @@ st.set_page_config(
     menu_items=None
 )
 
-# Farver baseret på Day/Night knap
-bg_color = "#111827" if is_dark else "#f8fafc"
-text_color = "#f9fafb" if is_dark else "#111827"
-card_bg = "#1f2937" if is_dark else "#ffffff"
-border_color = "#374151" if is_dark else "#e2e8f0"
-btn_bg = "#374151" if is_dark else "#f1f5f9"
-btn_text = "#ffffff" if is_dark else "#111827"
-hover_bg = "#4b5563" if is_dark else "#e2e8f0"
-hover_border = "#6b7280" if is_dark else "#cbd5e1"
-
-# Farver baseret på Day/Night knap
-bg_color = "#111827" if is_dark else "#f8fafc"
-text_color = "#f9fafb" if is_dark else "#111827"
-card_bg = "#1f2937" if is_dark else "#ffffff"
-border_color = "#374151" if is_dark else "#e2e8f0"
-btn_bg = "#374151" if is_dark else "#f1f5f9"
-btn_text = "#ffffff" if is_dark else "#111827"
-hover_bg = "#4b5563" if is_dark else "#e2e8f0"
-hover_border = "#6b7280" if is_dark else "#cbd5e1"
-
-admin_tabs = st.tabs([
-    "🧪 Test Sim", 
-    "⚙️ Pricing & Inflation", 
-    "📢 Broadcasts", 
-    "🎁 Airtime", 
-    "🚦 Subscriptions", 
-    "💰 Escrow", 
-    "📬 Messages", 
-    "🛵 Couriers", 
-    "🏪 Stores", 
-    "📦 Orders"
-])
-
 # Supabase forbindelse
 @st.cache_resource
 def get_supabase() -> Client:
@@ -938,6 +905,106 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 st.rerun()
 
         st.markdown("---")
+
+if is_dark:
+    st.markdown("""
+    <style>
+        div[data-testid="stTabs"] [role="tablist"],
+        div[data-testid="stTabs"] > div {
+            gap: 6px !important;
+            background-color: transparent !important;
+        }
+        div[data-testid="stTabs"] button,
+        div[data-testid="stTabs"] [role="tab"] {
+            background-color: #374151 !important;
+            border: 1px solid #4b5563 !important;
+            border-radius: 6px !important;
+            padding: 6px 14px !important;
+            opacity: 1 !important;
+        }
+        div[data-testid="stTabs"] button p,
+        div[data-testid="stTabs"] button span,
+        div[data-testid="stTabs"] button div,
+        div[data-testid="stTabs"] [data-testid="stMarkdownContainer"] p {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+            font-weight: 700 !important;
+            opacity: 1 !important;
+        }
+        div[data-testid="stTabs"] button[aria-selected="true"],
+        div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+            background-color: #10b981 !important;
+            border-color: #059669 !important;
+        }
+        div[data-testid="stTabs"] button[aria-selected="true"] p,
+        div[data-testid="stTabs"] button[aria-selected="true"] span,
+        div[data-testid="stTabs"] button[aria-selected="true"] div {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+        div[data-testid="stTabs"] button:hover,
+        div[data-testid="stTabs"] [role="tab"]:hover {
+            background-color: #4b5563 !important;
+            border-color: #10b981 !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <style>
+        div[data-testid="stTabs"] [role="tablist"],
+        div[data-testid="stTabs"] > div {
+            gap: 6px !important;
+            background-color: transparent !important;
+        }
+        div[data-testid="stTabs"] button,
+        div[data-testid="stTabs"] [role="tab"] {
+            background-color: #e2e8f0 !important;
+            border: 1px solid #94a3b8 !important;
+            border-radius: 6px !important;
+            padding: 6px 14px !important;
+            opacity: 1 !important;
+        }
+        div[data-testid="stTabs"] button p,
+        div[data-testid="stTabs"] button span,
+        div[data-testid="stTabs"] button div,
+        div[data-testid="stTabs"] [data-testid="stMarkdownContainer"] p {
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            font-weight: 700 !important;
+            opacity: 1 !important;
+        }
+        div[data-testid="stTabs"] button[aria-selected="true"],
+        div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+            background-color: #10b981 !important;
+            border-color: #059669 !important;
+        }
+        div[data-testid="stTabs"] button[aria-selected="true"] p,
+        div[data-testid="stTabs"] button[aria-selected="true"] span,
+        div[data-testid="stTabs"] button[aria-selected="true"] div {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+        div[data-testid="stTabs"] button:hover,
+        div[data-testid="stTabs"] [role="tab"]:hover {
+            background-color: #cbd5e1 !important;
+            border-color: #10b981 !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+admin_tabs = st.tabs([
+    "🧪 Test Sim", 
+    "⚙️ Pricing & Inflation", 
+    "📢 Broadcasts", 
+    "🎁 Airtime", 
+    "🚦 Subscriptions", 
+    "💰 Escrow", 
+    "📬 Messages", 
+    "🛵 Couriers", 
+    "🏪 Stores", 
+    "📦 Orders"
+])
         admin_tabs = st.tabs([
             "🧪 Test Sim", 
             "⚙️ Pricing & Inflation", 
