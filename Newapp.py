@@ -955,13 +955,17 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
     if not st.session_state.admin_logged_in:
         admin_pass = st.text_input("Admin PIN", type="password", placeholder="Master key")
         if st.button("Unlock Admin Panel", type="primary"):
-            # Sikkerhedstjek mod st.secrets i stedet for hårdkodet tekst
-            master_admin_pin = st.secrets.get("ADMIN_PASSWORD", "lagos2026")
-            if admin_pass == master_admin_pin:
+            # Hent sikkert fra st.secrets uden usikker fallback-værdi i koden
+            try:
+                master_admin_pin = st.secrets["ADMIN_PASSWORD"]
+            except Exception:
+                master_admin_pin = None
+
+            if master_admin_pin and admin_pass == master_admin_pin:
                 st.session_state.admin_logged_in = True
                 st.rerun()
             else:
-                st.error("Incorrect Admin PIN!")
+                st.error("Incorrect Admin PIN (or ADMIN_PASSWORD secret is missing on Streamlit Cloud)!")
     else:
         c_a1, c_a2 = st.columns([3, 1])
         with c_a1:
