@@ -1005,18 +1005,19 @@ admin_tabs = st.tabs([
     "🏪 Stores", 
     "📦 Orders"
 ])
+    st.markdown("---")
     admin_tabs = st.tabs([
-            "🧪 Test Sim", 
-            "⚙️ Pricing & Inflation", 
-            "📢 Broadcasts", 
-            "🎁 Airtime", 
-            "🚦 Subscriptions", 
-            "💰 Escrow", 
-            "📬 Messages", 
-            "🛵 Couriers", 
-            "🏪 Stores", 
-            "📦 Orders"
-        ])
+    "🧪 Test Sim", 
+    "⚙️ Pricing & Inflation", 
+    "📢 Broadcasts", 
+    "🎁 Airtime", 
+    "🚦 Subscriptions", 
+    "💰 Escrow", 
+    "📬 Messages", 
+    "🛵 Couriers", 
+    "🏪 Stores", 
+    "📦 Orders"
+])
 
         all_shops_list = supabase.table("shops").select("*").execute().data or []
         db_sub_price, db_escrow_fee = get_platform_settings()
