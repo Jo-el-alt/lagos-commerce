@@ -994,8 +994,8 @@ else:
     </style>
     """, unsafe_allow_html=True)
 
-         st.markdown("---")
-        admin_tabs = st.tabs([
+    st.markdown("---")
+    admin_tabs = st.tabs([
         "🧪 Test Sim", 
         "⚙️ Pricing & Inflation", 
         "📢 Broadcasts", 
