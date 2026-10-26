@@ -263,7 +263,6 @@ def verify_pin(pin: str, stored_val: str) -> bool:
         return False
     clean_pin = pin.strip()
     stored_str = str(stored_val).strip()
-    # Bagudkompatibel: hvis en ældre profil har en ukrypteret 4-cifret PIN
     if ":" not in stored_str:
         return hmac.compare_digest(clean_pin, stored_str)
     try:
@@ -423,8 +422,8 @@ if st.button(current_label, key="theme_toggle_btn"):
 
 st.markdown("---")
 
-# Navigationsmenu
-views = ["🛒 Browse Deals", "🎁 Customer Prizes & Referrals", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
+# Navigationsmenu (Opdateret fane-navn uden gambling)
+views = ["🛒 Browse Deals", "🎁 Customer Rewards & Cashbacks", "🏪 Store Owner Admin", "🛵 Courier / Dispatch", "💬 Support", "🛡️ Platform Admin"]
 st.radio("Nav", views, key="current_view", horizontal=True, label_visibility="collapsed")
 
 # ====================================================
@@ -552,11 +551,11 @@ if st.session_state.current_view == "🛒 Browse Deals":
                                     show_offer_modal(deal)
 
 # ====================================================
-# VISNING 2: KUNDE PRÆMIER & HENVISNING
+# VISNING 2: KUNDE REWARDS & CASHBACKS (LOVLIG MODEL)
 # ====================================================
-elif st.session_state.current_view == "🎁 Customer Prizes & Referrals":
-    st.markdown("### 🎁 Customer Cash Prizes & Referrals")
-    st.caption("Refer friends, family, or market stalls and win cash prizes in our weekly lucky draw!")
+elif st.session_state.current_view == "🎁 Customer Rewards & Cashbacks":
+    st.markdown("### 🎁 Customer Rewards & Cashbacks")
+    st.caption("Invite friends and market traders with your ID and earn guaranteed airtime and cash bonuses!")
     
     render_broadcast_alerts("All")
 
@@ -577,7 +576,7 @@ elif st.session_state.current_view == "🎁 Customer Prizes & Referrals":
                         st.error("Invalid phone number or PIN.")
         else:
             with st.container(border=True):
-                c_name = st.text_input("Full Name (Must match ID) *", placeholder="e.g. Chioma Adebayo")
+                c_name = st.text_input("Full Name (Must match official ID) *", placeholder="e.g. Chioma Adebayo")
                 c_phone_new = st.text_input("WhatsApp / Phone Number *", placeholder="080...")
                 c_pin_new = st.text_input("Create 4-Digit Secret PIN *", type="password", max_chars=4, placeholder="1234")
                 c_pin_confirm = st.text_input("Confirm 4-Digit PIN *", type="password", max_chars=4, placeholder="1234")
@@ -614,13 +613,12 @@ elif st.session_state.current_view == "🎁 Customer Prizes & Referrals":
         
         ref_res = supabase.table("customers").select("id").eq("referred_by", c_member_id).execute()
         my_referrals = len(ref_res.data or [])
-        total_tickets = 1 + my_referrals
 
         col_ch1, col_ch2 = st.columns([3, 1])
         with col_ch1:
             st.markdown(f"### 👤 {cust['name']}")
             st.markdown(f'<div class="member-badge">🎟️ Your Customer ID: {c_member_id}</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="referral-badge">🤝 Referrals: {my_referrals} friend(s)/stall(s) • 🎟️ Raffle Tickets: <b>{total_tickets}</b></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="referral-badge">🤝 Verified Referrals: <b>{my_referrals} person(s)</b></div>', unsafe_allow_html=True)
             st.caption(f"📞 {cust['phone']}")
         with col_ch2:
             if st.button("🚪 Log Out", use_container_width=True):
@@ -628,12 +626,32 @@ elif st.session_state.current_view == "🎁 Customer Prizes & Referrals":
                 st.rerun()
 
         st.markdown("---")
-        st.markdown("#### 💵 Cash Prize & Referral Program")
-        st.info(f"💡 **How to win cash:** Share your Customer ID (`{c_member_id}`) with friends or market stalls when they sign up or buy. Every time someone enters your ID, you get **1 extra ticket** in the weekly cash prize lucky draw!")
+        st.markdown("#### 💵 Guaranteed Cashback & Referral Rewards")
+        st.write(
+            "Earn guaranteed rewards for growing our Lagos community! No lottery, no waiting for luck — "
+            "earn fixed rewards once you reach the referral milestones:"
+        )
+        
+        # Milepæls-visning
+        r_col1, r_col2 = st.columns(2)
+        with r_col1:
+            if my_referrals >= 3:
+                st.success("✅ **Milestone 1 Met (3 Referrals):**\n₦500 Free Airtime / Data Earned!")
+            else:
+                st.info(f"⏳ **Milestone 1:** Refer 3 friends for **₦500 Airtime** ({my_referrals}/3 completed)")
+        with r_col2:
+            if my_referrals >= 10:
+                st.success("✅ **Milestone 2 Met (10 Referrals):**\n₦2,500 Cash Bonus Earned!")
+            else:
+                st.info(f"⏳ **Milestone 2:** Refer 10 friends for **₦2,500 Cash Bonus** ({my_referrals}/10 completed)")
 
-        share_text = f"Hey! Check out Sweet Debbie Deals for cheap market prices in Lagos. Use my referral ID *{c_member_id}* when you sign up so we both get extra raffle tickets!"
+        if my_referrals >= 3:
+            claim_msg = f"Hello Debbie Deals Coordinator! My name is {cust['name']} ({c_member_id}). I have verified {my_referrals} referrals and wish to claim my reward!"
+            st.link_button("🎁 Claim Your Reward on WhatsApp", make_wa_link("08000000000", claim_msg), use_container_width=True)
+
+        share_text = f"Check out Sweet Debbie Deals for the best Lagos local market prices! Use my invite ID *{c_member_id}* when you sign up."
         wa_share_url = f"https://wa.me/?text={urllib.parse.quote(share_text)}"
-        st.link_button("📤 Share your ID on WhatsApp with friends", wa_share_url, use_container_width=True)
+        st.link_button("📤 Share Your Invite Link on WhatsApp", wa_share_url, use_container_width=True)
 
 # ====================================================
 # VISNING 3: BUTIKSEJER ADMIN
@@ -712,9 +730,9 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
             st.markdown(f'<div class="member-badge">🎟️ Store ID: {member_id}</div>', unsafe_allow_html=True)
             
             if referred_count >= 5:
-                st.markdown(f'<div class="referral-badge" style="background-color: #e8f5e9; color:#1b5e20;">🎯 Referral Target Met: {referred_count}/5 stores referred! (Qualified for Lucky Draw)</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="referral-badge" style="background-color: #e8f5e9; color:#1b5e20;">🎯 Partner Milestone Met: {referred_count}/5 partner stalls referred! (Qualified for 1 Month Free Subscription)</div>', unsafe_allow_html=True)
             else:
-                st.markdown(f'<div class="referral-badge">🤝 Referred Stores: {referred_count}/5 (Refer {5 - referred_count} more for Lucky Draw)</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="referral-badge">🤝 Referred Stores: {referred_count}/5 (Refer {5 - referred_count} more for 1 Month Free Access)</div>', unsafe_allow_html=True)
                 
             st.caption(f"📍 {shop['area']} • 📞 {shop['phone']}")
         with col_hdr2:
@@ -969,7 +987,7 @@ elif st.session_state.current_view == "💬 Support":
         u_name = st.text_input("Your Name / Business Name *", value=default_name)
         u_phone = st.text_input("WhatsApp / Phone Number *", value=default_phone)
         u_role = st.selectbox("I am a:", ["Store Owner", "Courier / Rider", "Customer", "Other"], index=["Store Owner", "Courier / Rider", "Customer", "Other"].index(user_category) if user_category in ["Store Owner", "Courier / Rider", "Customer"] else 0)
-        u_subject = st.selectbox("Topic / Subject *", ["Payment & Subscription Inquiry", "Referral Program & Raffle", "Forgotten PIN", "Account Verification", "Order Issue", "General Suggestion"])
+        u_subject = st.selectbox("Topic / Subject *", ["Payment & Subscription Inquiry", "Referral Rewards & Cashbacks", "Forgotten PIN", "Account Verification", "Order Issue", "General Suggestion"])
         u_message = st.text_area("Your Message / Question *", placeholder="Describe your inquiry...")
         
         if st.button("📨 Send Message to Admin", type="primary", use_container_width=True):
@@ -1042,16 +1060,17 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
         st.markdown("---")
 
-        admin_tabs = st.tabs(["📢 Broadcasts", "🤝 Customer Cash Raffle", "🚦 Subscriptions", "🎉 Lucky Draw (Stores)", "📬 Messages", "🛵 Riders", "🏪 Stores", "👤 Customers", "📦 Orders", "🔥 Offers"])
+        # Fane-oversigt (Uden gambling/lotteri)
+        admin_tabs = st.tabs(["📢 Broadcasts", "🎁 Customer Cashback Tracker", "🚦 Subscriptions", "🤝 Store Partner Rewards", "📬 Messages", "🛵 Riders", "🏪 Stores", "👤 Customers", "📦 Orders", "🔥 Offers"])
 
         # --- FANE 0: BROADCASTS ---
         with admin_tabs[0]:
             st.markdown("#### 📢 Platform Broadcast Messages & Reminders")
             with st.expander("➕ Create New Broadcast Message"):
                 b_target = st.selectbox("Send To Audience:", ["Stores", "Couriers", "All"])
-                b_type = st.selectbox("Notice Type / Badge:", ["🎉 Event / Raffle", "⏳ Referral Reminder", "⚠️ Important Notice", "📢 Platform Update"])
-                b_title = st.text_input("Notice Title *", placeholder="e.g. ₦50,000 Friday Market Raffle Draw!")
-                b_body = st.text_area("Notice Message *", placeholder="e.g. Remember to refer 5 stores with your ID before Friday 6PM!")
+                b_type = st.selectbox("Notice Type / Badge:", ["🎁 Reward Promotion", "⏳ Referral Reminder", "⚠️ Important Notice", "📢 Platform Update"])
+                b_title = st.text_input("Notice Title *", placeholder="e.g. Free ₦500 Airtime for 3 referrals!")
+                b_body = st.text_area("Notice Message *", placeholder="e.g. Invite 3 friends with your ID and get ₦500 free airtime today!")
                 
                 if st.button("🚀 Publish Broadcast Alert", type="primary"):
                     if not b_title or not b_body:
@@ -1093,10 +1112,10 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                 supabase.table("broadcast_messages").delete().eq("id", b["id"]).execute()
                                 st.rerun()
 
-        # --- FANE 1: CUSTOMER CASH RAFFLE ---
+        # --- FANE 1: CUSTOMER CASHBACK TRACKER ---
         with admin_tabs[1]:
-            st.markdown("#### 🎁 Customer Cash Prize Raffle (Weighted)")
-            st.caption("The more friends or stores referred, the more tickets the customer has in the pool!")
+            st.markdown("#### 🎁 Customer Referral & Cashback Tracker")
+            st.caption("Overview of customers qualified for guaranteed milestone payouts (Airtime & Cash).")
             
             all_customers = supabase.table("customers").select("*").execute().data or []
             all_shops_for_ref = supabase.table("shops").select("*").execute().data or []
@@ -1107,41 +1126,37 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 cust_refs = len([x for x in all_customers if x.get("referred_by") == c_id])
                 shop_refs = len([x for x in all_shops_for_ref if x.get("referred_by") == c_id])
                 total_refs = cust_refs + shop_refs
-                tickets = 1 + total_refs
                 
                 customer_pool.append({
                     "name": c["name"],
                     "phone": c["phone"],
                     "id": c_id,
-                    "referrals": total_refs,
-                    "tickets": tickets
+                    "referrals": total_refs
                 })
             
-            total_tickets_sum = sum([item["tickets"] for item in customer_pool])
-            st.metric("👥 Total Registered Customers", len(customer_pool))
-            st.metric("🎟️ Total Tickets in Pool (Weighted)", total_tickets_sum)
-            
-            st.markdown("---")
-            if st.button("🎲 Draw Cash Prize Winner Among Customers", type="primary", use_container_width=True):
-                if not customer_pool:
-                    st.warning("No customers registered yet.")
-                else:
-                    weighted_list = []
-                    for item in customer_pool:
-                        for _ in range(item["tickets"]):
-                            weighted_list.append(item)
-                    
-                    winner = random.choice(weighted_list)
-                    st.balloons()
-                    st.success(f"🏆 **CASH WINNER FOUND!**\n\n**{winner['name']}**\n\n🎟️ Customer ID: `{winner['id']}`\n🤝 Referrals: **{winner['referrals']}** (Tickets in play: {winner['tickets']})\n📞 Phone: `{winner['phone']}`")
-                    win_wa = make_wa_link(winner['phone'], f"Congratulations {winner['name']}! Your ID ({winner['id']}) has won the Sweet Debbie Deals Customer Cash Prize!")
-                    st.link_button("💬 Send Prize Message on WhatsApp", win_wa, use_container_width=True)
+            qualified_rewards = [item for item in customer_pool if item["referrals"] >= 3]
+            st.metric("👥 Qualified for Airtime / Cash Rewards (3+ Referrals)", len(qualified_rewards))
 
-            st.markdown("##### Customer Tickets Overview")
-            for item in customer_pool:
-                with st.container(border=True):
-                    st.markdown(f"**{item['name']}** (`{item['id']}`) — 📞 `{item['phone']}`")
-                    st.write(f"Referrals: **{item['referrals']}** • Total tickets in pool: **{item['tickets']} pcs.**")
+            st.markdown("##### Customers Eligible for Payouts")
+            if not qualified_rewards:
+                st.info("No customers have hit 3+ referrals yet.")
+            else:
+                for item in qualified_rewards:
+                    with st.container(border=True):
+                        col_r1, col_r2 = st.columns([3, 2])
+                        with col_r1:
+                            st.markdown(f"**{item['name']}** (`{item['id']}`)")
+                            st.caption(f"📞 Phone: `{item['phone']}`")
+                            if item["referrals"] >= 10:
+                                st.success(f"🏆 Milestone 2 Reached: **{item['referrals']} Referrals** (Eligible for ₦2,500 Cash Bonus)")
+                            else:
+                                st.info(f"🎉 Milestone 1 Reached: **{item['referrals']} Referrals** (Eligible for ₦500 Airtime)")
+                        with col_r2:
+                            payout_wa = make_wa_link(
+                                item["phone"],
+                                f"Hello {item['name']}! You have earned your reward for {item['referrals']} referrals on Sweet Debbie Deals. Please provide your bank/network details to receive payout!"
+                            )
+                            st.link_button("💬 Pay via WhatsApp", payout_wa, use_container_width=True)
 
         # --- FANE 2: ABONNEMENTER ---
         with admin_tabs[2]:
@@ -1251,9 +1266,10 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                 supabase.table("billing_records").delete().eq("id", b["id"]).execute()
                                 st.rerun()
 
-        # --- FANE 3: LODTRÆKNING BODER ---
+        # --- FANE 3: STORE PARTNER REWARDS ---
         with admin_tabs[3]:
-            st.markdown("#### 🎉 Store Lucky Draw (Stores)")
+            st.markdown("#### 🤝 Store Partner Referral Milestones")
+            st.caption("Traders who refer 5+ new stores qualify for 1 Month of Free Platform Access.")
             all_shops_ref = supabase.table("shops").select("*").execute().data or []
             referral_counts = {}
             for s in all_shops_ref:
@@ -1268,16 +1284,17 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 if cnt >= 5:
                     qualified_stores.append({"name": s.get("name"), "phone": s.get("phone"), "id": s_id, "count": cnt})
 
-            st.write(f"Qualified stores (5+ referrals): **{len(qualified_stores)}**")
-            if st.button("🎲 Draw Store Winner Now", type="primary", use_container_width=True):
-                if not qualified_stores:
-                    st.warning("No stores have met 5 referrals yet.")
-                else:
-                    winner = random.choice(qualified_stores)
-                    st.balloons()
-                    st.success(f"🏆 **STORE WINNER!**\n\n**{winner['name']}**\n\n🎟️ ID: `{winner['id']}`\n📞 Phone: `{winner['phone']}`")
-                    win_wa = make_wa_link(winner['phone'], f"Congratulations {winner['name']}! Your store ({winner['id']}) has won the Lucky Draw!")
-                    st.link_button("💬 WhatsApp Message", win_wa, use_container_width=True)
+            st.write(f"Stalls meeting 5+ Partner Referrals: **{len(qualified_stores)}**")
+            for store in qualified_stores:
+                with st.container(border=True):
+                    col_st1, col_st2 = st.columns([3, 2])
+                    with col_st1:
+                        st.markdown(f"**{store['name']}** (`{store['id']}`)")
+                        st.caption(f"📞 `{store['phone']}` • Referred: **{store['count']} stalls**")
+                        st.success("Eligible for 1 Month Free Listing!")
+                    with col_st2:
+                        wa_shop_rew = make_wa_link(store["phone"], f"Hello {store['name']}! Thank you for referring {store['count']} stalls to Sweet Debbie Deals! Your store has been credited with 1 month of free platform listing.")
+                        st.link_button("💬 Send Free Month Notice", wa_shop_rew, use_container_width=True)
 
         # --- FANE 4: SUPPORT BESKEDER ---
         with admin_tabs[4]:
@@ -1394,25 +1411,20 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                             st.rerun()
 
 # ====================================================
-# GLOBAL FOOTER: PRIVACY & ANSVARSFRASKRIVELSE
+# GLOBAL FOOTER: PRIVACY & JURIDISK ANSVARSFRASKRIVELSE (100% LOVLIG)
 # ====================================================
 st.markdown("---")
 footer_html = (
     "<div class='disclaimer-box'>"
-    "<strong>Platform Disclaimer, Terms & Limitation of Liability:</strong><br>"
-    "Sweet Debbie Deals is an intermediary discovery and connection platform. "
-    "We do not manufacture, sell, store, or inspect the products listed. "
-    "All sale agreements and warranties exist strictly between the merchant and the customer. "
-    "Dispatch couriers operate as independent contractors. To the maximum extent permitted under Nigerian law, "
-    "Sweet Debbie Deals shall not be liable for any product defect, delivery loss, delayed dispatch, personal injury, "
-    "road incident, or transaction dispute.<br><br>"
-    "<strong>Cash Prizes, Raffles & Referral Terms (18+ Only):</strong><br>"
-    "Participation in cash prize draws and referral programs requires users to be at least 18 years of age. "
-    "<strong>Identity Verification Rule:</strong> The full name registered on any user or merchant profile <em>must strictly match</em> "
-    "the official government-issued ID (NIN, Voter's Card, or Driver's License) provided upon verification or prize claim. "
-    "Any discrepancy, fake account, or fraudulent referral activity will result in immediate disqualification and forfeiture of cash prizes.<br><br>"
-    "<strong>Privacy (NDPA / NDPR):</strong> User data is processed strictly for commerce fulfillment, identity accreditation, and prize delivery. "
-    "Registered users retain the right to rectify or request full deletion of records anytime."
+    "<strong>Platform Terms, Intermediary Disclaimer & Limitation of Liability:</strong><br>"
+    "Sweet Debbie Deals operates strictly as a digital marketplace directory and discovery platform connecting local merchants, independent dispatch couriers, and buyers in Lagos. "
+    "We do not own, sell, inspect, stock, or manufacture listed goods. All commercial purchase agreements exist exclusively between the buyer and the store owner. "
+    "Couriers are independent third parties. To the fullest extent permitted by Nigerian law, Sweet Debbie Deals disclaims liability for item warranties, transaction disputes, road delays, or delivery losses.<br><br>"
+    "<strong>Performance-Based Rewards & Affiliate Policy:</strong><br>"
+    "Sweet Debbie Deals operates a non-chance, performance-based referral loyalty program. No lottery, betting, or sweepstakes mechanics are used. "
+    "Referral milestones (such as airtime bonuses or subscription discounts) are earned strictly upon verified active peer registrations. "
+    "To prevent fraud, registered account names must correspond to official identity documents upon reward claims. Fake sign-ups or bot registrations will result in immediate disqualification.<br><br>"
+    "<strong>Data Privacy (NDPA / NDPR):</strong> User data is handled solely for transaction fulfillment, fraud mitigation, and account security. Users retain statutory rights to request account rectification or deletion anytime."
     "</div>"
 )
 st.markdown(footer_html, unsafe_allow_html=True)
