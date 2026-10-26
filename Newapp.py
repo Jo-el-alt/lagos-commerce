@@ -38,7 +38,7 @@ border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
 
-# Moderne st.html() til styling af knapper og kolonner
+# CSS med den præcise 1/3 bredde og 25px højde rettelse
 st.html(f"""
 <style>
     .stApp {{
@@ -71,59 +71,65 @@ st.html(f"""
         color: {text_color} !important;
         border-radius: 8px !important;
     }}
-    div[data-testid="stPopover"] button, div[data-testid="stPopover"] > div > button {{
-        background-color: {card_bg} !important;
-        color: {text_color} !important;
-        -webkit-text-fill-color: {text_color} !important;
-        border: 1px solid {border_color} !important;
-        border-radius: 6px !important;
-        font-weight: 600 !important;
-        width: 100% !important;
-    }}
     div[data-baseweb="popover"], div[data-baseweb="popover"] > div, div[data-testid="stPopoverBody"] {{
         background-color: {card_bg} !important;
         color: {text_color} !important;
         border: 1px solid {border_color} !important;
         border-radius: 8px !important;
     }}
-    
-    /* Præcis målrettet stButton > button for kompakte knapper */
-    .stButton > button {{
+
+    /* Målret BÅDE stButton og stPopover (Day/Night, Log In og Register) */
+    .stButton > button,
+    div[data-testid="stPopover"] > button,
+    div[data-testid="stPopover"] > div > button {{
         background-color: {btn_bg} !important;
         color: {btn_text} !important;
         -webkit-text-fill-color: {btn_text} !important;
         border: 1px solid {border_color} !important;
         font-weight: 600 !important;
         width: 100% !important;
-        min-height: 32px !important;
-        height: 32px !important;
-        padding: 2px 6px !important;
-        font-size: 0.75rem !important;
-        border-radius: 6px !important;
-        outline: none !important;
+
+        /* Kompakt højde sat til 25px */
+        min-height: 25px !important;
+        height: 25px !important;
+        max-height: 25px !important;
+        padding: 0px 4px !important;
+        font-size: 0.70rem !important;
+        line-height: 23px !important;
+        border-radius: 5px !important;
         box-shadow: none !important;
+        outline: none !important;
     }}
-    .stButton > button:hover {{
+
+    .stButton > button:hover,
+    div[data-testid="stPopover"] > button:hover {
         background-color: {"#4b5563" if is_dark else "#e5e7eb"} !important;
-        color: {btn_text} !important;
-        border-color: {border_color} !important;
-    }}
-    
-    /* Sikr at top-kolonnerne holder 1/3 bredde */
-    div[data-testid="stHorizontalBlock"] {{
+        border-color: {"#6b7280" if is_dark else "#d1d5db"} !important;
+    }
+
+    /* Fjern Streamlits wrapper-margins */
+    div[data-testid="stButton"],
+    div[data-testid="stPopover"] {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Fasthold præcis 1/3 (33.333%) bredde i top-baren */
+    div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
         gap: 4px !important;
         width: 100% !important;
-    }}
-    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
-        flex: 0 0 33.333% !important;
-        max-width: 33.333% !important;
-        width: 33.333% !important;
+    }
+
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+        flex: 0 0 calc(33.333% - 3px) !important;
+        max-width: calc(33.333% - 3px) !important;
+        width: calc(33.333% - 3px) !important;
         min-width: 0 !important;
-    }}
+    }
 
     .grid-img-box {{ width: 100%; height: 125px; overflow: hidden; border-radius: 8px; margin-bottom: 8px; background-color: {"#374151" if is_dark else "#f3f4f6"}; display: flex; align-items: center; justify-content: center; }}
     .grid-img-box img {{ width: 100%; height: 100%; object-fit: cover; }}
