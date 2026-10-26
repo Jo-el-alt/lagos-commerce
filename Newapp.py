@@ -38,8 +38,8 @@ border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
 
-# CSS der tvinger de 3 knapper til præcis 1/3 bredde
-st.markdown(f"""
+# Moderne st.html() til styling af knapper og kolonner
+st.html(f"""
 <style>
     .stApp {{
         background-color: {bg_color} !important;
@@ -86,22 +86,30 @@ st.markdown(f"""
         border: 1px solid {border_color} !important;
         border-radius: 8px !important;
     }}
-    .stButton button, .stButton button:focus, .stButton button:active {{
+    
+    /* Præcis målrettet stButton > button for kompakte knapper */
+    .stButton > button {{
         background-color: {btn_bg} !important;
         color: {btn_text} !important;
         -webkit-text-fill-color: {btn_text} !important;
         border: 1px solid {border_color} !important;
         font-weight: 600 !important;
+        width: 100% !important;
+        min-height: 32px !important;
+        height: 32px !important;
+        padding: 2px 6px !important;
+        font-size: 0.75rem !important;
+        border-radius: 6px !important;
         outline: none !important;
         box-shadow: none !important;
     }}
-    .stButton button:hover {{
+    .stButton > button:hover {{
         background-color: {"#4b5563" if is_dark else "#e5e7eb"} !important;
         color: {btn_text} !important;
         border-color: {border_color} !important;
     }}
     
-    /* TVING TOP-KOLONNER TIL 1/3 BREDDE PÅ ALLE SKÆRME */
+    /* Sikr at top-kolonnerne holder 1/3 bredde */
     div[data-testid="stHorizontalBlock"] {{
         display: flex !important;
         flex-direction: row !important;
@@ -115,16 +123,6 @@ st.markdown(f"""
         max-width: 33.333% !important;
         width: 33.333% !important;
         min-width: 0 !important;
-    }}
-    div[data-testid="stHorizontalBlock"] button,
-    div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] button {{
-        padding: 2px 4px !important;
-        font-size: 0.72rem !important;
-        min-height: 32px !important;
-        height: 32px !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
     }}
 
     .grid-img-box {{ width: 100%; height: 125px; overflow: hidden; border-radius: 8px; margin-bottom: 8px; background-color: {"#374151" if is_dark else "#f3f4f6"}; display: flex; align-items: center; justify-content: center; }}
@@ -141,7 +139,7 @@ st.markdown(f"""
     .disclaimer-box {{ font-size: 0.8rem; background-color: {card_bg}; color: {text_color} !important; -webkit-text-fill-color: {text_color} !important; opacity: 0.85; padding: 12px; border-radius: 8px; border: 1px solid {border_color}; margin-top: 15px; }}
     .pin-box {{ background-color: #fef08a; color: #854d0e; padding: 15px; border-radius: 8px; text-align: center; border: 2px dashed #eab308; margin-top: 10px; margin-bottom: 10px; }}
 </style>
-""", unsafe_allow_html=True)
+""")
 
 # Supabase forbindelse
 @st.cache_resource
