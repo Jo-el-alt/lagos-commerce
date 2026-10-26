@@ -30,7 +30,7 @@ st.set_page_config(
     menu_items=None
 )
 
-# Farver
+# Farver (uændret så nattilstand altid virker)
 bg_color = "#111827" if is_dark else "#ffffff"
 text_color = "#f9fafb" if is_dark else "#111827"
 card_bg = "#1f2937" if is_dark else "#f9fafb"
@@ -40,8 +40,8 @@ btn_text = "#ffffff" if is_dark else "#111827"
 hover_bg = "#4b5563" if is_dark else "#e5e7eb"
 hover_border = "#6b7280" if is_dark else "#d1d5db"
 
-# Moderne st.html() til styling af knapper og kolonner
-st.html(f"""
+# CSS
+st.markdown(f"""
 <style>
     .stApp {{
         background-color: {bg_color} !important;
@@ -90,8 +90,6 @@ st.html(f"""
         border: 1px solid {border_color} !important;
         font-weight: 600 !important;
         width: 100% !important;
-
-        /* Kompakt højde sat til 25px */
         min-height: 25px !important;
         height: 25px !important;
         max-height: 25px !important;
@@ -104,7 +102,8 @@ st.html(f"""
     }}
 
     .stButton > button:hover,
-    div[data-testid="stPopover"] > button:hover {{
+    div[data-testid="stPopover"] > button:hover,
+    div[data-testid="stPopover"] > div > button:hover {{
         background-color: {hover_bg} !important;
         border-color: {hover_border} !important;
     }}
@@ -116,7 +115,7 @@ st.html(f"""
         padding: 0 !important;
     }}
 
-    /* Fasthold præcis 1/3 (33.333%) bredde i top-baren */
+    /* Tving kolonnerne til at blive inde på skærmen ved siden af hinanden på mobil */
     div[data-testid="stHorizontalBlock"] {{
         display: flex !important;
         flex-direction: row !important;
@@ -126,11 +125,12 @@ st.html(f"""
         width: 100% !important;
     }}
 
-    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
-        flex: 0 0 calc(33.333% - 3px) !important;
-        max-width: calc(33.333% - 3px) !important;
-        width: calc(33.333% - 3px) !important;
+    div[data-testid="stHorizontalBlock"] > div,
+    div[data-testid="stColumn"],
+    div[data-testid="column"] {{
+        flex: 1 1 0% !important;
         min-width: 0 !important;
+        width: 0 !important;
     }}
 
     .grid-img-box {{ width: 100%; height: 125px; overflow: hidden; border-radius: 8px; margin-bottom: 8px; background-color: {card_bg}; display: flex; align-items: center; justify-content: center; }}
@@ -147,7 +147,7 @@ st.html(f"""
     .disclaimer-box {{ font-size: 0.8rem; background-color: {card_bg}; color: {text_color} !important; -webkit-text-fill-color: {text_color} !important; opacity: 0.85; padding: 12px; border-radius: 8px; border: 1px solid {border_color}; margin-top: 15px; }}
     .pin-box {{ background-color: #fef08a; color: #854d0e; padding: 15px; border-radius: 8px; text-align: center; border: 2px dashed #eab308; margin-top: 10px; margin-bottom: 10px; }}
 </style>
-""")
+""", unsafe_allow_html=True)
 
 # Supabase forbindelse
 @st.cache_resource
