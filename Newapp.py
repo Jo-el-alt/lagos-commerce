@@ -50,75 +50,106 @@ btn_text = "#ffffff" if is_dark else "#111827"
 hover_bg = "#4b5563" if is_dark else "#e2e8f0"
 hover_border = "#6b7280" if is_dark else "#cbd5e1"
 
-# Tving høj kontrast på admin fanelinjen i både lys og mørk tilstand
-        tab_bg = "#374151" if is_dark else "#e2e8f0"
-        tab_border = "#4b5563" if is_dark else "#94a3b8"
-        tab_text = "#ffffff" if is_dark else "#0f172a"
+# Tving høj kontrast på admin fanelinjen uden f-string fejl
+if is_dark:
+    st.markdown("""
+    <style>
+        div[data-testid="stTabs"] [role="tablist"],
+        div[data-testid="stTabs"] > div {
+            gap: 6px !important;
+            background-color: transparent !important;
+        }
+        div[data-testid="stTabs"] button,
+        div[data-testid="stTabs"] [role="tab"] {
+            background-color: #374151 !important;
+            border: 1px solid #4b5563 !important;
+            border-radius: 6px !important;
+            padding: 6px 14px !important;
+            opacity: 1 !important;
+        }
+        div[data-testid="stTabs"] button p,
+        div[data-testid="stTabs"] button span,
+        div[data-testid="stTabs"] button div,
+        div[data-testid="stTabs"] [data-testid="stMarkdownContainer"] p {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+            font-weight: 700 !important;
+            opacity: 1 !important;
+        }
+        div[data-testid="stTabs"] button[aria-selected="true"],
+        div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+            background-color: #10b981 !important;
+            border-color: #059669 !important;
+        }
+        div[data-testid="stTabs"] button[aria-selected="true"] p,
+        div[data-testid="stTabs"] button[aria-selected="true"] span,
+        div[data-testid="stTabs"] button[aria-selected="true"] div {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+        div[data-testid="stTabs"] button:hover,
+        div[data-testid="stTabs"] [role="tab"]:hover {
+            background-color: #4b5563 !important;
+            border-color: #10b981 !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <style>
+        div[data-testid="stTabs"] [role="tablist"],
+        div[data-testid="stTabs"] > div {
+            gap: 6px !important;
+            background-color: transparent !important;
+        }
+        div[data-testid="stTabs"] button,
+        div[data-testid="stTabs"] [role="tab"] {
+            background-color: #e2e8f0 !important;
+            border: 1px solid #94a3b8 !important;
+            border-radius: 6px !important;
+            padding: 6px 14px !important;
+            opacity: 1 !important;
+        }
+        div[data-testid="stTabs"] button p,
+        div[data-testid="stTabs"] button span,
+        div[data-testid="stTabs"] button div,
+        div[data-testid="stTabs"] [data-testid="stMarkdownContainer"] p {
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
+            font-weight: 700 !important;
+            opacity: 1 !important;
+        }
+        div[data-testid="stTabs"] button[aria-selected="true"],
+        div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+            background-color: #10b981 !important;
+            border-color: #059669 !important;
+        }
+        div[data-testid="stTabs"] button[aria-selected="true"] p,
+        div[data-testid="stTabs"] button[aria-selected="true"] span,
+        div[data-testid="stTabs"] button[aria-selected="true"] div {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+        div[data-testid="stTabs"] button:hover,
+        div[data-testid="stTabs"] [role="tab"]:hover {
+            background-color: #cbd5e1 !important;
+            border-color: #10b981 !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-        st.markdown(f"""
-        <style>
-            /* 1. Målret fanebaren */
-            div[data-testid="stTabs"] [role="tablist"],
-            div[data-testid="stTabs"] > div {{
-                gap: 6px !important;
-                background-color: transparent !important;
-            }}
-
-            /* 2. Selve knapperne: Får en tydelig boks og kant */
-            div[data-testid="stTabs"] button,
-            div[data-testid="stTabs"] [role="tab"] {{
-                background-color: {tab_bg} !important;
-                border: 1px solid {tab_border} !important;
-                border-radius: 6px !important;
-                padding: 6px 14px !important;
-                opacity: 1 !important;
-            }}
-
-            /* 3. Tving tekst og ikoner til synlig farve */
-            div[data-testid="stTabs"] button p,
-            div[data-testid="stTabs"] button span,
-            div[data-testid="stTabs"] button div,
-            div[data-testid="stTabs"] [data-testid="stMarkdownContainer"] p {{
-                color: {tab_text} !important;
-                -webkit-text-fill-color: {tab_text} !important;
-                font-weight: 700 !important;
-                opacity: 1 !important;
-            }}
-
-            /* 4. Aktiv valgt fane (flot grøn med hvid tekst) */
-            div[data-testid="stTabs"] button[aria-selected="true"],
-            div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
-                background-color: #10b981 !important;
-                border-color: #059669 !important;
-            }}
-            div[data-testid="stTabs"] button[aria-selected="true"] p,
-            div[data-testid="stTabs"] button[aria-selected="true"] span,
-            div[data-testid="stTabs"] button[aria-selected="true"] div {{
-                color: #ffffff !important;
-                -webkit-text-fill-color: #ffffff !important;
-            }}
-
-            /* 5. Hover tilstand */
-            div[data-testid="stTabs"] button:hover,
-            div[data-testid="stTabs"] [role="tab"]:hover {{
-                background-color: {"#4b5563" if is_dark else "#cbd5e1"} !important;
-                border-color: #10b981 !important;
-            }}
-        </style>
-        """, unsafe_allow_html=True)
-
-        admin_tabs = st.tabs([
-            "🧪 Test Sim", 
-            "⚙️ Pricing & Inflation", 
-            "📢 Broadcasts", 
-            "🎁 Airtime", 
-            "🚦 Subscriptions", 
-            "💰 Escrow", 
-            "📬 Messages", 
-            "🛵 Couriers", 
-            "🏪 Stores", 
-            "📦 Orders"
-        ])
+admin_tabs = st.tabs([
+    "🧪 Test Sim", 
+    "⚙️ Pricing & Inflation", 
+    "📢 Broadcasts", 
+    "🎁 Airtime", 
+    "🚦 Subscriptions", 
+    "💰 Escrow", 
+    "📬 Messages", 
+    "🛵 Couriers", 
+    "🏪 Stores", 
+    "📦 Orders"
+])
 
 # Supabase forbindelse
 @st.cache_resource
