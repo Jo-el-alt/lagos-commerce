@@ -555,13 +555,21 @@ elif st.session_state.current_view == "🎁 Customer Prizes & Referrals":
                 c_phone = st.text_input("WhatsApp / Phone Number", placeholder="080...")
                 c_pin = st.text_input("4-Digit PIN", type="password", placeholder="1234")
                 if st.button("Log In to Customer Portal", type="primary", use_container_width=True):
-                    res = supabase.table("customers").select("*").eq("phone", c_phone.strip()).eq("pin", c_pin.strip()).execute()
-                    if res.data:
-                        st.session_state.logged_customer = res.data[0]
-                        st.success(f"Welcome back, {res.data[0]['name']}!")
-                        st.rerun()
-                    else:
-                        st.error("Invalid phone number or PIN.")
+                    res = (
+                            supabase.table("customers")
+                            .select("*")
+                            .eq("phone", c_phone.strip())
+                            .execute()
+                            )
+
+                    if res.data and verify_customer_pin(
+    c_pin.strip(), res.data[0].get("pin_hash")
+):
+    st.session_state.logged_customer = res.data[0]
+    st.success(f"Welcome back, {res.data[0]['name']}!")
+    st.rerun()
+else:
+    st.error("Invalid phone number or PIN.")
         else:
             with st.container(border=True):
                 c_name = st.text_input("Full Name (Must match ID) *", placeholder="e.g. Chioma Adebayo")
