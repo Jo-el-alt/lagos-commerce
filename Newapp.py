@@ -237,6 +237,31 @@ def get_supabase() -> Client:
 
 supabase = get_supabase()
 
+def hash_customer_pin(pin):
+    salt = secrets.token_hex(16)
+    pin_hash = hashlib.pbkdf2_hmac(
+        "sha256",
+        pin.encode("utf-8"),
+        salt.encode("utf-8"),
+        200000
+    ).hex()
+    return f"{salt}:{pin_hash}"
+
+
+def verify_customer_pin(pin, stored_hash):
+    try:
+        salt, expected_hash = stored_hash.split(":", 1)
+        actual_hash = hashlib.pbkdf2_hmac(
+            "sha256",
+            pin.encode("utf-8"),
+            salt.encode("utf-8"),
+            200000
+        ).hex()
+        return hmac.compare_digest(actual_hash, expected_hash)
+    except (ValueError, AttributeError):
+        return False
+
+
 # OpenAI klient
 @st.cache_resource
 def get_openai_client():
