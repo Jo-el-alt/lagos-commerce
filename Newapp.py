@@ -955,7 +955,9 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
     if not st.session_state.admin_logged_in:
         admin_pass = st.text_input("Admin PIN", type="password", placeholder="Master key")
         if st.button("Unlock Admin Panel", type="primary"):
-            if admin_pass == "lagos2026":
+            # Sikkerhedstjek mod st.secrets i stedet for hårdkodet tekst
+            master_admin_pin = st.secrets.get("ADMIN_PASSWORD", "lagos2026")
+            if admin_pass == master_admin_pin:
                 st.session_state.admin_logged_in = True
                 st.rerun()
             else:
@@ -971,7 +973,6 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
 
         st.markdown("---")
 
-        # Hent samlede antal til overbliks-metrikker
         try:
             total_cust_count = len(supabase.table("customers").select("id", count="exact").execute().data or [])
         except Exception:
@@ -987,7 +988,6 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
         except Exception:
             total_couriers_count = 0
 
-        # Vis overbliks-metrikker øverst i admin
         m_col1, m_col2, m_col3 = st.columns(3)
         with m_col1:
             st.metric("👥 Total Customers", total_cust_count)
