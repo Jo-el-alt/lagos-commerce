@@ -860,7 +860,8 @@ elif st.session_state.current_view == "💬 Support":
         default_name = st.session_state.logged_courier["name"]
         default_phone = st.session_state.logged_courier["phone"]
         user_category = "Courier / Rider"
-        
+
+
     with st.container(border=True):
         u_name = st.text_input("Your Name / Business Name *", value=default_name)
         u_phone = st.text_input("WhatsApp / Phone Number *", value=default_phone)
@@ -993,31 +994,31 @@ else:
     </style>
     """, unsafe_allow_html=True)
 
-admin_tabs = st.tabs([
-    "🧪 Test Sim", 
-    "⚙️ Pricing & Inflation", 
-    "📢 Broadcasts", 
-    "🎁 Airtime", 
-    "🚦 Subscriptions", 
-    "💰 Escrow", 
-    "📬 Messages", 
-    "🛵 Couriers", 
-    "🏪 Stores", 
-    "📦 Orders"
-])
-    st.markdown("---")
-    admin_tabs = st.tabs([
-    "🧪 Test Sim", 
-    "⚙️ Pricing & Inflation", 
-    "📢 Broadcasts", 
-    "🎁 Airtime", 
-    "🚦 Subscriptions", 
-    "💰 Escrow", 
-    "📬 Messages", 
-    "🛵 Couriers", 
-    "🏪 Stores", 
-    "📦 Orders"
-])
+        admin_tabs = st.tabs([
+        "🧪 Test Sim", 
+        "⚙️ Pricing & Inflation", 
+        "📢 Broadcasts", 
+        "🎁 Airtime", 
+        "🚦 Subscriptions", 
+        "💰 Escrow", 
+        "📬 Messages", 
+        "🛵 Couriers", 
+        "🏪 Stores", 
+        "📦 Orders"
+            ])
+        st.markdown("---")
+        admin_tabs = st.tabs([
+        "🧪 Test Sim", 
+        "⚙️ Pricing & Inflation", 
+        "📢 Broadcasts", 
+        "🎁 Airtime", 
+        "🚦 Subscriptions", 
+        "💰 Escrow", 
+        "📬 Messages", 
+        "🛵 Couriers", 
+        "🏪 Stores", 
+        "📦 Orders"
+            ])
 
         all_shops_list = supabase.table("shops").select("*").execute().data or []
         db_sub_price, db_escrow_fee = get_platform_settings()
