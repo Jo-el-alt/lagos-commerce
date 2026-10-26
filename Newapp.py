@@ -15,16 +15,24 @@ import secrets
 import hmac
 from openai import OpenAI
 
+# Mobil opsætning (skal ligge øverst i Streamlit)
+st.set_page_config(
+    page_title="Vendora 🇳🇬",
+    page_icon="🛍️",
+    layout="centered",
+    initial_sidebar_state="collapsed",
+    menu_items=None
+)
+
 # Tema-tilstand
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
 is_dark = st.session_state.dark_mode
 
-
-        # ====================================================
-        # FULD-SIDE MØRKT / LYST TEMA CSS (STREAMLIT GLOBAL)
-        # ====================================================
+# ====================================================
+# FULD-SIDE MØRKT / LYST TEMA CSS (STREAMLIT GLOBAL)
+# ====================================================
 if is_dark:
     st.markdown("""
     <style>
@@ -45,19 +53,42 @@ if is_dark:
             color: #94a3b8 !important;
         }
 
-        /* 3. Kort, Beholdere & Expander (How Vendora Works) */
-        div[data-testid="stVerticalBlockBorderWrapper"] > div,
-        div[data-testid="stExpander"],
-        div[data-testid="stExpander"] details {
+        /* 3. Kort, Beholdere & Expander (How Vendora Works m.fl.) */
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {
             background-color: #151d30 !important;
             border: 1px solid #29354f !important;
             border-radius: 12px !important;
             color: #f8fafc !important;
         }
+        div[data-testid="stExpander"] {
+            background-color: #151d30 !important;
+            border: 1px solid #29354f !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+        }
+        div[data-testid="stExpander"] details {
+            background-color: #151d30 !important;
+            border: none !important;
+        }
+        div[data-testid="stExpander"] summary {
+            background-color: #151d30 !important;
+            color: #f8fafc !important;
+            padding: 10px 14px !important;
+            font-weight: 600 !important;
+        }
+        div[data-testid="stExpander"] summary p,
+        div[data-testid="stExpander"] summary span,
+        div[data-testid="stExpander"] summary svg {
+            color: #f8fafc !important;
+            fill: #f8fafc !important;
+        }
 
-        /* 4. Alle knapper OG Popover-knapper (uden > så alle fanges) */
+        /* 4. Alle knapper, Popover-knapper og Link-knapper */
         div.stButton > button,
         div[data-testid="stPopover"] button,
+        div[data-testid="stPopover"] > div > button,
+        div.stLinkButton > a,
+        [data-testid="stBaseButton-secondary"],
         button[kind="secondary"] {
             background-color: #243048 !important;
             border: 1px solid #3b4b68 !important;
@@ -68,18 +99,39 @@ if is_dark:
         div.stButton > button p, 
         div.stButton > button span,
         div[data-testid="stPopover"] button p,
-        div[data-testid="stPopover"] button span {
+        div[data-testid="stPopover"] button span,
+        div[data-testid="stPopover"] button div,
+        div[data-testid="stPopover"] button svg,
+        div.stLinkButton > a p,
+        div.stLinkButton > a span {
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
+            fill: #ffffff !important;
         }
         div.stButton > button:hover,
-        div[data-testid="stPopover"] button:hover {
+        div[data-testid="stPopover"] button:hover,
+        div.stLinkButton > a:hover {
             background-color: #3b4b68 !important;
             border-color: #10b981 !important;
         }
+        button[kind="primary"],
+        [data-testid="stBaseButton-primary"] {
+            background-color: #10b981 !important;
+            border: 1px solid #059669 !important;
+            color: #ffffff !important;
+        }
+
+        /* Popover åben boks & Dialog-vinduer */
+        [data-testid="stPopoverBody"],
+        div[data-baseweb="popover"] > div,
+        div[role="dialog"] {
+            background-color: #151d30 !important;
+            border: 1px solid #3b4b68 !important;
+            color: #f8fafc !important;
+        }
 
         /* 5. Inputfelter, dropdowns og tekstbokse */
-        input, textarea, div[data-baseweb="input"], div[data-baseweb="select"] {
+        input, textarea, div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="base-input"] {
             background-color: #0b0f19 !important;
             color: #ffffff !important;
             border-color: #3b4b68 !important;
@@ -87,7 +139,7 @@ if is_dark:
         div[data-baseweb="input"] > div {
             background-color: #0b0f19 !important;
         }
-        input::placeholder {
+        input::placeholder, textarea::placeholder {
             color: #64748b !important;
         }
 
@@ -138,13 +190,105 @@ if is_dark:
             border-color: #10b981 !important;
         }
 
-        /* 8. Gårsdagens Disclaimer boks */
+        /* 8. Specialbokse, produktkort og badges */
         .disclaimer-box {
             background-color: #151d30 !important;
             border: 1px solid #29354f !important;
             color: #94a3b8 !important;
+            border-radius: 10px !important;
+            padding: 14px !important;
+            font-size: 0.85rem !important;
+            line-height: 1.5 !important;
+        }
+        .grid-img-box {
+            width: 100%;
+            height: 140px;
+            background-color: #0b0f19;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .grid-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .grid-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .grid-price {
+            color: #10b981 !important;
+            font-weight: 800;
+            font-size: 1.05rem;
+            margin-bottom: 4px;
+        }
+        .member-badge {
+            display: inline-block;
+            background-color: #243048;
+            color: #38bdf8 !important;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            border: 1px solid #3b4b68;
+        }
+        .trial-badge, .status-light-green {
+            display: inline-block;
+            background-color: #064e3b;
+            color: #34d399 !important;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            margin-left: 6px;
+        }
+        .status-light-red {
+            display: inline-block;
+            background-color: #7f1d1d;
+            color: #fca5a5 !important;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            margin-left: 6px;
+        }
+        .referral-badge {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            color: #f8fafc !important;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin: 6px 0;
+        }
+        .escrow-badge {
+            background-color: #064e3b;
+            border: 1px solid #10b981;
+            color: #ecfdf5 !important;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin: 6px 0;
+        }
+        .pin-box {
+            background-color: #fef9c3;
+            border: 2px dashed #ca8a04;
             border-radius: 10px;
             padding: 14px;
+            text-align: center;
+            margin: 10px 0;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -168,42 +312,95 @@ else:
             color: #64748b !important;
         }
 
-        /* 3. Beholdere, Kort & Expander (How Vendora Works) */
-        div[data-testid="stVerticalBlockBorderWrapper"] > div,
-        div[data-testid="stExpander"],
-        div[data-testid="stExpander"] details {
+        /* 3. Beholdere, Kort & Expander (How Vendora Works m.fl.) */
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {
             background-color: #ffffff !important;
-            border: 1px solid #e2e8f0 !important;
+            border: 1px solid #cbd5e1 !important;
             border-radius: 12px !important;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
             color: #0f172a !important;
         }
+        div[data-testid="stExpander"] {
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+            overflow: hidden !important;
+        }
+        div[data-testid="stExpander"] details {
+            background-color: #ffffff !important;
+            border: none !important;
+        }
+        div[data-testid="stExpander"] summary {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            padding: 10px 14px !important;
+            font-weight: 600 !important;
+        }
+        div[data-testid="stExpander"] summary p,
+        div[data-testid="stExpander"] summary span,
+        div[data-testid="stExpander"] summary svg {
+            color: #0f172a !important;
+            fill: #0f172a !important;
+        }
 
-        /* 4. Alle knapper OG Popover-knapper (uden > så alle fanges) */
+        /* 4. Alle knapper, Popover-knapper og Link-knapper */
         div.stButton > button,
         div[data-testid="stPopover"] button,
+        div[data-testid="stPopover"] > div > button,
+        div.stLinkButton > a,
+        [data-testid="stBaseButton-secondary"],
         button[kind="secondary"] {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 8px !important;
             color: #0f172a !important;
             font-weight: 600 !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
         }
         div.stButton > button p, 
         div.stButton > button span,
         div[data-testid="stPopover"] button p,
-        div[data-testid="stPopover"] button span {
+        div[data-testid="stPopover"] button span,
+        div[data-testid="stPopover"] button div,
+        div[data-testid="stPopover"] button svg,
+        div.stLinkButton > a p,
+        div.stLinkButton > a span {
             color: #0f172a !important;
             -webkit-text-fill-color: #0f172a !important;
+            fill: #0f172a !important;
         }
         div.stButton > button:hover,
-        div[data-testid="stPopover"] button:hover {
+        div[data-testid="stPopover"] button:hover,
+        div.stLinkButton > a:hover {
             background-color: #f1f5f9 !important;
             border-color: #10b981 !important;
         }
+        button[kind="primary"],
+        [data-testid="stBaseButton-primary"] {
+            background-color: #10b981 !important;
+            border: 1px solid #059669 !important;
+            color: #ffffff !important;
+        }
+        button[kind="primary"] p,
+        button[kind="primary"] span,
+        [data-testid="stBaseButton-primary"] p,
+        [data-testid="stBaseButton-primary"] span {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+
+        /* Popover åben boks & Dialog-vinduer */
+        [data-testid="stPopoverBody"],
+        div[data-baseweb="popover"] > div,
+        div[role="dialog"] {
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+        }
 
         /* 5. Inputfelter, dropdowns og tekstbokse */
-        input, textarea, div[data-baseweb="input"], div[data-baseweb="select"] {
+        input, textarea, div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="base-input"] {
             background-color: #ffffff !important;
             color: #0f172a !important;
             border-color: #cbd5e1 !important;
@@ -211,14 +408,14 @@ else:
         div[data-baseweb="input"] > div {
             background-color: #ffffff !important;
         }
-        input::placeholder {
+        input::placeholder, textarea::placeholder {
             color: #94a3b8 !important;
         }
 
         /* 6. Nøgletal (st.metric) */
         div[data-testid="stMetric"] {
             background-color: #ffffff !important;
-            border: 1px solid #e2e8f0 !important;
+            border: 1px solid #cbd5e1 !important;
             border-radius: 10px !important;
             padding: 10px 14px !important;
         }
@@ -268,24 +465,109 @@ else:
             border-color: #10b981 !important;
         }
 
-        /* 8. Gårsdagens Disclaimer boks */
+        /* 8. Specialbokse, produktkort og badges */
         .disclaimer-box {
-            background-color: #f1f5f9 !important;
-            border: 1px solid #e2e8f0 !important;
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
             color: #475569 !important;
+            border-radius: 10px !important;
+            padding: 14px !important;
+            font-size: 0.85rem !important;
+            line-height: 1.5 !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important;
+        }
+        .grid-img-box {
+            width: 100%;
+            height: 140px;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        .grid-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .grid-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .grid-price {
+            color: #059669 !important;
+            font-weight: 800;
+            font-size: 1.05rem;
+            margin-bottom: 4px;
+        }
+        .member-badge {
+            display: inline-block;
+            background-color: #e0f2fe;
+            color: #0369a1 !important;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            border: 1px solid #bae6fd;
+        }
+        .trial-badge, .status-light-green {
+            display: inline-block;
+            background-color: #dcfce7;
+            color: #15803d !important;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            margin-left: 6px;
+        }
+        .status-light-red {
+            display: inline-block;
+            background-color: #fee2e2;
+            color: #b91c1c !important;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            margin-left: 6px;
+        }
+        .referral-badge {
+            background-color: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            color: #0f172a !important;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin: 6px 0;
+        }
+        .escrow-badge {
+            background-color: #dcfce7;
+            border: 1px solid #22c55e;
+            color: #166534 !important;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin: 6px 0;
+        }
+        .pin-box {
+            background-color: #fef9c3;
+            border: 2px dashed #ca8a04;
             border-radius: 10px;
             padding: 14px;
+            text-align: center;
+            margin: 10px 0;
         }
     </style>
     """, unsafe_allow_html=True)
-# Mobil opsætning
-st.set_page_config(
-    page_title="Vendora 🇳🇬",
-    page_icon="🛍️",
-    layout="centered",
-    initial_sidebar_state="collapsed",
-    menu_items=None
-)
 
 # Supabase forbindelse
 @st.cache_resource
@@ -619,8 +901,8 @@ def show_offer_modal(item):
             st.success("🎉 Payment Confirmed! Your order is secured.")
             st.markdown(f"""
             <div class="pin-box">
-                <h3 style="margin:0; color:#854d0e;">YOUR DELIVERY PIN: {pay_info['delivery_pin']}</h3>
-                <p style="margin:0; font-size:0.9rem;">Do NOT share this PIN with the rider until they arrive with your items.</p>
+                <h3 style="margin:0; color:#854d0e !important;">YOUR DELIVERY PIN: {pay_info['delivery_pin']}</h3>
+                <p style="margin:0; font-size:0.9rem; color:#713f12 !important;">Do NOT share this PIN with the rider until they arrive with your items.</p>
             </div>
             """, unsafe_allow_html=True)
             if st.button("Close Order"):
@@ -837,7 +1119,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
 
             if unpaid_refs >= 5:
                 ready_payouts = unpaid_refs // 5
-                st.markdown(f'<div class="referral-badge" style="background-color: #e8f5e9; color:#1b5e20;">🎉 Target Met! You have <b>₦{ready_payouts * 1000:,} Airtime</b> ready for payout!</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="referral-badge" style="background-color: #e8f5e9; color:#1b5e20 !important;">🎉 Target Met! You have <b>₦{ready_payouts * 1000:,} Airtime</b> ready for payout!</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="referral-badge">🎁 Referral Airtime Progress: <b>{current_progress}/5 stalls</b> (Refer {5 - current_progress} more to earn ₦1,000 Airtime)</div>', unsafe_allow_html=True)
                 
@@ -940,7 +1222,7 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
 # ====================================================
 elif st.session_state.current_view == "🛵 Courier / Dispatch":
     
-    with st.("ℹ️ Courier Guide (How to deliver safely)"):
+    with st.expander("ℹ️ Courier Guide (How to deliver safely)"):
         st.markdown("""
         **Welcome Verified Riders!**
         1. **Accept Jobs:** Browse 'Open Delivery Requests' and accept the ones that fit your route.
@@ -1118,7 +1400,6 @@ elif st.session_state.current_view == "💬 Support":
         default_phone = st.session_state.logged_courier["phone"]
         user_category = "Courier / Rider"
 
-
     with st.container(border=True):
         u_name = st.text_input("Your Name / Business Name *", value=default_name)
         u_phone = st.text_input("WhatsApp / Phone Number *", value=default_phone)
@@ -1163,9 +1444,6 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 st.rerun()
 
         st.markdown("---")
-
-        
-        st.markdown("---")
         admin_tabs = st.tabs([
             "🧪 Test Sim", 
             "⚙️ Pricing & Inflation", 
@@ -1177,7 +1455,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
             "🛵 Couriers", 
             "🏪 Stores", 
             "📦 Orders"
-                ])
+        ])
     
         all_shops_list = supabase.table("shops").select("*").execute().data or []
         db_sub_price, db_escrow_fee = get_platform_settings()
@@ -1332,7 +1610,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
         # --- TAB 2: BROADCASTS ---
         with admin_tabs[2]:
             st.markdown("#### 📢 Platform Broadcast Alerts")
-            with st.("➕ Create New Alert"):
+            with st.expander("➕ Create New Alert"):
                 b_target = st.selectbox("Target Audience:", ["Stores", "Couriers", "All"])
                 b_type = st.selectbox("Badge:", ["🎁 Airtime Promotion", "📢 Platform Update", "⚠️ Notice"])
                 b_title = st.text_input("Title *")
