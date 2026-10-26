@@ -37,8 +37,10 @@ card_bg = "#1f2937" if is_dark else "#f9fafb"
 border_color = "#374151" if is_dark else "#e5e7eb"
 btn_bg = "#374151" if is_dark else "#f3f4f6"
 btn_text = "#ffffff" if is_dark else "#111827"
+hover_bg = "#4b5563" if is_dark else "#e5e7eb"
+hover_border = "#6b7280" if is_dark else "#d1d5db"
 
-# CSS med den præcise 1/3 bredde og 25px højde rettelse
+# Moderne st.html() til styling af knapper og kolonner
 st.html(f"""
 <style>
     .stApp {{
@@ -102,36 +104,36 @@ st.html(f"""
     }}
 
     .stButton > button:hover,
-    div[data-testid="stPopover"] > button:hover {
-        background-color: {"#4b5563" if is_dark else "#e5e7eb"} !important;
-        border-color: {"#6b7280" if is_dark else "#d1d5db"} !important;
-    }
+    div[data-testid="stPopover"] > button:hover {{
+        background-color: {hover_bg} !important;
+        border-color: {hover_border} !important;
+    }}
 
     /* Fjern Streamlits wrapper-margins */
     div[data-testid="stButton"],
-    div[data-testid="stPopover"] {
+    div[data-testid="stPopover"] {{
         margin: 0 !important;
         padding: 0 !important;
-    }
+    }}
 
     /* Fasthold præcis 1/3 (33.333%) bredde i top-baren */
-    div[data-testid="stHorizontalBlock"] {
+    div[data-testid="stHorizontalBlock"] {{
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
         gap: 4px !important;
         width: 100% !important;
-    }
+    }}
 
-    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
         flex: 0 0 calc(33.333% - 3px) !important;
         max-width: calc(33.333% - 3px) !important;
         width: calc(33.333% - 3px) !important;
         min-width: 0 !important;
-    }
+    }}
 
-    .grid-img-box {{ width: 100%; height: 125px; overflow: hidden; border-radius: 8px; margin-bottom: 8px; background-color: {"#374151" if is_dark else "#f3f4f6"}; display: flex; align-items: center; justify-content: center; }}
+    .grid-img-box {{ width: 100%; height: 125px; overflow: hidden; border-radius: 8px; margin-bottom: 8px; background-color: {card_bg}; display: flex; align-items: center; justify-content: center; }}
     .grid-img-box img {{ width: 100%; height: 100%; object-fit: cover; }}
     .grid-title {{ font-size: 0.95rem; font-weight: 700; line-height: 1.2; margin-bottom: 4px; color: {text_color} !important; -webkit-text-fill-color: {text_color} !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.4em; }}
     .grid-price {{ font-size: 1.05rem; font-weight: 800; color: {"#4ade80" if is_dark else "#16a34a"}; margin-bottom: 4px; }}
