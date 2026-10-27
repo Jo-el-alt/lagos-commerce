@@ -2282,7 +2282,7 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                     supabase.table("shops").update({
                                         "subscription_status": "active_paid", "trial_ends_at": new_exp.isoformat()
                                     }).eq("id", s_data["id"]).execute()
-                                        st.rerun()
+                                    st.rerun()
 
         # --- UPGRADE & BOOST APPROVALS ---
             st.markdown("---")
