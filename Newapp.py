@@ -1594,9 +1594,6 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         if "ai_tries" not in st.session_state:
             st.session_state.ai_tries = 0
     
-        c_ai1, c_ai2 = st.columns([3, 1])
-        with c_ai1:
-            ai_keywords = st.text_input("Highlights for AI (optional)", placeholder="e.g. fresh stock, direct from distributor")
         with c_ai2:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
             if st.session_state.ai_tries >= 3:
@@ -1605,63 +1602,60 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 if st.button("✨ Write with AI", use_container_width=True):
                     st.session_state.ai_tries += 1
                     openai_api_key = st.secrets.get("OPENAI_API_KEY", "")
-                if not openai_api_key:
-                    st.error("OpenAI API key missing in Secrets.")
-                elif not product:
-                    st.warning("Enter product name first.")
-                else:
-                    try:
-                        client = OpenAI(api_key=openai_api_key)
-                        resp = client.chat.completions.create(
-                            model="gpt-4o-mini",
-                            messages=[
-                                {
-                                    "role": "system",
-                                    "content": (
-                                        "You are a sharp, energetic Nigerian street-market vendor in Lagos. "
-                                        "Write deal captions in natural, authentic Nigerian Pidgin mixed with casual Nigerian English. "
-                                        "Use real street market slang (e.g. 'Omo', 'Sharp sharp', 'Correct quality', 'No dull yourself', 'E dey hot'). "
-                                        "Keep it strictly under 2 short, punchy sentences so it sounds 100% local and street-smart, never like a robot or translated text."
-                                    )
-                                },
-                                {
-                                    "role": "user",
-                                    "content": (
-                                        f"Product: {product}, Price: NGN {price:,}, Shop: {shop['name']}, Area: {shop['area']}. "
-                                        f"Highlights: {ai_keywords}."
-                                    )
-                                }
-                            ],
-                            max_tokens=80
-                        )
-                        st.session_state.ai_ad_text = resp.choices[0].message.content.strip()
-                        st.rerun()
-    except Exception as e:
-                st.error(f"AI error: {e}")
+                    if not openai_api_key:
+                        st.error("OpenAI API key missing in Secrets.")
+                    elif not product:
+                        st.warning("Enter product name first.")
+                    else:
+                        try:
+                            client = OpenAI(api_key=openai_api_key)
+                            resp = client.chat.completions.create(
+                                model="gpt-4o-mini",
+                                messages=[
+                                    {
+                                        "role": "system",
+                                        "content": (
+                                            "You are a sharp, energetic Nigerian street market vendor in Lagos. "
+                                            "Write deal captions in natural Lagos Pidgin (use phrases like 'Omo', 'Sharp sharp', 'No carry last', 'Better market'). "
+                                            "Use real street market slang (e.g., 'E dey shake', 'Sweet sweet price', 'No dull yourself'). "
+                                            "Keep it strictly under 2 short, catchy sentences."
+                                        )
+                                    },
+                                    {
+                                        "role": "user",
+                                        "content": f"Product: {product}. Extras/Highlights: {ai_keywords}"
+                                    }
+                                ],
+                                max_tokens=80
+                            )
+                            st.session_state.ai_ad_text = resp.choices[0].message.content.strip()
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"AI error: {e}")
 
-        default_ad_text = st.session_state.ai_ad_text or f"🔥 Quality {product} now available at {shop['name']} on Vendora for only NGN {price:,}! Limited stock today in {shop['area']}."
-        desc = st.text_area("Ad Description:", value=default_ad_text, height=85)
-        
+        default_ad_text = st.session_state.ai_ad_text or f"🔥 Fresh deal on {product}! Grab it now before stock finish."
+        desc = st.text_area("Ad Description:", value=default_ad_text)
+
         if st.button("🚀 Publish Deal Now", type="primary", use_container_width=True):
             if not product:
                 st.error("Please enter a product name.")
             else:
-            existing_deals = supabase.table("offers").select("id").eq("shop", shop["name"]).execute().data
-            if len(existing_deals) >= 3:
-                st.error("⚠️ Limit reached! You can have a maximum of 3 active deals at a time. Delete an old deal to post a new one.")
-            else:
-                final_img = convert_to_base64_img(uploaded_file) if uploaded_file else None
-                new_data = {
-                    "shop": shop["name"], "category": shop["category"],
-                    "is_mobile": is_mobile, "location_note": location_note,
-                    "product": product, "price": int(price), "desc": desc,
-                    "img_src": final_img, "status": "active"
-                }
-                supabase.table("offers").insert(new_data).execute()
-                st.session_state.ai_ad_text = ""
-                st.session_state.ai_tries = 0
-                st.session_state.go_to_deals = True
-                st.rerun()
+                existing_deals = supabase.table("offers").select("id").eq("shop", shop["name"]).execute().data
+                if len(existing_deals) >= 3:
+                    st.error("⚠️ Limit reached! You can have a maximum of 3 active deals at a time. Delete an old deal to post a new one.")
+                else:
+                    final_img = convert_to_base64_img(uploaded_file) if uploaded_file else None
+                    new_data = {
+                        "shop": shop["name"], "category": shop["category"],
+                        "is_mobile": is_mobile, "location_note": location_note,
+                        "product": product, "price": int(price), "desc": desc,
+                        "img_src": final_img, "status": "active"
+                    }
+                    supabase.table("offers").insert(new_data).execute()
+                    st.session_state.ai_ad_text = ""
+                    st.session_state.ai_tries = 0
+                    st.session_state.go_to_deals = True
+                    st.rerun()
 
         st.markdown("---")
         st.markdown("### Store QR Code")
