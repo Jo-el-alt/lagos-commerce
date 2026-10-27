@@ -2021,17 +2021,35 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
             st.info("Adjust store subscription fees and platform escrow cut directly in the database to counter inflation.")
             
             with st.container(border=True):
-                st.markdown("##### 📈 Global Platform Settings")
-                new_sub_input = st.number_input("Standard Weekly Store Fee (₦)", min_value=500, value=db_sub_price, step=100)
-                new_fee_input = st.number_input("Escrow / Platform Fee per Order (₦)", min_value=50, value=db_escrow_fee, step=25)
+                st.markdown("##### 📈 Global Platform Settings & Prices")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.caption("Store Subscriptions")
+                # Henter de nuværende priser (eller sætter standardværdier hvis de mangler)
+                new_p7 = st.number_input("Price for 7 Days (₦)", value=1500)
+                new_p14 = st.number_input("Price for 14 Days (₦)", value=2500)
+                new_p30 = st.number_input("Price for 30 Days (₦)", value=4000)
                 
-                if st.button("💾 Save New Rates to Database", type="primary"):
-                    supabase.table("platform_settings").update({
-                        "weekly_sub_price": int(new_sub_input),
-                        "escrow_fee": int(new_fee_input)
-                    }).eq("id", 1).execute()
-                    st.success("✅ Platform rates saved permanently in Supabase!")
-                    st.rerun()
+            with col2:
+                st.caption("Fees & Upgrades")
+                new_fee_input = st.number_input("Escrow / Platform Fee", value=500)
+                new_upg_deals = st.number_input("Price: +5 Extra Deals (₦)", value=1000)
+                new_upg_high = st.number_input("Price: Highlight Deal (₦)", value=2000)
+
+            if st.button("💾 Save New Rates to Database", type="primary"):
+                # Opdaterer alle priserne i Supabase
+                supabase.table("platform_settings").update({
+                    "price_7": int(new_p7),
+                    "price_14": int(new_p14),
+                    "price_30": int(new_p30),
+                    "escrow_fee": int(new_fee_input),
+                    "price_extra_deals": int(new_upg_deals),
+                    "price_highlight": int(new_upg_high)
+                }).eq("id", 1).execute()
+                
+                st.success("✅ All platform rates saved permanently in Supabase!")
+                st.rerun()
 
             st.markdown("---")
             st.markdown("##### 🎁 Win-Back Discount Generator")
