@@ -1636,8 +1636,8 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                         )
                         st.session_state.ai_ad_text = resp.choices[0].message.content.strip()
                         st.rerun()
-                    except Exception as e:
-                        st.error(f"AI error: {e}")
+    except Exception as e:
+                st.error(f"AI error: {e}")
 
         default_ad_text = st.session_state.ai_ad_text or f"🔥 Quality {product} now available at {shop['name']} on Vendora for only NGN {price:,}! Limited stock today in {shop['area']}."
         desc = st.text_area("Ad Description:", value=default_ad_text, height=85)
@@ -1646,15 +1646,20 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
             if not product:
                 st.error("Please enter a product name.")
             else:
+            existing_deals = supabase.table("offers").select("id").eq("shop", shop["name"]).execute().data
+            if len(existing_deals) >= 3:
+                st.error("⚠️ Limit reached! You can have a maximum of 3 active deals at a time. Delete an old deal to post a new one.")
+            else:
                 final_img = convert_to_base64_img(uploaded_file) if uploaded_file else None
                 new_data = {
-                    "shop": shop["name"], "category": shop["category"], "area": shop["area"],
-                    "is_mobile": is_mobile, "location_note": location_note, "phone": shop["phone"],
-                    "product": product, "price": int(price), "description": desc,
+                    "shop": shop["name"], "category": shop["category"],
+                    "is_mobile": is_mobile, "location_note": location_note,
+                    "product": product, "price": int(price), "desc": desc,
                     "img_src": final_img, "status": "active"
                 }
                 supabase.table("offers").insert(new_data).execute()
                 st.session_state.ai_ad_text = ""
+                st.session_state.ai_tries = 0
                 st.session_state.go_to_deals = True
                 st.rerun()
 
