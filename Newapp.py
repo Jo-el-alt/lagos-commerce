@@ -1698,9 +1698,15 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                     if not slot_ref.strip():
                         st.error("Please enter your transfer reference.")
                     else:
+                        s_id = shop.get("id")
+                        try:
+                            s_id = int(s_id) if s_id is not None else None
+                        except (ValueError, TypeError):
+                            s_id = None
+
                         supabase.table("upgrade_requests").insert({
-                            "shop_id": shop["id"],
-                            "shop_name": shop["name"],
+                            "shop_id": s_id,
+                            "shop_name": shop.get("name", "Unknown"),
                             "upgrade_type": "extra_deals",
                             "amount": p_extra,
                             "payment_ref": slot_ref.strip(),
@@ -1725,15 +1731,22 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                         if not high_ref.strip():
                             st.error("Please enter your transfer reference.")
                         else:
-                            supabase.table("upgrade_requests").insert({
-                                "shop_id": shop["id"],
-                                "shop_name": shop["name"],
-                                "upgrade_type": "highlight",
-                                "target_deal_id": deal_options[selected_deal_prod],
-                                "amount": p_high,
-                                "payment_ref": high_ref.strip(),
-                                "status": "pending"
-                            }).execute()
+                            s_id = shop.get("id")
+                        try:
+                            s_id = int(s_id) if s_id is not None else None
+                        except (ValueError, TypeError):
+                            s_id = None
+
+                                supabase.table("upgrade_requests").insert({
+                                    "shop_id": s_id,
+                                    "shop_name": shop.get("name", "Unknown"),
+                                    "upgrade_type": "highlight",
+                                    "target_deal_id": deal_options[selected_deal_prod],
+                                    "amount": p_high,
+                                    "payment_ref": high_ref.strip(),
+                                    "status": "pending"
+                                }).execute()
+                            
                             st.success("✅ Highlight request submitted! Debbie will activate it shortly.")
                             
 # ====================================================
