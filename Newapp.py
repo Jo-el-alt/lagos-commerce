@@ -1713,7 +1713,6 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                             "status": "pending"
                         }).execute()
                         st.success("✅ Upgrade request submitted! Debbie will approve once transfer is confirmed.")
-
         with upg_col2:
             st.markdown("**⭐ Featured Spot**")
             st.caption("Pin your deal to the top with a gold badge")
