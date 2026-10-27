@@ -2282,8 +2282,44 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                                     supabase.table("shops").update({
                                         "subscription_status": "active_paid", "trial_ends_at": new_exp.isoformat()
                                     }).eq("id", s_data["id"]).execute()
-                                    st.rerun()
+                                        st.rerun()
 
+        # --- UPGRADE & BOOST APPROVALS ---
+            st.markdown("---")
+            st.markdown("#### ⚡ Pending Shop Upgrades & Boosts")
+        
+            pending_upgs = supabase.table("upgrade_requests").select("*").eq("status", "pending").order("created_at", desc=True).execute().data
+        
+            if not pending_upgs:
+                st.caption("No pending store upgrades at the moment.")
+            else:
+                for req in pending_upgs:
+                    with st.container(border=True):
+                        u_cols = st.columns([3, 2, 2, 2])
+                        with u_cols[0]:
+                            st.write(f"**Shop:** {req.get('shop_name', 'Unknown')}")
+                            st.caption(f"Type: `{req.get('upgrade_type')}` | Ref: `{req.get('payment_ref')}`")
+                        with u_cols[1]:
+                            st.write(f"**Amount:** ₦{req.get('amount', 0):,}")
+                        with u_cols[2]:
+                            if st.button("✅ Approve", key=f"app_upg_{req['id']}", type="primary"):
+                                if req.get("upgrade_type") == "extra_deals":
+                                    target_shop = supabase.table("shops").select("max_deals").eq("id", req["shop_id"]).execute().data
+                                    old_limit = target_shop[0].get("max_deals", 3) if target_shop else 3
+                                    supabase.table("shops").update({"max_deals": (old_limit or 3) + 5}).eq("id", req["shop_id"]).execute()
+                                elif req.get("upgrade_type") == "highlight":
+                                    if req.get("target_deal_id"):
+                                        supabase.table("offers").update({"status": "highlighted"}).eq("id", req["target_deal_id"]).execute()
+                            
+                                supabase.table("upgrade_requests").update({"status": "approved"}).eq("id", req["id"]).execute()
+                                st.success(f"Approved upgrade for {req.get('shop_name')}!")
+                                st.rerun()
+                        with u_cols[3]:
+                            if st.button("❌ Reject", key=f"rej_upg_{req['id']}"):
+                                supabase.table("upgrade_requests").update({"status": "rejected"}).eq("id", req["id"]).execute()
+                                st.warning("Request rejected.")
+                                st.rerun()
+        
         # --- TAB 5: ESCROW & SETTLEMENTS ---
         with admin_tabs[5]:
             st.markdown("#### 💰 Paystack Escrow & Settlement Ledger")
