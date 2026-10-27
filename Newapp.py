@@ -1645,8 +1645,9 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 st.error("Please enter a product name.")
             else:
                 existing_deals = supabase.table("offers").select("id").eq("shop", shop["name"]).execute().data
-                if len(existing_deals) >= 3:
-                    st.error("⚠️ Limit reached! You can have a maximum of 3 active deals at a time. Delete an old deal to post a new one.")
+                allowed_deals = shop.get("max_deals", 3) or 3
+                if len(existing_deals) >= allowed_deals:
+                    st.error(f"⚠️ Limit reached! You can have a maximum of {allowed_deals} active deals at a time. Delete an old deal or upgrade your slots below.")
                 else:
                     final_img = convert_to_base64_img(uploaded_file) if uploaded_file else None
                 new_data = {
@@ -1672,6 +1673,36 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         st.markdown("### Store QR Code")
         direct_shop_url = f"https://lagos-commerce-pzru6e8tsftfmt72gbjnhz.streamlit.app/?shop={shop['slug']}"
         st.image(generate_qr(direct_shop_url), width=160, caption=f"Scan for {shop['name']}")
+
+        # --- STORE UPGRADES & BOOSTS ---
+        st.markdown("---")
+        st.subheader("🚀 Boost Your Store & Deals")
+
+        settings_data = supabase.table("platform_settings").select("*").eq("id", 1).execute().data
+        p_settings = settings_data[0] if settings_data else {}
+        p_extra = int(p_settings.get("price_extra_deals", 1000))
+        p_high = int(p_settings.get("price_highlight", 2000))
+
+        current_max = shop.get("max_deals", 3) or 3
+
+        upg_col1, upg_col2 = st.columns(2)
+
+        with upg_col1:
+            st.markdown("**📦 Expand Deal Slots**")
+            st.caption(f"Currently active limit: **{current_max} deals**")
+            st.write(f"Unlock +5 slots for **₦{p_extra:,}**")
+            if st.button(f"Upgrade to {current_max + 5} Deals", use_container_width=True):
+                new_limit = current_max + 5
+                supabase.table("shops").update({"max_deals": new_limit}).eq("id", shop["id"]).execute()
+                st.success(f"🎉 Limit increased! You can now post up to {new_limit} deals.")
+                st.rerun()
+
+        with upg_col2:
+            st.markdown("**⭐ Featured Spot**")
+            st.caption("Pin your deal to the top with a gold badge")
+            st.write(f"Feature a deal for **₦{p_high:,}**")
+            if st.button("Request Deal Highlight", use_container_width=True):
+                st.info("📲 Contact Admin Debbie on WhatsApp to highlight your current deal right away!")
 
 # ====================================================
 # VIEW 3: COURIER / DISPATCH
