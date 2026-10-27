@@ -1738,16 +1738,16 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                             s_id = None
 
                                 supabase.table("upgrade_requests").insert({
-                                    "shop_id": s_id,
-                                    "shop_name": shop.get("name", "Unknown"),
-                                    "upgrade_type": "highlight",
-                                    "target_deal_id": deal_options[selected_deal_prod],
-                                    "amount": p_high,
-                                    "payment_ref": high_ref.strip(),
-                                    "status": "pending"
-                                }).execute()
+                                "shop_id": s_id,
+                                "shop_name": shop.get("name", "Unknown"),
+                                "upgrade_type": "highlight",
+                                "target_deal_id": deal_options[selected_deal_prod],
+                                "amount": p_high,
+                                "payment_ref": high_ref.strip(),
+                                "status": "pending"
+                            }).execute()
                             
-                            st.success("✅ Highlight request submitted! Debbie will activate it shortly.")
+                        st.success("✅ Highlight request submitted! Debbie will activate it shortly.")
                             
 # ====================================================
 # VIEW 3: COURIER / DISPATCH
