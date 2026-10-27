@@ -1605,10 +1605,26 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                 else:
                     try:
                         client = OpenAI(api_key=openai_api_key)
-                        prompt = f"Write a short, punchy Nigerian sales caption (max 2 sentences) for a market deal on Vendora Lagos. Store: {shop['name']}, Market/Area: {shop['area']}, Product: {product}, Price: NGN {price:,}. Highlights: {ai_keywords}."
                         resp = client.chat.completions.create(
                             model="gpt-4o-mini",
-                            messages=[{"role": "user", "content": prompt}],
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": (
+                                        "You are a sharp, energetic Nigerian street-market vendor in Lagos. "
+                                        "Write deal captions in natural, authentic Nigerian Pidgin mixed with casual Nigerian English. "
+                                        "Use real street market slang (e.g. 'Omo', 'Sharp sharp', 'Correct quality', 'No dull yourself', 'E dey hot'). "
+                                        "Keep it strictly under 2 short, punchy sentences so it sounds 100% local and street-smart, never like a robot or translated text."
+                                    )
+                                },
+                                {
+                                    "role": "user",
+                                    "content": (
+                                        f"Product: {product}, Price: NGN {price:,}, Shop: {shop['name']}, Area: {shop['area']}. "
+                                        f"Highlights: {ai_keywords}."
+                                    )
+                                }
+                            ],
                             max_tokens=80
                         )
                         st.session_state.ai_ad_text = resp.choices[0].message.content.strip()
