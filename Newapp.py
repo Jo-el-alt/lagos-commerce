@@ -2023,22 +2023,23 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
             with st.container(border=True):
                 st.markdown("##### 📈 Global Platform Settings & Prices")
             
+            settings_res = supabase.table("platform_settings").select("*").eq("id", 1).execute().data
+            current_settings = settings_res[0] if settings_res else {}
+
             col1, col2 = st.columns(2)
             with col1:
                 st.caption("Store Subscriptions")
-                # Henter de nuværende priser (eller sætter standardværdier hvis de mangler)
-                new_p7 = st.number_input("Price for 7 Days (₦)", value=1500)
-                new_p14 = st.number_input("Price for 14 Days (₦)", value=2500)
-                new_p30 = st.number_input("Price for 30 Days (₦)", value=4000)
+                new_p7 = st.number_input("Price for 7 Days (₦)", value=int(current_settings.get("price_7", 1500)))
+                new_p14 = st.number_input("Price for 14 Days (₦)", value=int(current_settings.get("price_14", 2500)))
+                new_p30 = st.number_input("Price for 30 Days (₦)", value=int(current_settings.get("price_30", 4000)))
                 
             with col2:
                 st.caption("Fees & Upgrades")
-                new_fee_input = st.number_input("Escrow / Platform Fee", value=500)
-                new_upg_deals = st.number_input("Price: +5 Extra Deals (₦)", value=1000)
-                new_upg_high = st.number_input("Price: Highlight Deal (₦)", value=2000)
+                new_fee_input = st.number_input("Escrow / Platform Fee", value=int(current_settings.get("escrow_fee", 200)))
+                new_upg_deals = st.number_input("Price: +5 Extra Deals (₦)", value=int(current_settings.get("price_extra_deals", 1000)))
+                new_upg_high = st.number_input("Price: Highlight Deal (₦)", value=int(current_settings.get("price_highlight", 2000)))
 
             if st.button("💾 Save New Rates to Database", type="primary"):
-                # Opdaterer alle priserne i Supabase
                 supabase.table("platform_settings").update({
                     "price_7": int(new_p7),
                     "price_14": int(new_p14),
@@ -2050,29 +2051,6 @@ elif st.session_state.current_view == "🛡️ Platform Admin":
                 
                 st.success("✅ All platform rates saved permanently in Supabase!")
                 st.rerun()
-
-            st.markdown("---")
-            st.markdown("##### 🎁 Win-Back Discount Generator")
-            st.caption("Select an expired store and send a targeted WhatsApp comeback offer.")
-            
-            expired_shops_list = [s for s in all_shops_list if get_shop_access_status(s)[0] == "expired"]
-            if not expired_shops_list:
-                st.info("No expired stores right now – all merchants are active!")
-            else:
-                for ex_s in expired_shops_list:
-                    with st.container(border=True):
-                        st.markdown(f"**{ex_s['name']}** (📞 `{ex_s['phone']}`)")
-                        discount_pct = st.selectbox("Select win-back offer:", ["50% off 1st week renewal", "1 Free Week (+7 days)", "2 weeks at half price"], key=f"disc_{ex_s['id']}")
-                        
-                        if discount_pct.startswith("50%"):
-                            disc_msg = f"Hello {ex_s['name']}! We miss you at Vendora Lagos. Come back today and get 50% off your store renewal!"
-                        elif discount_pct.startswith("1 Free"):
-                            disc_msg = f"Hello {ex_s['name']}! Ready to sell again on Vendora? We are gifting you 1 free week (+7 days access) on the house."
-                        else:
-                            disc_msg = f"Hello {ex_s['name']}! Special come-back offer on Vendora: 2 weeks access at half price. Contact us to activate!"
-
-                        wa_winback = make_wa_link(ex_s['phone'], disc_msg)
-                        st.link_button("💬 Send Win-Back Offer on WhatsApp", wa_winback, use_container_width=True)
 
         # --- TAB 2: BROADCASTS ---
         with admin_tabs[2]:
