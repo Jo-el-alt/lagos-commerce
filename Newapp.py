@@ -1590,14 +1590,21 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
         
         if "ai_ad_text" not in st.session_state:
             st.session_state.ai_ad_text = ""
-
+            
+        if "ai_tries" not in st.session_state:
+            st.session_state.ai_tries = 0
+    
         c_ai1, c_ai2 = st.columns([3, 1])
         with c_ai1:
             ai_keywords = st.text_input("Highlights for AI (optional)", placeholder="e.g. fresh stock, direct from distributor")
         with c_ai2:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            if st.button("✨ Write with AI", use_container_width=True):
-                openai_api_key = st.secrets.get("OPENAI_API_KEY", "")
+            if st.session_state.ai_tries >= 3:
+                st.warning("⚠️ Max 3 AI tries used")
+            else:
+                if st.button("✨ Write with AI", use_container_width=True):
+                    st.session_state.ai_tries += 1
+                    openai_api_key = st.secrets.get("OPENAI_API_KEY", "")
                 if not openai_api_key:
                     st.error("OpenAI API key missing in Secrets.")
                 elif not product:
