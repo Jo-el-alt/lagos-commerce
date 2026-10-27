@@ -1649,17 +1649,24 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
                     st.error("⚠️ Limit reached! You can have a maximum of 3 active deals at a time. Delete an old deal to post a new one.")
                 else:
                     final_img = convert_to_base64_img(uploaded_file) if uploaded_file else None
-                    new_data = {
-                        "shop": shop["name"], "category": shop["category"],
-                        "is_mobile": is_mobile, "location_note": location_note,
-                        "product": product, "price": int(price), "desc": desc,
-                        "img_src": final_img, "status": "active"
-                    }
-                    supabase.table("offers").insert(new_data).execute()
-                    st.session_state.ai_ad_text = ""
-                    st.session_state.ai_tries = 0
-                    st.session_state.go_to_deals = True
-                    st.rerun()
+                new_data = {
+                    "shop": shop["name"],
+                    "category": shop["category"],
+                    "area": shop.get("area", ""),
+                    "phone": shop.get("phone", ""),
+                    "is_mobile": is_mobile,
+                    "location_note": location_note,
+                    "product": product,
+                    "price": int(price),
+                    "description": desc,
+                    "img_src": final_img,
+                    "status": "active"
+                }
+                supabase.table("offers").insert(new_data).execute()
+                st.session_state.ai_ad_text = ""
+                st.session_state.ai_tries = 0
+                st.session_state.go_to_deals = True
+                st.rerun()
 
         st.markdown("---")
         st.markdown("### Store QR Code")
