@@ -1691,19 +1691,51 @@ elif st.session_state.current_view == "🏪 Store Owner Admin":
             st.markdown("**📦 Expand Deal Slots**")
             st.caption(f"Currently active limit: **{current_max} deals**")
             st.write(f"Unlock +5 slots for **₦{p_extra:,}**")
-            if st.button(f"Upgrade to {current_max + 5} Deals", use_container_width=True):
-                new_limit = current_max + 5
-                supabase.table("shops").update({"max_deals": new_limit}).eq("id", shop["id"]).execute()
-                st.success(f"🎉 Limit increased! You can now post up to {new_limit} deals.")
-                st.rerun()
+            with st.expander("Request +5 Deal Slots"):
+                st.info(f"Transfer ₦{p_extra:,} to Admin Debbie, enter reference, and submit for instant verification.")
+                slot_ref = st.text_input("Transfer Reference / Note", key="slot_pay_ref", placeholder="e.g. OPay-123456")
+                if st.button("Submit Slot Upgrade", key="btn_slot_upg", type="primary"):
+                    if not slot_ref.strip():
+                        st.error("Please enter your transfer reference.")
+                    else:
+                        supabase.table("upgrade_requests").insert({
+                            "shop_id": shop["id"],
+                            "shop_name": shop["name"],
+                            "upgrade_type": "extra_deals",
+                            "amount": p_extra,
+                            "payment_ref": slot_ref.strip(),
+                            "status": "pending"
+                        }).execute()
+                        st.success("✅ Upgrade request submitted! Debbie will approve once transfer is confirmed.")
 
         with upg_col2:
             st.markdown("**⭐ Featured Spot**")
             st.caption("Pin your deal to the top with a gold badge")
             st.write(f"Feature a deal for **₦{p_high:,}**")
-            if st.button("Request Deal Highlight", use_container_width=True):
-                st.info("📲 Contact Admin Debbie on WhatsApp to highlight your current deal right away!")
-
+            with st.expander("Request Deal Highlight"):
+                # Hent sælgerens aktive annoncer så de kan vælge en
+                shop_deals = supabase.table("offers").select("id, product").eq("shop", shop["name"]).execute().data
+                if not shop_deals:
+                    st.caption("Post a deal first to highlight it.")
+                else:
+                    deal_options = {d["product"]: d["id"] for d in shop_deals}
+                    selected_deal_prod = st.selectbox("Select deal to boost", list(deal_options.keys()))
+                    high_ref = st.text_input("Transfer Reference / Note", key="high_pay_ref", placeholder="e.g. OPay-987654")
+                    if st.button("Submit Highlight Boost", key="btn_high_upg", type="primary"):
+                        if not high_ref.strip():
+                            st.error("Please enter your transfer reference.")
+                        else:
+                            supabase.table("upgrade_requests").insert({
+                                "shop_id": shop["id"],
+                                "shop_name": shop["name"],
+                                "upgrade_type": "highlight",
+                                "target_deal_id": deal_options[selected_deal_prod],
+                                "amount": p_high,
+                                "payment_ref": high_ref.strip(),
+                                "status": "pending"
+                            }).execute()
+                            st.success("✅ Highlight request submitted! Debbie will activate it shortly.")
+                            
 # ====================================================
 # VIEW 3: COURIER / DISPATCH
 # ====================================================
